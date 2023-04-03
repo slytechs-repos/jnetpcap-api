@@ -1,2 +1,2 @@
 # jNetPcap Pro
-A protocol enabled jNetPcap with IPF reassembly
+A protocol enabled jNetPcap with IP Fragment reassembly. 
