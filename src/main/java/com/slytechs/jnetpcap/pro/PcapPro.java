@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.jnetpcap.Pcap0_4;
 import org.jnetpcap.Pcap0_6;
+import org.jnetpcap.Pcap1_0;
 import org.jnetpcap.Pcap1_5;
 import org.jnetpcap.Pcap1_9;
 import org.jnetpcap.PcapDumper;
@@ -66,6 +67,28 @@ public final class PcapPro extends NonSealedPcap {
 	 */
 	public static PcapPro create(String device) throws PcapException {
 		return Pcap1_9.create(PcapPro::new, device);
+	}
+
+	/**
+	 * Create a live capture handle.
+	 * 
+	 * {@code create} is used to create a packet capture handle to look at packets
+	 * on the network. source is a string that specifies the network device to open;
+	 * on Linux systems with 2.2 or later kernels, a source argument of "any" or
+	 * NULL can be used to capture packets from all interfaces. The returned handle
+	 * must be activated with pcap_activate() before pack' ets can be captured with
+	 * it; options for the capture, such as promiscu' ous mode, can be set on the
+	 * handle before activating it.
+	 *
+	 * @param device pcap network interface that specifies the network device to
+	 *               open.
+	 * @return a new pcap object that needs to be activated using
+	 *         {@link #activate()} call
+	 * @throws PcapException the pcap exception
+	 * @since libpcap 1.0
+	 */
+	public static PcapPro create(PcapIf device) throws PcapException {
+		return Pcap1_0.create(PcapPro::new, device.name());
 	}
 
 	/**
@@ -310,6 +333,10 @@ public final class PcapPro extends NonSealedPcap {
 	}
 
 	public PcapPro enableIpfReassembly(boolean enable) {
+		throw new UnsupportedOperationException("Not implemented yet. ");
+	}
+
+	public PcapPro dropReassembledIpFragments(boolean enable) {
 		throw new UnsupportedOperationException("Not implemented yet. ");
 	}
 
