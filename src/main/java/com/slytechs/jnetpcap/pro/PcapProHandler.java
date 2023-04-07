@@ -17,11 +17,15 @@
  */
 package com.slytechs.jnetpcap.pro;
 
+import java.lang.foreign.MemoryAddress;
+
 import org.jnetpcap.PcapHandler;
 
 import com.slytechs.jnet.protocol.packet.Packet;
 
 /**
+ * Marker interface for all Pcap pro packet handlers.
+ * 
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  * @author Mark Bednarczyk
@@ -29,9 +33,26 @@ import com.slytechs.jnet.protocol.packet.Packet;
  */
 public interface PcapProHandler extends PcapHandler {
 
+	/**
+	 * A dispatcher which dispatches high level packets with protocol header
+	 * information.
+	 *
+	 * @param <U> the generic type
+	 */
 	@FunctionalInterface
 	public interface OfPacket<U> extends PcapProHandler {
 		void handlePacket(U user, Packet packet);
 	}
-	
+
+	/**
+	 * Callback from a native IP fragment tracker and reassembler
+	 */
+	@FunctionalInterface
+	public interface NativeIpfCallback {
+		void handleNativeIpfCallback(
+				MemoryAddress ipfDescriptor,
+				MemoryAddress pktDescriptor,
+				MemoryAddress pkt,
+				MemoryAddress user);
+	}
 }

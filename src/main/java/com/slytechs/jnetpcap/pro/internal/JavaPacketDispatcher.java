@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.slytechs.jnetpcap.pro;
+package com.slytechs.jnetpcap.pro.internal;
 
 import java.lang.foreign.MemoryAddress;
 import java.lang.foreign.MemorySegment;
@@ -26,21 +26,27 @@ import java.nio.ByteOrder;
 import org.jnetpcap.internal.PcapHeaderABI;
 import org.jnetpcap.internal.StandardPcapDispatcher;
 
-import com.slytechs.jnet.protocol.constants.PacketDescriptorType;
+import com.slytechs.jnet.protocol.core.constants.PacketDescriptorType;
 import com.slytechs.jnet.protocol.packet.Frame.FrameNumber;
 import com.slytechs.jnet.protocol.packet.Packet;
 import com.slytechs.jnet.protocol.packet.descriptor.PacketDescriptor;
 import com.slytechs.jnet.protocol.packet.descriptor.PacketDissector;
 import com.slytechs.jnet.protocol.packet.meta.PacketFormat;
 import com.slytechs.jnet.runtime.time.TimestampUnit;
+import com.slytechs.jnetpcap.pro.PcapProHandler;
+import com.slytechs.jnetpcap.pro.PcapProHandler.OfPacket;
 
 /**
+ * A packet dissector and dispatcher.
+ * 
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  * @author Mark Bednarczyk
  *
  */
-public class PacketDispatcher extends StandardPcapDispatcher {
+public final class JavaPacketDispatcher
+		extends StandardPcapDispatcher
+		implements PacketDispatcher {
 
 	private static final int DESC_BUFFER_SIZE = 1024;
 
@@ -62,7 +68,7 @@ public class PacketDispatcher extends StandardPcapDispatcher {
 	 * @param pcapHandle     the pcap handle
 	 * @param descriptorType the descriptor type
 	 */
-	public PacketDispatcher(MemoryAddress pcapHandle, Runnable breakDispatch, PacketDescriptorType descriptorType) {
+	public JavaPacketDispatcher(MemoryAddress pcapHandle, Runnable breakDispatch, PacketDescriptorType descriptorType) {
 		super(pcapHandle, breakDispatch);
 		this.descriptorType = descriptorType;
 		this.dissector = PacketDissector.dissector(descriptorType);
@@ -73,10 +79,12 @@ public class PacketDispatcher extends StandardPcapDispatcher {
 		this.frameNo = FrameNumber.starting(0);
 	}
 
+	@Override
 	public void setFrameNumber(FrameNumber frameNumberAssigner) {
 		this.frameNo = frameNumberAssigner;
 	}
 
+	@Override
 	public void setPacketFormat(PacketFormat newFormat) {
 		this.formatter = newFormat;
 	}
@@ -119,6 +127,7 @@ public class PacketDispatcher extends StandardPcapDispatcher {
 	 * @param user  the user
 	 * @return the int
 	 */
+	@Override
 	public <U> int loopPacket(int count, PcapProHandler.OfPacket<U> sink, U user) {
 		return super.loopNative(count, (ignore, pcapHdr, pktData) -> {
 			/* Pcap header fields */
@@ -149,6 +158,7 @@ public class PacketDispatcher extends StandardPcapDispatcher {
 	 * @param user  the user
 	 * @return the int
 	 */
+	@Override
 	public <U> int dispatchPacket(int count, PcapProHandler.OfPacket<U> sink, U user) {
 		return super.dispatchNative(count, (ignore, pcapHdr, pktData) -> {
 
@@ -174,6 +184,7 @@ public class PacketDispatcher extends StandardPcapDispatcher {
 	/**
 	 * @return the descriptorType
 	 */
+	@Override
 	public PacketDescriptorType getDescriptorType() {
 		return descriptorType;
 	}
@@ -181,10 +192,12 @@ public class PacketDispatcher extends StandardPcapDispatcher {
 	/**
 	 * @return the dissector
 	 */
+	@Override
 	public PacketDissector getDissector() {
 		return dissector;
 	}
 
+	@Override
 	public void setPortNumber(int portNo) {
 		this.portNo = portNo;
 	}

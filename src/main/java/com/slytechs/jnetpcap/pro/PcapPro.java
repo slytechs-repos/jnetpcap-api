@@ -34,11 +34,16 @@ import org.jnetpcap.constant.PcapTStampPrecision;
 import org.jnetpcap.internal.NonSealedPcap;
 import org.jnetpcap.internal.PcapHeaderABI;
 
-import com.slytechs.jnet.protocol.constants.PacketDescriptorType;
+import com.slytechs.jnet.protocol.core.constants.PacketDescriptorType;
 import com.slytechs.jnet.protocol.packet.Frame.FrameNumber;
 import com.slytechs.jnet.protocol.packet.meta.PacketFormat;
+import com.slytechs.jnet.runtime.util.MemoryUnit;
+import com.slytechs.jnetpcap.pro.internal.JavaPacketDispatcher;
+import com.slytechs.jnetpcap.pro.internal.PacketDispatcher;
 
 /**
+ * Pcap packet capture with high level packet and protocol support.
+ * 
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  * @author Mark Bednarczyk
@@ -258,15 +263,19 @@ public final class PcapPro extends NonSealedPcap {
 		return Pcap0_4.openOffline(PcapPro::new, fname);
 	}
 
+	/** The packet dispatcher. */
 	private PacketDispatcher packetDispatcher;
 
 	/**
-	 * @param pcapHandle
-	 * @param name
+	 * Instantiates a new pcap pro.
+	 *
+	 * @param pcapHandle the pcap handle
+	 * @param name       the name
+	 * @param abi        the abi
 	 */
 	PcapPro(MemoryAddress pcapHandle, String name, PcapHeaderABI abi) {
 		super(pcapHandle, name, abi);
-		setPacketDispatcher(new PacketDispatcher(pcapHandle, this::breakloop, PacketDescriptorType.TYPE2));
+		setPacketDispatcher(PacketDispatcher.packetDispatcher(pcapHandle, this::breakloop, PacketDescriptorType.TYPE2));
 	}
 
 	/**
@@ -317,11 +326,13 @@ public final class PcapPro extends NonSealedPcap {
 	 * the "any" device is opened have some other data link type, such as DLT_EN10MB
 	 * for Ethernet.
 	 * </p>
-	 * 
+	 *
+	 * @param <U>     the generic type
 	 * @param count   A value of -1 or 0 for count is equivalent to infinity, so
 	 *                that packets are processed until another ending condition
 	 *                occurs
 	 * @param handler array handler which will receive packets
+	 * @param user    the user
 	 * @return returns 0 if count is exhausted or if, when reading from a
 	 *         ``savefile'', no more packets are available. It returns
 	 *         PCAP_ERROR_BREAK if the loop terminated due to a call to
@@ -332,15 +343,68 @@ public final class PcapPro extends NonSealedPcap {
 		return packetDispatcher.dispatchPacket(count, handler, user);
 	}
 
+	/**
+	 * Enable IP datagram reassembly using IP fragments. IP fragments are tracked
+	 * and reassembled into new data buffers and dispatched as new packets to use
+	 * handler.
+	 *
+	 * @param enable if true, enable IP datagram reassembly.
+	 * @return this handle
+	 */
 	public PcapPro enableIpfReassembly(boolean enable) {
 		throw new UnsupportedOperationException("Not implemented yet. ");
 	}
 
+	/**
+	 * Drop reassembled ip fragments. IP fragments are dropped before being
+	 * dispatched to the dispatcher. If IPF reassembly is enabled, that fragments
+	 * are used to reasseble IP datagrams and dropped after wards. If IP
+	 * fragmentation is disabled and fragments to be dropped, a specialized capture
+	 * will be set to drop fragments at the capture interface level.
+	 *
+	 * @param enable true enables IP fragment to be dropped
+	 * @return this handle
+	 */
 	public PcapPro dropReassembledIpFragments(boolean enable) {
 		throw new UnsupportedOperationException("Not implemented yet. ");
 	}
 
+	/**
+	 * Enable IP fragment tracking. When IP fragment tracking is enabled, IP
+	 * fragments are tracked in IPF Table and dispatched with a specialized IPF
+	 * descriptor with tracking information.
+	 *
+	 * @param enable if true, enable IP fragment tracking
+	 * @return this handle
+	 */
 	public PcapPro enableIpfTracking(boolean enable) {
+		throw new UnsupportedOperationException();
+	}
+
+	/**
+	 * Sets and pre-allocates table of specified size.
+	 *
+	 * @param entryCount the entry count
+	 * @param bufferSize the buffer size
+	 * @param unit       the unit
+	 * @return the pcap pro
+	 */
+	public PcapPro setIpfTableSize(int entryCount, long bufferSize, MemoryUnit unit) {
+		throw new UnsupportedOperationException();
+	}
+
+	/**
+	 * Sets per entry timeout parameters. Entries can timeout when the last fragment
+	 * is seen but not all fragments have arrived or timeout duration has elapsed.
+	 * If timeout on last frag is not enabled, then entries are kept alive until
+	 * timeout occurs or all fragments arrive, which ever condition occurs first.
+	 *
+	 * @param timeoutOnLastFrag the timeout on last frag
+	 * @param duration          the duration
+	 * @param unit              the unit
+	 * @return the pcap pro
+	 */
+	public PcapPro setIpfTimeout(boolean timeoutOnLastFrag, long duration, TimeUnit unit) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -392,11 +456,13 @@ public final class PcapPro extends NonSealedPcap {
 	 * the "any" device is opened have some other data link type, such as DLT_EN10MB
 	 * for Ethernet.
 	 * </p>
-	 * 
+	 *
+	 * @param <U>     the generic type
 	 * @param count   A value of -1 or 0 for count is equivalent to infinity, so
 	 *                that packets are processed until another ending condition
 	 *                occurs
 	 * @param handler array handler which will receive packets
+	 * @param user    the user
 	 * @return returns 0 if count is exhausted or if, when reading from a
 	 *         ``savefile'', no more packets are available. It returns
 	 *         PCAP_ERROR_BREAK if the loop terminated due to a call to
@@ -407,34 +473,69 @@ public final class PcapPro extends NonSealedPcap {
 		return packetDispatcher.loopPacket(count, handler, user);
 	}
 
+	/**
+	 * Sets the descriptor type.
+	 *
+	 * @param type the type
+	 * @return the pcap pro
+	 */
 	public PcapPro setDescriptorType(PacketDescriptorType type) {
-		setPacketDispatcher(new PacketDispatcher(getPcapHandle(), this::breakloop, type));
+		setPacketDispatcher(new JavaPacketDispatcher(getPcapHandle(), this::breakloop, type));
 
 		return this;
 	}
 
+	/**
+	 * Sets the packet dispatcher.
+	 *
+	 * @param newDispatcher the new packet dispatcher
+	 */
 	protected void setPacketDispatcher(PacketDispatcher newDispatcher) {
 		this.packetDispatcher = newDispatcher;
 
 		super.setDispatcher(newDispatcher);
 	}
 
+	/**
+	 * Sets the packet formatter.
+	 *
+	 * @param formatter the formatter
+	 * @return the pcap pro
+	 */
 	public PcapPro setPacketFormatter(PacketFormat formatter) {
 		packetDispatcher.setPacketFormat(formatter);
 
 		return this;
 	}
 
+	/**
+	 * Sets the frame number.
+	 *
+	 * @param frameNumberAssigner the frame number assigner
+	 * @return the pcap pro
+	 */
 	public PcapPro setFrameNumber(FrameNumber frameNumberAssigner) {
 		packetDispatcher.setFrameNumber(frameNumberAssigner);
 
 		return this;
 	}
 
+	/**
+	 * Sets the frame starting number.
+	 *
+	 * @param startingNo the starting no
+	 * @return the pcap pro
+	 */
 	public PcapPro setFrameStartingNumber(long startingNo) {
 		return setFrameNumber(FrameNumber.starting(startingNo));
 	}
 
+	/**
+	 * Sets the port number.
+	 *
+	 * @param portNo the port no
+	 * @return the pcap pro
+	 */
 	public PcapPro setPortNumber(int portNo) {
 		packetDispatcher.setPortNumber(portNo);
 
