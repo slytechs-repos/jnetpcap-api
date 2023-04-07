@@ -17,12 +17,36 @@
  */
 package com.slytechs.jnetpcap.pro.internal.ipf;
 
+import java.lang.foreign.MemoryAddress;
+
+import com.slytechs.jnet.protocol.core.constants.PacketDescriptorType;
+import com.slytechs.jnet.runtime.util.MemoryUnit;
+import com.slytechs.jnetpcap.pro.internal.JavaPacketDispatcher;
+
 /**
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  * @author Mark Bednarczyk
  *
  */
-public class JavaIpfDispatcher {
+public class JavaIpfDispatcher extends JavaPacketDispatcher implements IpfDispatcher {
+
+	/**
+	 * @param pcapHandle
+	 * @param breakDispatch
+	 * @param descriptorType
+	 */
+	public JavaIpfDispatcher(MemoryAddress pcapHandle, Runnable breakDispatch, PacketDescriptorType descriptorType) {
+		super(pcapHandle, breakDispatch, descriptorType);
+	}
+
+	/**
+	 * @see com.slytechs.jnetpcap.pro.internal.ipf.IpfDispatcher#setIpfTableSize(int,
+	 *      long, com.slytechs.jnet.runtime.util.MemoryUnit)
+	 */
+	@Override
+	public void setIpfTableSize(int entryCount, long bufferSize, MemoryUnit unit) {
+		throw new UnsupportedOperationException("not implemented yet");
+	}
 
 }

@@ -34,7 +34,6 @@ import com.slytechs.jnet.protocol.packet.descriptor.PacketDissector;
 import com.slytechs.jnet.protocol.packet.meta.PacketFormat;
 import com.slytechs.jnet.runtime.time.TimestampUnit;
 import com.slytechs.jnetpcap.pro.PcapProHandler;
-import com.slytechs.jnetpcap.pro.PcapProHandler.OfPacket;
 
 /**
  * A packet dissector and dispatcher.
@@ -44,7 +43,7 @@ import com.slytechs.jnetpcap.pro.PcapProHandler.OfPacket;
  * @author Mark Bednarczyk
  *
  */
-public final class JavaPacketDispatcher
+public class JavaPacketDispatcher
 		extends StandardPcapDispatcher
 		implements PacketDispatcher {
 

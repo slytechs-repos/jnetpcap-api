@@ -17,6 +17,10 @@
  */
 package com.slytechs.jnetpcap.pro.internal.ipf;
 
+import java.lang.foreign.MemoryAddress;
+
+import com.slytechs.jnet.protocol.core.constants.PacketDescriptorType;
+import com.slytechs.jnet.runtime.util.MemoryUnit;
 import com.slytechs.jnetpcap.pro.internal.PacketDispatcher;
 
 /**
@@ -27,22 +31,36 @@ import com.slytechs.jnetpcap.pro.internal.PacketDispatcher;
  */
 public interface IpfDispatcher extends PacketDispatcher {
 
-	static IpfDispatcher ipfDispatcher() {
+	static IpfDispatcher ipfDispatcher(
+			MemoryAddress pcapHandle,
+			Runnable breakDispatch,
+			PacketDescriptorType descriptorType) {
+
 		if (isNativeIpfDispatcherSupported())
-			return nativeIpfDispatcher();
+			return nativeIpfDispatcher(pcapHandle, breakDispatch, descriptorType);
 		else
-			return javaIpfDispatcher();
+			return javaIpfDispatcher(pcapHandle, breakDispatch, descriptorType);
 	}
 
-	static IpfDispatcher javaIpfDispatcher() {
-		throw new UnsupportedOperationException();
+	static IpfDispatcher javaIpfDispatcher(
+			MemoryAddress pcapHandle,
+			Runnable breakDispatch,
+			PacketDescriptorType descriptorType) {
+		return new JavaIpfDispatcher(pcapHandle, breakDispatch, descriptorType);
 	}
 
 	static boolean isNativeIpfDispatcherSupported() {
-		return false;
+		return NativeIpfDispatcher.isNativeSupported();
 	}
 
-	static IpfDispatcher nativeIpfDispatcher() {
-		throw new UnsupportedOperationException();
+	static IpfDispatcher nativeIpfDispatcher(
+			MemoryAddress pcapHandle,
+			Runnable breakDispatch,
+			PacketDescriptorType descriptorType) {
+
+		return new NativeIpfDispatcher(pcapHandle, breakDispatch, descriptorType);
 	}
+
+	void setIpfTableSize(int entryCount, long bufferSize, MemoryUnit unit);
+
 }
