@@ -19,7 +19,6 @@ package com.slytechs.jnetpcap.pro;
 
 import com.slytechs.jnet.protocol.core.constants.PacketDescriptorType;
 import com.slytechs.jnet.protocol.packet.descriptor.PacketDescriptor;
-import com.slytechs.jnet.runtime.util.Detail;
 
 /**
  * A IP fragment tracking descriptor. This descriptor type, tracks IP fragments
@@ -32,88 +31,45 @@ import com.slytechs.jnet.runtime.util.Detail;
  * @author Mark Bednarczyk
  *
  */
-public class IpfDescriptor extends PacketDescriptor {
+public final class IpfDescriptor extends PacketDescriptorProxy {
+
+	/** The secondary. */
+	private PacketDescriptor secondary;
 
 	/**
-	 * @param type
+	 * Instantiates a new ipf descriptor.
 	 */
-	public IpfDescriptor(PacketDescriptorType type) {
-		super(type);
-		// TODO Auto-generated constructor stub
+	public IpfDescriptor() {
+		super(PacketDescriptorType.IPF);
 	}
 
 	/**
-	 * @see com.slytechs.jnet.protocol.packet.HeaderLookup#isHeaderExtensionSupported()
+	 * Sets the secondary.
+	 *
+	 * @param descriptor the new secondary
 	 */
-	@Override
-	public boolean isHeaderExtensionSupported() {
-		throw new UnsupportedOperationException("not implemented yet");
+	public void setSecondary(PacketDescriptor descriptor) {
+		secondary = descriptor;
 	}
 
 	/**
-	 * @see com.slytechs.jnet.protocol.packet.HeaderLookup#listHeaders()
+	 * Gets the secondary.
+	 *
+	 * @return the secondary
 	 */
-	@Override
-	public long[] listHeaders() {
-		throw new UnsupportedOperationException("not implemented yet");
+	public PacketDescriptor getSecondary() {
+		return secondary;
 	}
 
 	/**
-	 * @see com.slytechs.jnet.protocol.packet.HeaderLookup#lookupHeader(int, int)
+	 * Gets the proxy.
+	 *
+	 * @return the proxy
+	 * @see com.slytechs.jnetpcap.pro.PacketDescriptorProxy#getProxy()
 	 */
 	@Override
-	public long lookupHeader(int id, int depth) {
-		throw new UnsupportedOperationException("not implemented yet");
-	}
-
-	/**
-	 * @see com.slytechs.jnet.protocol.packet.HeaderLookup#lookupHeaderExtension(int,
-	 *      int, int, int)
-	 */
-	@Override
-	public long lookupHeaderExtension(int headerId, int extId, int depth, int recordIndexHint) {
-		throw new UnsupportedOperationException("not implemented yet");
-	}
-
-	/**
-	 * @see com.slytechs.jnet.protocol.packet.descriptor.PacketDescriptor#byteSize()
-	 */
-	@Override
-	public int byteSize() {
-		throw new UnsupportedOperationException("not implemented yet");
-	}
-
-	/**
-	 * @see com.slytechs.jnet.protocol.packet.descriptor.PacketDescriptor#timestamp()
-	 */
-	@Override
-	public long timestamp() {
-		throw new UnsupportedOperationException("not implemented yet");
-	}
-
-	/**
-	 * @see com.slytechs.jnet.protocol.packet.descriptor.PacketDescriptor#captureLength()
-	 */
-	@Override
-	public int captureLength() {
-		throw new UnsupportedOperationException("not implemented yet");
-	}
-
-	/**
-	 * @see com.slytechs.jnet.protocol.packet.descriptor.PacketDescriptor#wireLength()
-	 */
-	@Override
-	public int wireLength() {
-		throw new UnsupportedOperationException("not implemented yet");
-	}
-
-	/**
-	 * @see com.slytechs.jnet.protocol.packet.descriptor.PacketDescriptor#buildDetailedString(java.lang.StringBuilder,
-	 *      com.slytechs.jnet.runtime.util.Detail)
-	 */
-	@Override
-	protected StringBuilder buildDetailedString(StringBuilder b, Detail detail) {
-		throw new UnsupportedOperationException("not implemented yet");
+	PacketDescriptor getProxy() {
+		return secondary;
 	}
 
 }

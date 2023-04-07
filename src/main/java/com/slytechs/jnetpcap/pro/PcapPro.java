@@ -356,18 +356,6 @@ public final class PcapPro extends NonSealedPcap {
 	}
 
 	/**
-	 * Enable IP datagram reassembly using IP fragments. IP fragments are tracked
-	 * and reassembled into new data buffers and dispatched as new packets to use
-	 * handler.
-	 *
-	 * @param enable if true, enable IP datagram reassembly.
-	 * @return this handle
-	 */
-	public PcapPro enableIpfReassembly(boolean enable, boolean forceJava) {
-		throw new UnsupportedOperationException("Not implemented yet. ");
-	}
-
-	/**
 	 * Disable native IP fragment tracking and reassembly. By default, the native
 	 * IPF tracking and reassembly is used, if native library is available. This
 	 * option, disables the use of native IPF, even if available.
