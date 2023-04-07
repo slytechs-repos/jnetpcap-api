@@ -34,9 +34,9 @@ import org.jnetpcap.constant.PcapTStampPrecision;
 import org.jnetpcap.internal.NonSealedPcap;
 import org.jnetpcap.internal.PcapHeaderABI;
 
+import com.slytechs.jnet.protocol.Frame.FrameNumber;
 import com.slytechs.jnet.protocol.core.constants.PacketDescriptorType;
-import com.slytechs.jnet.protocol.packet.Frame.FrameNumber;
-import com.slytechs.jnet.protocol.packet.meta.PacketFormat;
+import com.slytechs.jnet.protocol.meta.PacketFormat;
 import com.slytechs.jnet.runtime.util.MemoryUnit;
 import com.slytechs.jnetpcap.pro.internal.JavaPacketDispatcher;
 import com.slytechs.jnetpcap.pro.internal.PacketDispatcher;

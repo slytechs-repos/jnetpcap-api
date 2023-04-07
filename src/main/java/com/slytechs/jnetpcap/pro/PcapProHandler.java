@@ -21,7 +21,7 @@ import java.lang.foreign.MemoryAddress;
 
 import org.jnetpcap.PcapHandler;
 
-import com.slytechs.jnet.protocol.packet.Packet;
+import com.slytechs.jnet.protocol.Packet;
 
 /**
  * Marker interface for all Pcap pro packet handlers.

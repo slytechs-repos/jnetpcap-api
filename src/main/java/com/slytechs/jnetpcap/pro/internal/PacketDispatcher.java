@@ -21,10 +21,10 @@ import java.lang.foreign.MemoryAddress;
 
 import org.jnetpcap.internal.PcapDispatcher;
 
+import com.slytechs.jnet.protocol.Frame.FrameNumber;
 import com.slytechs.jnet.protocol.core.constants.PacketDescriptorType;
-import com.slytechs.jnet.protocol.packet.Frame.FrameNumber;
-import com.slytechs.jnet.protocol.packet.descriptor.PacketDissector;
-import com.slytechs.jnet.protocol.packet.meta.PacketFormat;
+import com.slytechs.jnet.protocol.descriptor.PacketDissector;
+import com.slytechs.jnet.protocol.meta.PacketFormat;
 import com.slytechs.jnetpcap.pro.PcapProHandler;
 
 /**
