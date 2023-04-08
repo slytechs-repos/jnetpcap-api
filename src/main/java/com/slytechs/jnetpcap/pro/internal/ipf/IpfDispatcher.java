@@ -19,9 +19,9 @@ package com.slytechs.jnetpcap.pro.internal.ipf;
 
 import java.lang.foreign.MemoryAddress;
 
-import com.slytechs.jnet.protocol.core.constants.PacketDescriptorType;
-import com.slytechs.jnet.runtime.util.MemoryUnit;
 import com.slytechs.jnetpcap.pro.internal.PacketDispatcher;
+import com.slytechs.protocol.pack.core.constants.PacketDescriptorType;
+import com.slytechs.protocol.runtime.util.MemoryUnit;
 
 /**
  * @author Sly Technologies Inc

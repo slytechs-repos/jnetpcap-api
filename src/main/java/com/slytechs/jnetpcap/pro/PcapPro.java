@@ -34,12 +34,12 @@ import org.jnetpcap.constant.PcapTStampPrecision;
 import org.jnetpcap.internal.NonSealedPcap;
 import org.jnetpcap.internal.PcapHeaderABI;
 
-import com.slytechs.jnet.protocol.Frame.FrameNumber;
-import com.slytechs.jnet.protocol.core.constants.PacketDescriptorType;
-import com.slytechs.jnet.protocol.meta.PacketFormat;
-import com.slytechs.jnet.runtime.util.MemoryUnit;
 import com.slytechs.jnetpcap.pro.internal.JavaPacketDispatcher;
 import com.slytechs.jnetpcap.pro.internal.PacketDispatcher;
+import com.slytechs.protocol.Frame.FrameNumber;
+import com.slytechs.protocol.meta.PacketFormat;
+import com.slytechs.protocol.pack.core.constants.PacketDescriptorType;
+import com.slytechs.protocol.runtime.util.MemoryUnit;
 
 /**
  * Pcap packet capture with high level packet and protocol support.

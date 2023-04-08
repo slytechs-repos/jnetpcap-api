@@ -19,9 +19,9 @@ package com.slytechs.jnetpcap.pro.internal.ipf;
 
 import java.lang.foreign.MemoryAddress;
 
-import com.slytechs.jnet.protocol.core.constants.PacketDescriptorType;
-import com.slytechs.jnet.runtime.util.MemoryUnit;
 import com.slytechs.jnetpcap.pro.internal.JavaPacketDispatcher;
+import com.slytechs.protocol.pack.core.constants.PacketDescriptorType;
+import com.slytechs.protocol.runtime.util.MemoryUnit;
 
 /**
  * @author Sly Technologies Inc
@@ -42,7 +42,7 @@ public class JavaIpfDispatcher extends JavaPacketDispatcher implements IpfDispat
 
 	/**
 	 * @see com.slytechs.jnetpcap.pro.internal.ipf.IpfDispatcher#setIpfTableSize(int,
-	 *      long, com.slytechs.jnet.runtime.util.MemoryUnit)
+	 *      long, com.slytechs.protocol.runtime.util.MemoryUnit)
 	 */
 	@Override
 	public void setIpfTableSize(int entryCount, long bufferSize, MemoryUnit unit) {

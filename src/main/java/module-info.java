@@ -28,5 +28,5 @@ module com.slytechs.jnet.jnetpcap.pro {
 	exports com.slytechs.jnetpcap.pro;
 
 	requires transitive org.jnetpcap;
-	requires transitive com.slytechs.jnet.protocol.core;
+	requires transitive com.slytechs.protocol;
 }

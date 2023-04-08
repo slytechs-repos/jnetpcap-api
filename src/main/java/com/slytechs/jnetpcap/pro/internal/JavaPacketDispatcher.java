@@ -26,14 +26,14 @@ import java.nio.ByteOrder;
 import org.jnetpcap.internal.PcapHeaderABI;
 import org.jnetpcap.internal.StandardPcapDispatcher;
 
-import com.slytechs.jnet.protocol.Packet;
-import com.slytechs.jnet.protocol.Frame.FrameNumber;
-import com.slytechs.jnet.protocol.core.constants.PacketDescriptorType;
-import com.slytechs.jnet.protocol.descriptor.PacketDescriptor;
-import com.slytechs.jnet.protocol.descriptor.PacketDissector;
-import com.slytechs.jnet.protocol.meta.PacketFormat;
-import com.slytechs.jnet.runtime.time.TimestampUnit;
 import com.slytechs.jnetpcap.pro.PcapProHandler;
+import com.slytechs.protocol.Packet;
+import com.slytechs.protocol.Frame.FrameNumber;
+import com.slytechs.protocol.descriptor.PacketDescriptor;
+import com.slytechs.protocol.descriptor.PacketDissector;
+import com.slytechs.protocol.meta.PacketFormat;
+import com.slytechs.protocol.pack.core.constants.PacketDescriptorType;
+import com.slytechs.protocol.runtime.time.TimestampUnit;
 
 /**
  * A packet dissector and dispatcher.
