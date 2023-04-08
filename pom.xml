@@ -1,4 +1,6 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.slytechs.jnet</groupId>
 	<artifactId>jnetpcap-pro</artifactId>
@@ -34,24 +36,37 @@
 		</developer>
 	</developers>
 	<dependencies>
-		<!-- https://mvnrepository.com/artifact/org.apache.maven.plugins/maven-compiler-plugin -->
+		<!--
+		https://mvnrepository.com/artifact/org.apache.maven.plugins/maven-compiler-plugin -->
 		<dependency>
 			<groupId>org.apache.maven.plugins</groupId>
 			<artifactId>maven-compiler-plugin</artifactId>
 			<version>3.10.1</version>
 		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.junit.platform/junit-platform-suite-api -->
+		<!--
+		https://mvnrepository.com/artifact/org.junit.platform/junit-platform-suite-api -->
 		<dependency>
 			<groupId>org.junit.platform</groupId>
 			<artifactId>junit-platform-suite-api</artifactId>
 			<version>1.9.1</version>
 			<scope>test</scope>
 		</dependency>
+
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter-engine</artifactId>
 			<version>5.9.1</version>
 			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.slytechs.jnet</groupId>
+			<artifactId>jnetpcap</artifactId>
+			<version>2.0.0-alpha.2</version>
+		</dependency>
+		<dependency>
+			<groupId>com.slytechs.jnet</groupId>
+			<artifactId>core-protocols</artifactId>
+			<version>0.9-SNAPSHOT</version>
 		</dependency>
 	</dependencies>
 	<build>
@@ -99,7 +114,8 @@
 					<groups>${groups}</groups>
 					<excludedGroups>${excludeGroups}</excludedGroups>
 					<argLine>
-						${java.library.path.libpcap} ${java.preview} ${java.native}
+						${java.library.path.libpcap} ${java.preview}
+						${java.native}
 					</argLine>
 				</configuration>
 			</plugin>
@@ -109,15 +125,16 @@
 				<version>3.4.1 </version>
 				<configuration>
 					<doctitle>Public API for ${project.name} ${project.version}</doctitle>
-					<windowtitle>Public API for ${project.name} ${project.version}</windowtitle>
+					<windowtitle>Public API for ${project.name}
+						${project.version}</windowtitle>
 					<encoding>${java.encoding}</encoding>
 					<source>${jdk.version}</source>
 					<overview>${basedir}/Overview.html</overview>
 					<additionalOptions>
-								${java.preview}
+						${java.preview}
 					</additionalOptions>
 					<show>public</show>
-          			<excludePackageNames>*.internal</excludePackageNames>
+					<excludePackageNames>*.internal</excludePackageNames>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -148,16 +165,19 @@
 				<version>3.4.1</version>
 				<configuration>
 					<doctitle>Public API for ${project.name} ${project.version}</doctitle>
-					<windowtitle>Public API for ${project.name} ${project.version}</windowtitle>
-					<testDoctitle>Test API for ${project.name} ${project.version}</testDoctitle>
-					<testWindowtitle>Test API for ${project.name} ${project.version}</testWindowtitle>
+					<windowtitle>Public API for ${project.name}
+						${project.version}</windowtitle>
+					<testDoctitle>Test API for ${project.name}
+						${project.version}</testDoctitle>
+					<testWindowtitle>Test API for ${project.name}
+						${project.version}</testWindowtitle>
 					<encoding>${java.encoding}</encoding>
 					<source>${jdk.version}</source>
 					<overview>${basedir}/Overview.html</overview>
 					<additionalOptions>
-								${java.preview}
+						${java.preview}
 					</additionalOptions>
-          			<excludePackageNames>*.internal</excludePackageNames>
+					<excludePackageNames>*.internal</excludePackageNames>
 				</configuration>
 				<reportSets>
 					<reportSet>
@@ -196,7 +216,8 @@
 	</issueManagement>
 	<scm>
 		<connection>scm:git:git://github.com/slytechs-repos/jnetpcap-pro.git</connection>
-		<developerConnection>scm:git:ssh:git://github.com/slytechs-repos/jnetpcap-pro.git</developerConnection>
+		<developerConnection>
+			scm:git:ssh:git://github.com/slytechs-repos/jnetpcap-pro.git</developerConnection>
 		<url>https://github.com/slytechs-repos/jnetpcap-pro</url>
 	</scm>
 	<distributionManagement>
