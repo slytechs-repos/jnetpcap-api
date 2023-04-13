@@ -12,14 +12,10 @@ To get started lets take a look at a couple of examples.
 
 Capturing packets with full protocol header access is easy.
 ```java
-/** Example instance */
 void main() throws PcapException {
 	/* Pcap capture file to read */
 	final String PCAP_FILE = "pcaps/HTTP.cap";
-
-	/* Make sure we have a compatible Pcap runtime installed */
-	Pcap.checkPcapVersion(Pcap.VERSION);
-
+	
 	/*
 	 * Automatically close Pcap resource when done and checks the client and
 	 * installed runtime API versions to ensure they are compatible.
@@ -57,7 +53,7 @@ void main() throws PcapException {
 			if (packet.hasHeader(tcp))
 				System.out.println(tcp);
 
-		}, "Example2 - Hello World");
+		}, "Example - Hello World");
 	}
 }
 ```
