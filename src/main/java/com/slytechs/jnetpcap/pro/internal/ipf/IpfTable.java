@@ -15,17 +15,16 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
+package com.slytechs.jnetpcap.pro.internal.ipf;
 
 /**
- * Provides packet dissection and IP fragment reassembly services.
+ * IP Fragment tracking table.
  * 
- * @author Sly Technologies Inc.
+ * @author Sly Technologies Inc
  * @author repos@slytechs.com
+ * @author Mark Bednarczyk
  *
  */
-module com.slytechs.jnetpcap.pro {
-	exports com.slytechs.jnetpcap.pro;
+public interface IpfTable {
 
-	requires transitive org.jnetpcap;
-	requires transitive com.slytechs.protocol;
 }
