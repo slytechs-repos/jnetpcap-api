@@ -28,8 +28,6 @@ import com.slytechs.protocol.Packet;
  * 
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
- * @author Mark Bednarczyk
- *
  */
 public interface PcapProHandler extends PcapHandler {
 
@@ -41,6 +39,13 @@ public interface PcapProHandler extends PcapHandler {
 	 */
 	@FunctionalInterface
 	public interface OfPacket<U> extends PcapProHandler {
+
+		/**
+		 * Handle a packet.
+		 *
+		 * @param user   user opaque value returned back
+		 * @param packet packet data
+		 */
 		void handlePacket(U user, Packet packet);
 	}
 
@@ -51,12 +56,12 @@ public interface PcapProHandler extends PcapHandler {
 	public interface NativeIpfCallback {
 
 		/**
-		 * Handle native IPF callback.
+		 * Handle native IPF (IP Fragment) callback.
 		 *
-		 * @param ipfDescriptor the ipf descriptor
-		 * @param pktDescriptor the pkt descriptor
-		 * @param pkt           the pkt
-		 * @param user          the user
+		 * @param ipfDescriptor the IPF descriptor
+		 * @param pktDescriptor the standard packet descriptor
+		 * @param pkt           packet data
+		 * @param user          user opaque value returned back
 		 */
 		void handleNativeIpfCallback(
 				MemoryAddress ipfDescriptor,
