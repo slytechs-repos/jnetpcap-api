@@ -214,7 +214,7 @@ public class JavaPacketDispatcher
 	}
 
 	/**
-	 * Gets the dissector.
+	 * Gets the current dissector.
 	 *
 	 * @return the dissector
 	 */
