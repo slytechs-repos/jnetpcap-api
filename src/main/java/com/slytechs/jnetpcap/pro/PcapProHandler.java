@@ -51,7 +51,7 @@ public interface PcapProHandler extends PcapHandler {
 	public interface NativeIpfCallback {
 
 		/**
-		 * Handle native ipf callback.
+		 * Handle native IPF callback.
 		 *
 		 * @param ipfDescriptor the ipf descriptor
 		 * @param pktDescriptor the pkt descriptor

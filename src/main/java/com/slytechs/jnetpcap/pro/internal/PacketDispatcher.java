@@ -28,11 +28,10 @@ import com.slytechs.protocol.meta.PacketFormat;
 import com.slytechs.protocol.pack.core.constants.PacketDescriptorType;
 
 /**
- * The Interface PacketDispatcher.
+ * Packet dispatcher with protocol level support.
  *
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
- * @author Mark Bednarczyk
  */
 public interface PacketDispatcher extends PcapDispatcher {
 
