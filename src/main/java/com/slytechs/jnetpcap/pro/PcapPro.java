@@ -362,7 +362,8 @@ public final class PcapPro extends NonSealedPcap {
 	 * 
 	 * <p>
 	 * This option has no effect if native library is not available (ie. found on
-	 * java.library.path). </p
+	 * java.library.path).
+	 * </p>
 	 *
 	 * @param enable if true, native IPF will be disabled even if available (native
 	 *               library found), otherwise if false, native implementation will

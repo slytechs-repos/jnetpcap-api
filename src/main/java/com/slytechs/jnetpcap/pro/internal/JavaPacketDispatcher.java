@@ -47,24 +47,41 @@ public class JavaPacketDispatcher
 		extends StandardPcapDispatcher
 		implements PacketDispatcher {
 
+	/** The Constant DESC_BUFFER_SIZE. */
 	private static final int DESC_BUFFER_SIZE = 1024;
 
+	/** The Constant ABI. */
 	private static final PcapHeaderABI ABI = PcapHeaderABI.nativeAbi();
 
+	/** The dissector. */
 	private final PacketDissector dissector;
+
+	/** The descriptor type. */
 	private final PacketDescriptorType descriptorType;
+
+	/** The timestamp unit. */
 	private final TimestampUnit timestampUnit = TimestampUnit.PCAP_MICRO;
+
+	/** The singleton desc buffer. */
 	private final ByteBuffer singletonDescBuffer;
+
+	/** The singleton packet. */
 	private final Packet singletonPacket;
 
+	/** The frame no. */
 	private FrameNumber frameNo;
+
+	/** The formatter. */
 	private PacketFormat formatter;
+
+	/** The port no. */
 	private int portNo;
 
 	/**
 	 * Instantiates a new packet dispatcher.
 	 *
 	 * @param pcapHandle     the pcap handle
+	 * @param breakDispatch  the break dispatch
 	 * @param descriptorType the descriptor type
 	 */
 	public JavaPacketDispatcher(MemoryAddress pcapHandle, Runnable breakDispatch, PacketDescriptorType descriptorType) {
@@ -78,11 +95,17 @@ public class JavaPacketDispatcher
 		this.frameNo = FrameNumber.starting(0);
 	}
 
+	/**
+	 * @see com.slytechs.jnetpcap.pro.internal.PacketDispatcher#setFrameNumber(com.slytechs.protocol.Frame.FrameNumber)
+	 */
 	@Override
 	public void setFrameNumber(FrameNumber frameNumberAssigner) {
 		this.frameNo = frameNumberAssigner;
 	}
 
+	/**
+	 * @see com.slytechs.jnetpcap.pro.internal.PacketDispatcher#setPacketFormat(com.slytechs.protocol.meta.PacketFormat)
+	 */
 	@Override
 	public void setPacketFormat(PacketFormat newFormat) {
 		this.formatter = newFormat;
@@ -181,6 +204,8 @@ public class JavaPacketDispatcher
 	}
 
 	/**
+	 * Gets the descriptor type.
+	 *
 	 * @return the descriptorType
 	 */
 	@Override
@@ -189,6 +214,8 @@ public class JavaPacketDispatcher
 	}
 
 	/**
+	 * Gets the dissector.
+	 *
 	 * @return the dissector
 	 */
 	@Override
@@ -196,6 +223,9 @@ public class JavaPacketDispatcher
 		return dissector;
 	}
 
+	/**
+	 * @see com.slytechs.jnetpcap.pro.internal.PacketDispatcher#setPortNumber(int)
+	 */
 	@Override
 	public void setPortNumber(int portNo) {
 		this.portNo = portNo;

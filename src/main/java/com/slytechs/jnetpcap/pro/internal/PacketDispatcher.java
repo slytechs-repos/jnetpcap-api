@@ -28,13 +28,22 @@ import com.slytechs.protocol.meta.PacketFormat;
 import com.slytechs.protocol.pack.core.constants.PacketDescriptorType;
 
 /**
+ * The Interface PacketDispatcher.
+ *
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  * @author Mark Bednarczyk
- *
  */
 public interface PacketDispatcher extends PcapDispatcher {
 
+	/**
+	 * Packet dispatcher.
+	 *
+	 * @param pcapHandle     the pcap handle
+	 * @param breakDispatch  the break dispatch
+	 * @param descriptorType the descriptor type
+	 * @return the packet dispatcher
+	 */
 	static PacketDispatcher packetDispatcher(
 			MemoryAddress pcapHandle,
 			Runnable breakDispatch,
@@ -46,6 +55,14 @@ public interface PacketDispatcher extends PcapDispatcher {
 			return javaPacketDispatcher(pcapHandle, breakDispatch, descriptorType);
 	}
 
+	/**
+	 * Java packet dispatcher.
+	 *
+	 * @param pcapHandle     the pcap handle
+	 * @param breakDispatch  the break dispatch
+	 * @param descriptorType the descriptor type
+	 * @return the packet dispatcher
+	 */
 	static PacketDispatcher javaPacketDispatcher(
 			MemoryAddress pcapHandle,
 			Runnable breakDispatch,
@@ -54,10 +71,23 @@ public interface PacketDispatcher extends PcapDispatcher {
 		return new JavaPacketDispatcher(pcapHandle, breakDispatch, descriptorType);
 	}
 
+	/**
+	 * Checks if is native packet dispatcher supported.
+	 *
+	 * @return true, if is native packet dispatcher supported
+	 */
 	static boolean isNativePacketDispatcherSupported() {
 		return false;
 	}
 
+	/**
+	 * Native packet dispatcher.
+	 *
+	 * @param pcapHandle     the pcap handle
+	 * @param breakDispatch  the break dispatch
+	 * @param descriptorType the descriptor type
+	 * @return the packet dispatcher
+	 */
 	static PacketDispatcher nativePacketDispatcher(
 			MemoryAddress pcapHandle,
 			Runnable breakDispatch,
@@ -65,17 +95,60 @@ public interface PacketDispatcher extends PcapDispatcher {
 		throw new UnsupportedOperationException();
 	}
 
+	/**
+	 * Sets the frame number.
+	 *
+	 * @param frameNumberAssigner the new frame number
+	 */
 	void setFrameNumber(FrameNumber frameNumberAssigner);
 
+	/**
+	 * Sets the packet format.
+	 *
+	 * @param newFormat the new packet format
+	 */
 	void setPacketFormat(PacketFormat newFormat);
 
+	/**
+	 * Loop packet.
+	 *
+	 * @param <U>   the generic type
+	 * @param count the count
+	 * @param sink  the sink
+	 * @param user  the user
+	 * @return the int
+	 */
 	<U> int loopPacket(int count, PcapProHandler.OfPacket<U> sink, U user);
 
+	/**
+	 * Dispatch packet.
+	 *
+	 * @param <U>   the generic type
+	 * @param count the count
+	 * @param sink  the sink
+	 * @param user  the user
+	 * @return the int
+	 */
 	<U> int dispatchPacket(int count, PcapProHandler.OfPacket<U> sink, U user);
 
+	/**
+	 * Gets the descriptor type.
+	 *
+	 * @return the descriptor type
+	 */
 	PacketDescriptorType getDescriptorType();
 
+	/**
+	 * Gets the dissector.
+	 *
+	 * @return the dissector
+	 */
 	PacketDissector getDissector();
 
+	/**
+	 * Sets the port number.
+	 *
+	 * @param portNo the new port number
+	 */
 	void setPortNumber(int portNo);
 }

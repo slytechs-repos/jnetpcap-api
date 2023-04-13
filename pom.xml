@@ -66,7 +66,7 @@
 		<dependency>
 			<groupId>com.slytechs.jnet</groupId>
 			<artifactId>core-protocols</artifactId>
-			<version>0.9-SNAPSHOT</version>
+			<version>0.9</version>
 		</dependency>
 	</dependencies>
 	<build>
@@ -85,67 +85,49 @@
 				<version>1.7.0</version>
 			</extension>
 		</extensions>
-		<plugins>
-			<plugin>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.10.1</version>
-				<configuration>
-					<source>${jdk.version}</source>
-					<target>${jdk.version}</target>
-					<release>${jdk.version}</release>
-					<enablePreview>true</enablePreview>
-				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-site-plugin</artifactId>
-				<version>3.7.1</version>
-			</plugin>
-			<!-- Unit test the API -->
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-surefire-plugin</artifactId>
-				<version>3.0.0-M7</version>
-				<configuration>
-					<trimStackTrace>true</trimStackTrace>
-					<encoding>${java.encoding}</encoding>
-					<skipAfterFailureCount>1</skipAfterFailureCount>
-					<reuseForks>true</reuseForks>
-					<groups>${groups}</groups>
-					<excludedGroups>${excludeGroups}</excludedGroups>
-					<argLine>
-						${java.library.path.libpcap} ${java.preview}
-						${java.native}
-					</argLine>
-				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>3.4.1 </version>
-				<configuration>
-					<doctitle>Public API for ${project.name} ${project.version}</doctitle>
-					<windowtitle>Public API for ${project.name}
-						${project.version}</windowtitle>
-					<encoding>${java.encoding}</encoding>
-					<source>${jdk.version}</source>
-					<overview>${basedir}/Overview.html</overview>
-					<additionalOptions>
-						${java.preview}
-					</additionalOptions>
-					<show>public</show>
-					<excludePackageNames>*.internal</excludePackageNames>
-				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-scm-publish-plugin</artifactId>
-				<version>3.0.0</version>
-				<configuration>
-					<scmBranch>gh-pages</scmBranch>
-				</configuration>
-			</plugin>
-		</plugins>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<version>3.11.0</version>
+					<configuration>
+						<source>${jdk.version}</source>
+						<target>${jdk.version}</target>
+						<release>${jdk.version}</release>
+						<compilerArgs>
+							<arg>--enable-preview</arg>
+						</compilerArgs>
+					</configuration>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-javadoc-plugin</artifactId>
+					<version>3.5.0</version>
+					<configuration>
+						<sourcepath>${basedir}/src/main/java</sourcepath>
+						<show>public</show>
+						<additionalJOption>--enable-preview</additionalJOption>
+						<excludePackageNames>
+							*.internal:*.internal.*</excludePackageNames>
+					</configuration>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-surefire-plugin</artifactId>
+					<version>3.0.0-M7</version>
+					<configuration>
+						<skipTests>true</skipTests>
+						<trimStackTrace>true</trimStackTrace>
+						<encoding>${java.encoding}</encoding>
+						<skipAfterFailureCount>1</skipAfterFailureCount>
+						<reuseForks>true</reuseForks>
+						<groups>${groups}</groups>
+						<excludedGroups>${excludeGroups}</excludedGroups>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
 	</build>
 	<reporting>
 		<plugins>
