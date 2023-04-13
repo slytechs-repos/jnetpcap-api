@@ -1,5 +1,5 @@
 # jNetPcap Pro
-A protocol enabled **jNetPcap** library with IP Fragment reassembly.
+A protocol enabled **jNetPcap** library with IP Fragment tracking and reassembly.
 
 ## How to use this library
 The **jNetPcap Pro** library provides starting point for your application. 
