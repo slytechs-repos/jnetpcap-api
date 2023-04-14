@@ -37,22 +37,12 @@ import com.slytechs.protocol.runtime.time.TimestampUnit;
 public interface PacketDispatcher extends PcapDispatcher {
 
 	/**
-	 * Packet dispatcher.
+	 * Checks if is native packet dispatcher supported.
 	 *
-	 * @param pcapHandle     the pcap handle
-	 * @param breakDispatch  the break dispatch
-	 * @param descriptorType the descriptor type
-	 * @return the packet dispatcher
+	 * @return true, if is native packet dispatcher supported
 	 */
-	static PacketDispatcher packetDispatcher(
-			MemoryAddress pcapHandle,
-			Runnable breakDispatch,
-			PacketDescriptorType descriptorType) {
-
-		if (isNativePacketDispatcherSupported())
-			return nativePacketDispatcher(pcapHandle, breakDispatch, descriptorType);
-		else
-			return javaPacketDispatcher(pcapHandle, breakDispatch, descriptorType);
+	static boolean isNativePacketDispatcherSupported() {
+		return false;
 	}
 
 	/**
@@ -72,15 +62,6 @@ public interface PacketDispatcher extends PcapDispatcher {
 	}
 
 	/**
-	 * Checks if is native packet dispatcher supported.
-	 *
-	 * @return true, if is native packet dispatcher supported
-	 */
-	static boolean isNativePacketDispatcherSupported() {
-		return false;
-	}
-
-	/**
 	 * Native packet dispatcher.
 	 *
 	 * @param pcapHandle     the pcap handle
@@ -96,29 +77,23 @@ public interface PacketDispatcher extends PcapDispatcher {
 	}
 
 	/**
-	 * Sets the frame number.
+	 * Packet dispatcher.
 	 *
-	 * @param frameNumberAssigner the new frame number
+	 * @param pcapHandle     the pcap handle
+	 * @param breakDispatch  the break dispatch
+	 * @param descriptorType the descriptor type
+	 * @return the packet dispatcher
 	 */
-	void setFrameNumber(FrameNumber frameNumberAssigner);
+	static PacketDispatcher packetDispatcher(
+			MemoryAddress pcapHandle,
+			Runnable breakDispatch,
+			PacketDescriptorType descriptorType) {
 
-	/**
-	 * Sets the packet format.
-	 *
-	 * @param newFormat the new packet format
-	 */
-	void setPacketFormat(PacketFormat newFormat);
-
-	/**
-	 * Loop packet.
-	 *
-	 * @param <U>   the generic type
-	 * @param count the count
-	 * @param sink  the sink
-	 * @param user  the user
-	 * @return the int
-	 */
-	<U> int loopPacket(int count, PcapProHandler.OfPacket<U> sink, U user);
+		if (isNativePacketDispatcherSupported())
+			return nativePacketDispatcher(pcapHandle, breakDispatch, descriptorType);
+		else
+			return javaPacketDispatcher(pcapHandle, breakDispatch, descriptorType);
+	}
 
 	/**
 	 * Dispatch packet.
@@ -144,6 +119,78 @@ public interface PacketDispatcher extends PcapDispatcher {
 	 * @return the dissector
 	 */
 	PacketDissector getDissector();
+
+	/**
+	 * Number of bytes that were dropped due to errors while receiving packets. If
+	 * byte count for any packet received and dropped is not available, the counter
+	 * will not reflect that correct value.
+	 * 
+	 * @return 64-bit counter
+	 */
+	long getDroppedCaplenCount();
+
+	/**
+	 * Number of packets that have been dropped due to errors when receiving
+	 * packets.
+	 * 
+	 * @return 64-bit counter
+	 */
+	long getDroppedPacketCount();
+
+	/**
+	 * Number of bytes seen on the wire that were dropped due to errors while
+	 * receiving packets. If byte count for any packet seen on wire and dropped is
+	 * not available, the counter will not reflect that correct value.
+	 * 
+	 * @return 64-bit counter
+	 */
+	long getDroppedWirelenCount();
+
+	/**
+	 * Number of total bytes received since the start of the pcap capture.
+	 * 
+	 * @return a 64-bit counter in units of bytes
+	 */
+	long getReceivedCaplenCount();
+
+	/**
+	 * Number of packets received since that start of the pcap capture.
+	 * 
+	 * @return a 64-bit counter
+	 */
+	long getReceivedPacketCount();
+
+	/**
+	 * Number of total bytes seen on the wire since the start of the pcap capture.
+	 * 
+	 * @return a 64-bit counter in units of bytes
+	 */
+	long getReceivedWirelenCount();
+
+	/**
+	 * Loop packet.
+	 *
+	 * @param <U>   the generic type
+	 * @param count the count
+	 * @param sink  the sink
+	 * @param user  the user
+	 * @return the int
+	 */
+	<U> int loopPacket(int count, PcapProHandler.OfPacket<U> sink, U user);
+
+	/**
+	 * Sets the frame number.
+	 *
+	 * @param frameNumberAssigner the new frame number
+	 */
+	void setFrameNumber(FrameNumber frameNumberAssigner);
+
+	/**
+	 * Sets the packet format.
+	 *
+	 * @param newFormat the new packet format
+	 */
+	void setPacketFormat(PacketFormat newFormat);
 
 	/**
 	 * Sets the port number.

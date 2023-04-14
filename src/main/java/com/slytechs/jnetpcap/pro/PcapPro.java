@@ -18,8 +18,11 @@
 package com.slytechs.jnetpcap.pro;
 
 import java.io.File;
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.lang.foreign.MemoryAddress;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import org.jnetpcap.Pcap0_4;
 import org.jnetpcap.Pcap0_6;
@@ -64,16 +67,15 @@ public final class PcapPro extends NonSealedPcap {
 	 * it; options for the capture, such as promiscu' ous mode, can be set on the
 	 * handle before activating it.
 	 *
-	 * @param device a string that specifies the network device to open; on Linux
-	 *               systems with 2.2 or later kernels, a source argument of "any"
-	 *               or NULL can be used to capture packets from all interfaces.
+	 * @param device pcap network interface that specifies the network device to
+	 *               open.
 	 * @return a new pcap object that needs to be activated using
 	 *         {@link #activate()} call
 	 * @throws PcapException the pcap exception
 	 * @since libpcap 1.0
 	 */
-	public static PcapPro create(String device) throws PcapException {
-		return Pcap1_9.create(PcapPro::new, device);
+	public static PcapPro create(PcapIf device) throws PcapException {
+		return Pcap1_0.create(PcapPro::new, device.name());
 	}
 
 	/**
@@ -87,15 +89,16 @@ public final class PcapPro extends NonSealedPcap {
 	 * it; options for the capture, such as promiscu' ous mode, can be set on the
 	 * handle before activating it.
 	 *
-	 * @param device pcap network interface that specifies the network device to
-	 *               open.
+	 * @param device a string that specifies the network device to open; on Linux
+	 *               systems with 2.2 or later kernels, a source argument of "any"
+	 *               or NULL can be used to capture packets from all interfaces.
 	 * @return a new pcap object that needs to be activated using
 	 *         {@link #activate()} call
 	 * @throws PcapException the pcap exception
 	 * @since libpcap 1.0
 	 */
-	public static PcapPro create(PcapIf device) throws PcapException {
-		return Pcap1_0.create(PcapPro::new, device.name());
+	public static PcapPro create(String device) throws PcapException {
+		return Pcap1_9.create(PcapPro::new, device);
 	}
 
 	/**
@@ -281,6 +284,41 @@ public final class PcapPro extends NonSealedPcap {
 	}
 
 	/**
+	 * Disable native IP fragment tracking and reassembly. By default, the native
+	 * IPF tracking and reassembly is used, if native library is available. This
+	 * option, disables the use of native IPF, even if available.
+	 * 
+	 * <p>
+	 * This option has no effect if native library is not available (ie. found on
+	 * java.library.path).
+	 * </p>
+	 *
+	 * @param enable if true, native IPF will be disabled even if available (native
+	 *               library found), otherwise if false, native implementation will
+	 *               be preferred, if native library is available.
+	 * @return this handle
+	 */
+	public PcapPro disableNativeIpf(boolean enable) {
+		throw new UnsupportedOperationException("Not implemented yet. ");
+	}
+
+	/**
+	 * Dispatch which uses a simple packet consumer.
+	 *
+	 * @param count          A value of -1 or 0 for count is equivalent to infinity,
+	 *                       so that packets are processed until another ending
+	 *                       condition occurs
+	 * @param packetConsumer the packet consumer
+	 * @return returns 0 if count is exhausted or if, when reading from a
+	 *         ``savefile'', no more packets are available. It returns
+	 *         PCAP_ERROR_BREAK if the loop terminated due to a call to
+	 *         pcap_breakloop() before any packets were processed
+	 */
+	public int dispatch(int count, OfPacketConsumer packetConsumer) {
+		return dispatch(count, (u, p) -> packetConsumer.accept(p), 0);
+	}
+
+	/**
 	 * Process packets from a live capture or savefile.
 	 * <p>
 	 * pcap_loop() processes packets from a live capture or ``savefile'' until cnt
@@ -346,19 +384,17 @@ public final class PcapPro extends NonSealedPcap {
 	}
 
 	/**
-	 * Dispatch which uses a simple packet consumer.
+	 * Drop reassembled ip fragments. IP fragments are dropped before being
+	 * dispatched to the dispatcher. If IPF reassembly is enabled, that fragments
+	 * are used to reasseble IP datagrams and dropped after wards. If IP
+	 * fragmentation is disabled and fragments to be dropped, a specialized capture
+	 * will be set to drop fragments at the capture interface level.
 	 *
-	 * @param count          A value of -1 or 0 for count is equivalent to infinity,
-	 *                       so that packets are processed until another ending
-	 *                       condition occurs
-	 * @param packetConsumer the packet consumer
-	 * @return returns 0 if count is exhausted or if, when reading from a
-	 *         ``savefile'', no more packets are available. It returns
-	 *         PCAP_ERROR_BREAK if the loop terminated due to a call to
-	 *         pcap_breakloop() before any packets were processed
+	 * @param enable true enables IP fragment to be dropped
+	 * @return this handle
 	 */
-	public int dispatch(int count, OfPacketConsumer packetConsumer) {
-		return dispatch(count, (u, p) -> packetConsumer.accept(p), 0);
+	public PcapPro dropReassembledIpFragments(boolean enable) {
+		throw new UnsupportedOperationException("Not implemented yet. ");
 	}
 
 	/**
@@ -370,39 +406,6 @@ public final class PcapPro extends NonSealedPcap {
 	 * @return this handle
 	 */
 	public PcapPro enableIpfReassembly(boolean enable) {
-		throw new UnsupportedOperationException("Not implemented yet. ");
-	}
-
-	/**
-	 * Disable native IP fragment tracking and reassembly. By default, the native
-	 * IPF tracking and reassembly is used, if native library is available. This
-	 * option, disables the use of native IPF, even if available.
-	 * 
-	 * <p>
-	 * This option has no effect if native library is not available (ie. found on
-	 * java.library.path).
-	 * </p>
-	 *
-	 * @param enable if true, native IPF will be disabled even if available (native
-	 *               library found), otherwise if false, native implementation will
-	 *               be preferred, if native library is available.
-	 * @return this handle
-	 */
-	public PcapPro disableNativeIpf(boolean enable) {
-		throw new UnsupportedOperationException("Not implemented yet. ");
-	}
-
-	/**
-	 * Drop reassembled ip fragments. IP fragments are dropped before being
-	 * dispatched to the dispatcher. If IPF reassembly is enabled, that fragments
-	 * are used to reasseble IP datagrams and dropped after wards. If IP
-	 * fragmentation is disabled and fragments to be dropped, a specialized capture
-	 * will be set to drop fragments at the capture interface level.
-	 *
-	 * @param enable true enables IP fragment to be dropped
-	 * @return this handle
-	 */
-	public PcapPro dropReassembledIpFragments(boolean enable) {
 		throw new UnsupportedOperationException("Not implemented yet. ");
 	}
 
@@ -419,30 +422,87 @@ public final class PcapPro extends NonSealedPcap {
 	}
 
 	/**
-	 * Sets and pre-allocates table of specified size.
-	 *
-	 * @param entryCount the entry count
-	 * @param bufferSize the buffer size
-	 * @param unit       the unit
-	 * @return the pcap pro
+	 * Number of bytes that were dropped due to errors while receiving packets. If
+	 * byte count for any packet received and dropped is not available, the counter
+	 * will not reflect that correct value.
+	 * 
+	 * @return 64-bit counter
 	 */
-	public PcapPro setIpfTableSize(int entryCount, long bufferSize, MemoryUnit unit) {
-		throw new UnsupportedOperationException();
+	public long getDroppedCaptureBytes() {
+		return packetDispatcher.getDroppedCaplenCount();
 	}
 
 	/**
-	 * Sets per entry timeout parameters. Entries can timeout when the last fragment
-	 * is seen but not all fragments have arrived or timeout duration has elapsed.
-	 * If timeout on last frag is not enabled, then entries are kept alive until
-	 * timeout occurs or all fragments arrive, which ever condition occurs first.
-	 *
-	 * @param timeoutOnLastFrag the timeout on last frag
-	 * @param duration          the duration
-	 * @param unit              the unit
-	 * @return the pcap pro
+	 * Number of packets that have been dropped due to errors when receiving
+	 * packets.
+	 * 
+	 * @return 64-bit counter
 	 */
-	public PcapPro setIpfTimeout(boolean timeoutOnLastFrag, long duration, TimeUnit unit) {
-		throw new UnsupportedOperationException();
+	public long getDroppedPacketCount() {
+		return packetDispatcher.getDroppedPacketCount();
+	}
+
+	/**
+	 * Number of bytes seen on the wire that were dropped due to errors while
+	 * receiving packets. If byte count for any packet seen on wire and dropped is
+	 * not available, the counter will not reflect that correct value.
+	 * 
+	 * @return 64-bit counter
+	 */
+	public long getDroppedWireBytes() {
+		return packetDispatcher.getDroppedWirelenCount();
+	}
+
+	/**
+	 * Number of total bytes received since the start of the pcap capture.
+	 * 
+	 * @return a 64-bit counter in units of bytes
+	 */
+	public long getReceivedCaptureBytes() {
+		return packetDispatcher.getReceivedCaplenCount();
+	}
+
+	/**
+	 * Number of packets received since that start of the pcap capture.
+	 * 
+	 * @return a 64-bit counter
+	 */
+	public long getReceivedPacketCount() {
+		return packetDispatcher.getReceivedPacketCount();
+	}
+
+	/**
+	 * Number of total bytes seen on the wire since the start of the pcap capture.
+	 * 
+	 * @return a 64-bit counter in units of bytes
+	 */
+	public long getReceivedWireBytes() {
+		return packetDispatcher.getReceivedWirelenCount();
+	}
+
+	/**
+	 * Gets any uncaught exceptions.
+	 *
+	 * @return the uncaught exception
+	 */
+	public Optional<Throwable> getUncaughtException() {
+		return Optional.ofNullable(packetDispatcher.getUncaughtException());
+	}
+
+	/**
+	 * Process packets from a live capture or savefile.
+	 *
+	 * @param count          A value of -1 or 0 for count is equivalent to infinity,
+	 *                       so that packets are processed until another ending
+	 *                       condition occurs
+	 * @param packetConsumer the packet consumer
+	 * @return returns 0 if count is exhausted or if, when reading from a
+	 *         ``savefile'', no more packets are available. It returns
+	 *         PCAP_ERROR_BREAK if the loop terminated due to a call to
+	 *         pcap_breakloop() before any packets were processed
+	 */
+	public int loop(int count, OfPacketConsumer packetConsumer) {
+		return loop(count, (u, p) -> packetConsumer.accept(p), 0);
 	}
 
 	/**
@@ -511,22 +571,6 @@ public final class PcapPro extends NonSealedPcap {
 	}
 
 	/**
-	 * Process packets from a live capture or savefile.
-	 *
-	 * @param count          A value of -1 or 0 for count is equivalent to infinity,
-	 *                       so that packets are processed until another ending
-	 *                       condition occurs
-	 * @param packetConsumer the packet consumer
-	 * @return returns 0 if count is exhausted or if, when reading from a
-	 *         ``savefile'', no more packets are available. It returns
-	 *         PCAP_ERROR_BREAK if the loop terminated due to a call to
-	 *         pcap_breakloop() before any packets were processed
-	 */
-	public int loop(int count, OfPacketConsumer packetConsumer) {
-		return loop(count, (u, p) -> packetConsumer.accept(p), 0);
-	}
-
-	/**
 	 * Sets the descriptor type.
 	 *
 	 * @param type the type
@@ -534,29 +578,6 @@ public final class PcapPro extends NonSealedPcap {
 	 */
 	public PcapPro setDescriptorType(PacketDescriptorType type) {
 		setPacketDispatcher(new JavaPacketDispatcher(getPcapHandle(), this::breakloop, type));
-
-		return this;
-	}
-
-	/**
-	 * Sets the packet dispatcher.
-	 *
-	 * @param newDispatcher the new packet dispatcher
-	 */
-	protected void setPacketDispatcher(PacketDispatcher newDispatcher) {
-		this.packetDispatcher = newDispatcher;
-
-		super.setDispatcher(newDispatcher);
-	}
-
-	/**
-	 * Sets the packet formatter.
-	 *
-	 * @param formatter the formatter
-	 * @return the pcap pro
-	 */
-	public PcapPro setPacketFormatter(PacketFormat formatter) {
-		packetDispatcher.setPacketFormat(formatter);
 
 		return this;
 	}
@@ -584,6 +605,56 @@ public final class PcapPro extends NonSealedPcap {
 	}
 
 	/**
+	 * Sets and pre-allocates table of specified size.
+	 *
+	 * @param entryCount the entry count
+	 * @param bufferSize the buffer size
+	 * @param unit       the unit
+	 * @return the pcap pro
+	 */
+	public PcapPro setIpfTableSize(int entryCount, long bufferSize, MemoryUnit unit) {
+		throw new UnsupportedOperationException();
+	}
+
+	/**
+	 * Sets per entry timeout parameters. Entries can timeout when the last fragment
+	 * is seen but not all fragments have arrived or timeout duration has elapsed.
+	 * If timeout on last frag is not enabled, then entries are kept alive until
+	 * timeout occurs or all fragments arrive, which ever condition occurs first.
+	 *
+	 * @param timeoutOnLastFrag the timeout on last frag
+	 * @param duration          the duration
+	 * @param unit              the unit
+	 * @return the pcap pro
+	 */
+	public PcapPro setIpfTimeout(boolean timeoutOnLastFrag, long duration, TimeUnit unit) {
+		throw new UnsupportedOperationException();
+	}
+
+	/**
+	 * Sets the packet dispatcher.
+	 *
+	 * @param newDispatcher the new packet dispatcher
+	 */
+	protected void setPacketDispatcher(PacketDispatcher newDispatcher) {
+		this.packetDispatcher = newDispatcher;
+
+		super.setDispatcher(newDispatcher);
+	}
+
+	/**
+	 * Sets the packet formatter.
+	 *
+	 * @param formatter the formatter
+	 * @return the pcap pro
+	 */
+	public PcapPro setPacketFormatter(PacketFormat formatter) {
+		packetDispatcher.setPacketFormat(formatter);
+
+		return this;
+	}
+
+	/**
 	 * Sets the port number.
 	 *
 	 * @param portNo the port no
@@ -604,6 +675,29 @@ public final class PcapPro extends NonSealedPcap {
 	 */
 	public PcapPro setTimestampUnit(TimestampUnit unit) {
 		packetDispatcher.setTimestampUnit(unit);
+
+		return this;
+	}
+
+	/**
+	 * Sets the uncaught exception handler.
+	 *
+	 * @param exceptionHandler the exception handler
+	 * @return the pcap
+	 */
+	@Override
+	public final PcapPro setUncaughtExceptionHandler(Consumer<? super Throwable> exceptionHandler) {
+		return setUncaughtExceptionHandler((t, e) -> exceptionHandler.accept(e));
+	}
+
+	/**
+	 * Sets the uncaught exception handler.
+	 * 
+	 * @see org.jnetpcap.Pcap#setUncaughtExceptionHandler(java.lang.Thread.UncaughtExceptionHandler)
+	 */
+	@Override
+	public final PcapPro setUncaughtExceptionHandler(UncaughtExceptionHandler exceptionHandler) {
+		super.setUncaughtExceptionHandler(exceptionHandler);
 
 		return this;
 	}
