@@ -26,6 +26,7 @@ import com.slytechs.protocol.Frame.FrameNumber;
 import com.slytechs.protocol.descriptor.PacketDissector;
 import com.slytechs.protocol.meta.PacketFormat;
 import com.slytechs.protocol.pack.core.constants.PacketDescriptorType;
+import com.slytechs.protocol.runtime.time.TimestampUnit;
 
 /**
  * Packet dispatcher with protocol level support.
@@ -150,4 +151,9 @@ public interface PacketDispatcher extends PcapDispatcher {
 	 * @param portNo the new port number
 	 */
 	void setPortNumber(int portNo);
+
+	/**
+	 * @param unit
+	 */
+	void setTimestampUnit(TimestampUnit unit);
 }

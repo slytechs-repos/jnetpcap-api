@@ -34,11 +34,13 @@ import org.jnetpcap.constant.PcapTStampPrecision;
 import org.jnetpcap.internal.NonSealedPcap;
 import org.jnetpcap.internal.PcapHeaderABI;
 
+import com.slytechs.jnetpcap.pro.PcapProHandler.OfPacketConsumer;
 import com.slytechs.jnetpcap.pro.internal.JavaPacketDispatcher;
 import com.slytechs.jnetpcap.pro.internal.PacketDispatcher;
 import com.slytechs.protocol.Frame.FrameNumber;
 import com.slytechs.protocol.meta.PacketFormat;
 import com.slytechs.protocol.pack.core.constants.PacketDescriptorType;
+import com.slytechs.protocol.runtime.time.TimestampUnit;
 import com.slytechs.protocol.runtime.util.MemoryUnit;
 
 /**
@@ -344,6 +346,22 @@ public final class PcapPro extends NonSealedPcap {
 	}
 
 	/**
+	 * Dispatch which uses a simple packet consumer.
+	 *
+	 * @param count          A value of -1 or 0 for count is equivalent to infinity,
+	 *                       so that packets are processed until another ending
+	 *                       condition occurs
+	 * @param packetConsumer the packet consumer
+	 * @return returns 0 if count is exhausted or if, when reading from a
+	 *         ``savefile'', no more packets are available. It returns
+	 *         PCAP_ERROR_BREAK if the loop terminated due to a call to
+	 *         pcap_breakloop() before any packets were processed
+	 */
+	public int dispatch(int count, OfPacketConsumer packetConsumer) {
+		return dispatch(count, (u, p) -> packetConsumer.accept(p), 0);
+	}
+
+	/**
 	 * Enable IP datagram reassembly using IP fragments. IP fragments are tracked
 	 * and reassembled into new data buffers and dispatched as new packets to use
 	 * handler.
@@ -493,6 +511,22 @@ public final class PcapPro extends NonSealedPcap {
 	}
 
 	/**
+	 * Process packets from a live capture or savefile.
+	 *
+	 * @param count          A value of -1 or 0 for count is equivalent to infinity,
+	 *                       so that packets are processed until another ending
+	 *                       condition occurs
+	 * @param packetConsumer the packet consumer
+	 * @return returns 0 if count is exhausted or if, when reading from a
+	 *         ``savefile'', no more packets are available. It returns
+	 *         PCAP_ERROR_BREAK if the loop terminated due to a call to
+	 *         pcap_breakloop() before any packets were processed
+	 */
+	public int loop(int count, OfPacketConsumer packetConsumer) {
+		return loop(count, (u, p) -> packetConsumer.accept(p), 0);
+	}
+
+	/**
 	 * Sets the descriptor type.
 	 *
 	 * @param type the type
@@ -557,6 +591,19 @@ public final class PcapPro extends NonSealedPcap {
 	 */
 	public PcapPro setPortNumber(int portNo) {
 		packetDispatcher.setPortNumber(portNo);
+
+		return this;
+	}
+
+	/**
+	 * Sets the timestamp unit which specifies the timestamp used by this pcap
+	 * handle.
+	 *
+	 * @param unit the new timestamp unit
+	 * @return this pcap
+	 */
+	public PcapPro setTimestampUnit(TimestampUnit unit) {
+		packetDispatcher.setTimestampUnit(unit);
 
 		return this;
 	}

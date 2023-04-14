@@ -18,6 +18,7 @@
 package com.slytechs.jnetpcap.pro;
 
 import java.lang.foreign.MemoryAddress;
+import java.util.function.Consumer;
 
 import org.jnetpcap.PcapHandler;
 
@@ -47,6 +48,23 @@ public interface PcapProHandler extends PcapHandler {
 		 * @param packet packet data
 		 */
 		void handlePacket(U user, Packet packet);
+	}
+
+	/**
+	 * A dispatcher which dispatches high level packets with protocol header
+	 * information.
+	 */
+	@FunctionalInterface
+	public interface OfPacketConsumer extends PcapProHandler, Consumer<Packet> {
+
+		/**
+		 * Accept a packet.
+		 *
+		 * @param user   user opaque value returned back
+		 * @param packet packet data
+		 */
+		@Override
+		void accept(Packet packet);
 	}
 
 	/**

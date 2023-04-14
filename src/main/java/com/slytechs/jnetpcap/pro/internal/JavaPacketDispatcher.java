@@ -77,6 +77,8 @@ public class JavaPacketDispatcher
 	/** The port no. */
 	private int portNo;
 
+	private TimestampUnit unit = TimestampUnit.PCAP_MICRO;
+
 	/**
 	 * Instantiates a new packet dispatcher.
 	 *
@@ -136,6 +138,7 @@ public class JavaPacketDispatcher
 		desc.frameNo(frameNo.getUsing(timestamp, portNo));
 		desc.timestampUnit(timestampUnit);
 		packet.setFormatter(formatter);
+		desc.timestampUnit(timestampUnit);
 
 		return packet;
 	}
@@ -229,5 +232,13 @@ public class JavaPacketDispatcher
 	@Override
 	public void setPortNumber(int portNo) {
 		this.portNo = portNo;
+	}
+
+	/**
+	 * @see com.slytechs.jnetpcap.pro.internal.PacketDispatcher#setTimestampUnit(com.slytechs.protocol.runtime.time.TimestampUnit)
+	 */
+	@Override
+	public void setTimestampUnit(TimestampUnit unit) {
+		this.unit = unit;
 	}
 }
