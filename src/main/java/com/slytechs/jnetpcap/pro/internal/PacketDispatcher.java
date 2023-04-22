@@ -20,6 +20,7 @@ package com.slytechs.jnetpcap.pro.internal;
 import java.lang.foreign.MemoryAddress;
 
 import org.jnetpcap.internal.PcapDispatcher;
+import org.jnetpcap.internal.PcapHeaderABI;
 
 import com.slytechs.jnetpcap.pro.PcapProHandler;
 import com.slytechs.protocol.Frame.FrameNumber;
@@ -35,6 +36,18 @@ import com.slytechs.protocol.runtime.time.TimestampUnit;
  * @author repos@slytechs.com
  */
 public interface PacketDispatcher extends PcapDispatcher {
+
+	public class PacketDispatcherConfig {
+
+		public int portNo;
+		public FrameNumber frameNo = FrameNumber.of();
+		public TimestampUnit timestampUnit = TimestampUnit.PCAP_MICRO;
+		public PacketFormat formatter;
+		public PacketDissector dissector;
+		public PacketDescriptorType descriptorType;
+		public PcapHeaderABI abi;
+
+	}
 
 	/**
 	 * Checks if is native packet dispatcher supported.
@@ -56,9 +69,9 @@ public interface PacketDispatcher extends PcapDispatcher {
 	static PacketDispatcher javaPacketDispatcher(
 			MemoryAddress pcapHandle,
 			Runnable breakDispatch,
-			PacketDescriptorType descriptorType) {
+			PacketDispatcherConfig config) {
 
-		return new JavaPacketDispatcher(pcapHandle, breakDispatch, descriptorType);
+		return new JavaPacketDispatcher(pcapHandle, breakDispatch, config);
 	}
 
 	/**
@@ -72,7 +85,7 @@ public interface PacketDispatcher extends PcapDispatcher {
 	static PacketDispatcher nativePacketDispatcher(
 			MemoryAddress pcapHandle,
 			Runnable breakDispatch,
-			PacketDescriptorType descriptorType) {
+			PacketDispatcherConfig config) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -87,12 +100,12 @@ public interface PacketDispatcher extends PcapDispatcher {
 	static PacketDispatcher packetDispatcher(
 			MemoryAddress pcapHandle,
 			Runnable breakDispatch,
-			PacketDescriptorType descriptorType) {
+			PacketDispatcherConfig config) {
 
 		if (isNativePacketDispatcherSupported())
-			return nativePacketDispatcher(pcapHandle, breakDispatch, descriptorType);
+			return nativePacketDispatcher(pcapHandle, breakDispatch, config);
 		else
-			return javaPacketDispatcher(pcapHandle, breakDispatch, descriptorType);
+			return javaPacketDispatcher(pcapHandle, breakDispatch, config);
 	}
 
 	/**
@@ -107,18 +120,18 @@ public interface PacketDispatcher extends PcapDispatcher {
 	<U> int dispatchPacket(int count, PcapProHandler.OfPacket<U> sink, U user);
 
 	/**
-	 * Gets the descriptor type.
-	 *
-	 * @return the descriptor type
-	 */
-	PacketDescriptorType getDescriptorType();
-
-	/**
 	 * Gets the dissector.
 	 *
 	 * @return the dissector
 	 */
 	PacketDissector getDissector();
+
+	/**
+	 * Gets the descriptor type.
+	 *
+	 * @return the descriptor type
+	 */
+	PacketDescriptorType getDescriptorType();
 
 	/**
 	 * Number of bytes that were dropped due to errors while receiving packets. If
@@ -178,29 +191,4 @@ public interface PacketDispatcher extends PcapDispatcher {
 	 */
 	<U> int loopPacket(int count, PcapProHandler.OfPacket<U> sink, U user);
 
-	/**
-	 * Sets the frame number.
-	 *
-	 * @param frameNumberAssigner the new frame number
-	 */
-	void setFrameNumber(FrameNumber frameNumberAssigner);
-
-	/**
-	 * Sets the packet format.
-	 *
-	 * @param newFormat the new packet format
-	 */
-	void setPacketFormat(PacketFormat newFormat);
-
-	/**
-	 * Sets the port number.
-	 *
-	 * @param portNo the new port number
-	 */
-	void setPortNumber(int portNo);
-
-	/**
-	 * @param unit
-	 */
-	void setTimestampUnit(TimestampUnit unit);
 }

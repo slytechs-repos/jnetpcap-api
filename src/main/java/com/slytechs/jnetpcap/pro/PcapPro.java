@@ -40,7 +40,10 @@ import org.jnetpcap.internal.PcapHeaderABI;
 import com.slytechs.jnetpcap.pro.PcapProHandler.OfPacketConsumer;
 import com.slytechs.jnetpcap.pro.internal.JavaPacketDispatcher;
 import com.slytechs.jnetpcap.pro.internal.PacketDispatcher;
+import com.slytechs.jnetpcap.pro.internal.ipf.IpfConfig;
+import com.slytechs.jnetpcap.pro.internal.ipf.JavaIpfDispatcher;
 import com.slytechs.protocol.Frame.FrameNumber;
+import com.slytechs.protocol.descriptor.PacketDissector;
 import com.slytechs.protocol.meta.PacketFormat;
 import com.slytechs.protocol.pack.core.constants.PacketDescriptorType;
 import com.slytechs.protocol.runtime.time.TimestampUnit;
@@ -270,6 +273,7 @@ public final class PcapPro extends NonSealedPcap {
 
 	/** The packet dispatcher. */
 	private PacketDispatcher packetDispatcher;
+	private final IpfConfig config = new IpfConfig();
 
 	/**
 	 * Instantiates a new pcap pro.
@@ -280,7 +284,9 @@ public final class PcapPro extends NonSealedPcap {
 	 */
 	PcapPro(MemoryAddress pcapHandle, String name, PcapHeaderABI abi) {
 		super(pcapHandle, name, abi);
-		setPacketDispatcher(PacketDispatcher.packetDispatcher(pcapHandle, this::breakloop, PacketDescriptorType.TYPE2));
+		config.abi = abi;
+
+		setDescriptorType(PacketDescriptorType.TYPE2);
 	}
 
 	/**
@@ -406,7 +412,12 @@ public final class PcapPro extends NonSealedPcap {
 	 * @return this handle
 	 */
 	public PcapPro enableIpfReassembly(boolean enable) {
-		throw new UnsupportedOperationException("Not implemented yet. ");
+		this.packetDispatcher = new JavaIpfDispatcher(
+				getPcapHandle(),
+				this::breakloop,
+				config);
+
+		return this;
 	}
 
 	/**
@@ -577,7 +588,13 @@ public final class PcapPro extends NonSealedPcap {
 	 * @return the pcap pro
 	 */
 	public PcapPro setDescriptorType(PacketDescriptorType type) {
-		setPacketDispatcher(new JavaPacketDispatcher(getPcapHandle(), this::breakloop, type));
+		config.descriptorType = type;
+		config.dissector = PacketDissector.dissector(type);
+
+		this.packetDispatcher = new JavaPacketDispatcher(
+				getPcapHandle(),
+				this::breakloop,
+				config);
 
 		return this;
 	}
@@ -589,7 +606,7 @@ public final class PcapPro extends NonSealedPcap {
 	 * @return the pcap pro
 	 */
 	public PcapPro setFrameNumber(FrameNumber frameNumberAssigner) {
-		packetDispatcher.setFrameNumber(frameNumberAssigner);
+		config.frameNo = frameNumberAssigner;
 
 		return this;
 	}
@@ -632,24 +649,13 @@ public final class PcapPro extends NonSealedPcap {
 	}
 
 	/**
-	 * Sets the packet dispatcher.
-	 *
-	 * @param newDispatcher the new packet dispatcher
-	 */
-	protected void setPacketDispatcher(PacketDispatcher newDispatcher) {
-		this.packetDispatcher = newDispatcher;
-
-		super.setDispatcher(newDispatcher);
-	}
-
-	/**
 	 * Sets the packet formatter.
 	 *
 	 * @param formatter the formatter
 	 * @return the pcap pro
 	 */
 	public PcapPro setPacketFormatter(PacketFormat formatter) {
-		packetDispatcher.setPacketFormat(formatter);
+		config.formatter = formatter;
 
 		return this;
 	}
@@ -661,7 +667,7 @@ public final class PcapPro extends NonSealedPcap {
 	 * @return the pcap pro
 	 */
 	public PcapPro setPortNumber(int portNo) {
-		packetDispatcher.setPortNumber(portNo);
+		config.portNo = portNo;
 
 		return this;
 	}
@@ -674,7 +680,7 @@ public final class PcapPro extends NonSealedPcap {
 	 * @return this pcap
 	 */
 	public PcapPro setTimestampUnit(TimestampUnit unit) {
-		packetDispatcher.setTimestampUnit(unit);
+		config.timestampUnit = unit;
 
 		return this;
 	}

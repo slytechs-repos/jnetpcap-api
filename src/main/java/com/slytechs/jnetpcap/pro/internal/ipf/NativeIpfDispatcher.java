@@ -23,8 +23,6 @@ import org.jnetpcap.internal.PcapForeignDowncall;
 import org.jnetpcap.internal.PcapForeignInitializer;
 
 import com.slytechs.jnetpcap.pro.internal.JavaPacketDispatcher;
-import com.slytechs.protocol.pack.core.constants.PacketDescriptorType;
-import com.slytechs.protocol.runtime.util.MemoryUnit;
 
 /**
  * @author Sly Technologies Inc
@@ -46,9 +44,9 @@ public class NativeIpfDispatcher
 	public NativeIpfDispatcher(
 			MemoryAddress pcapHandle,
 			Runnable breakDispatch,
-			PacketDescriptorType descriptorType) {
+			PacketDispatcherConfig config) {
 
-		super(pcapHandle, breakDispatch, descriptorType);
+		super(pcapHandle, breakDispatch, config);
 	}
 
 	private static final PcapForeignDowncall ipf_allocate_table;
@@ -61,16 +59,6 @@ public class NativeIpfDispatcher
 
 	static boolean isNativeSupported() {
 		return ipf_allocate_table.isNativeSymbolResolved();
-	}
-
-	/**
-	 * @see com.slytechs.jnetpcap.pro.internal.ipf.IpfDispatcher#setIpfTableSize(int,
-	 *      long, com.slytechs.protocol.runtime.util.MemoryUnit)
-	 */
-	@Override
-	public void setIpfTableSize(int entryCount, long bufferSize, MemoryUnit unit) {
-		this.ipfTable = (MemoryAddress) ipf_allocate_table
-				.invokeObj(entryCount, unit.toBytes(bufferSize));
 	}
 
 }

@@ -17,6 +17,13 @@
  */
 package com.slytechs.jnetpcap.pro.internal.ipf;
 
+import java.nio.ByteBuffer;
+
+import com.slytechs.protocol.descriptor.IpfFragDescriptor;
+import com.slytechs.protocol.runtime.hash.CuckooHashTable;
+import com.slytechs.protocol.runtime.hash.HashTable;
+import com.slytechs.protocol.runtime.hash.HashTable.HashEntry;
+
 /**
  * IP Fragment tracking table.
  * 
@@ -25,6 +32,55 @@ package com.slytechs.jnetpcap.pro.internal.ipf;
  * @author Mark Bednarczyk
  *
  */
-public interface IpfTable {
+public class IpfTable {
 
+	private IpfReassembler allocateIpfBufferSlice(int index) {
+		int sliceSize = this.bufferSize / tableSize;
+		int off = sliceSize * index;
+
+		ByteBuffer slice = buffer.slice(off, sliceSize);
+		HashEntry<IpfReassembler> entry = table.get(index);
+
+		return new IpfReassembler(slice, entry, config);
+	}
+
+	private final ByteBuffer buffer;
+	private final HashTable<IpfReassembler> table;
+	private final int bufferSize;
+	private final ByteBuffer key;
+	private final IpfConfig config;
+	private final int tableSize;
+
+	public IpfTable(IpfConfig config) {
+		this(config, ByteBuffer.allocateDirect(config.bufferSize));
+	}
+
+	public IpfTable(IpfConfig config, ByteBuffer buffer) {
+		this.config = config;
+		this.bufferSize = config.bufferSize;
+		this.buffer = buffer;
+		this.key = ByteBuffer.allocateDirect(HashTable.MAX_KEY_SIZE_BYTES);
+		this.tableSize = config.tableSize;
+
+		this.table = new CuckooHashTable<IpfReassembler>(config.tableSize)
+				.enableStickyData(true);
+
+		this.table.fill(this::allocateIpfBufferSlice);
+	}
+
+	public IpfReassembler lookup(IpfFragDescriptor desc, long hashcode) {
+		var key = desc.keyBuffer();
+		assert key.remaining() > 0;
+		
+		int index = table.add(key, null, hashcode);
+		if (index == -1)
+			return null; // Out of table space
+
+		var entry = table.get(index);
+		var ipf = entry.data();
+		if (ipf.isExpired())
+			ipf.reset(key);
+
+		return ipf;
+	}
 }

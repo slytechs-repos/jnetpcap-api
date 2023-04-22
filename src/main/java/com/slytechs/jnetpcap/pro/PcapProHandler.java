@@ -17,7 +17,6 @@
  */
 package com.slytechs.jnetpcap.pro;
 
-import java.lang.foreign.MemoryAddress;
 import java.util.function.Consumer;
 
 import org.jnetpcap.PcapHandler;
@@ -67,24 +66,4 @@ public interface PcapProHandler extends PcapHandler {
 		void accept(Packet packet);
 	}
 
-	/**
-	 * Callback from a native IP fragment tracker and reassembler
-	 */
-	@FunctionalInterface
-	public interface NativeIpfCallback {
-
-		/**
-		 * Handle native IPF (IP Fragment) callback.
-		 *
-		 * @param ipfDescriptor the IPF descriptor
-		 * @param pktDescriptor the standard packet descriptor
-		 * @param pkt           packet data
-		 * @param user          user opaque value returned back
-		 */
-		void handleNativeIpfCallback(
-				MemoryAddress ipfDescriptor,
-				MemoryAddress pktDescriptor,
-				MemoryAddress pkt,
-				MemoryAddress user);
-	}
 }
