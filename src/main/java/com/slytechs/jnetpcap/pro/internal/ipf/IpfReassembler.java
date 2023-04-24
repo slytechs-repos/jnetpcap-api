@@ -22,7 +22,8 @@ import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import com.slytechs.protocol.descriptor.IpfFragDescriptor;
+import com.slytechs.jnetpcap.pro.IpfConfiguration;
+import com.slytechs.protocol.descriptor.IpfFragment;
 import com.slytechs.protocol.runtime.hash.HashTable.HashEntry;
 import com.slytechs.protocol.runtime.time.TimestampSource;
 import com.slytechs.protocol.runtime.util.Detail;
@@ -30,7 +31,6 @@ import com.slytechs.protocol.runtime.util.Detail;
 /**
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
- *
  */
 public class IpfReassembler {
 
@@ -38,6 +38,7 @@ public class IpfReassembler {
 		int offset;
 		int length;
 		long timestamp;
+		long frameNo;
 
 		/**
 		 * @see java.lang.Comparable#compareTo(java.lang.Object)
@@ -52,7 +53,7 @@ public class IpfReassembler {
 		}
 
 		/**
-		 * @see java.lang.Object#toString()
+		 * @see java.lang. Object#toString()
 		 */
 		@Override
 		public String toString() {
@@ -83,7 +84,7 @@ public class IpfReassembler {
 	 */
 	private final TimestampSource timeSource;
 	private final HashEntry<IpfReassembler> tableEntry;
-	private final IpfConfig config;
+	private final IpfConfiguration config;
 	private long expiration;
 	private long startTimeMilli = 0;
 
@@ -92,63 +93,71 @@ public class IpfReassembler {
 
 	private boolean hasFirst;
 	private boolean hasLast;
+	private long frameNo;
 
-	public IpfReassembler(ByteBuffer buffer, HashEntry<IpfReassembler> tableEntry, IpfConfig config) {
+	public IpfReassembler(ByteBuffer buffer, HashEntry<IpfReassembler> tableEntry, IpfConfiguration config) {
 		this.index = tableEntry.index();
 		this.buffer = buffer;
 		this.tableEntry = tableEntry;
-		this.timeSource = config.timeSource;
+		this.timeSource = config.getTimeSource();
 		this.config = config;
-		this.tracking = new Track[config.ipfMaxFragTrackCount];
+		this.tracking = new Track[config.getIpfMaxFragmentCount()];
 
 		IntStream
-				.range(0, config.ipfMaxFragTrackCount)
+				.range(0, config.getIpfMaxFragmentCount())
 				.forEach(i -> tracking[i] = new Track());
 	}
 
-	public boolean processFragment(ByteBuffer packet, IpfFragDescriptor desc) {
+	public boolean processFragment(long frameNo, ByteBuffer packet, IpfFragment desc) {
+		this.frameNo = frameNo;
+
+		if (!desc.isFrag())
+			return false;
 
 		if (startTimeMilli == 0) {
-
 			startTimeMilli = timeSource.timestamp();
-			expiration = startTimeMilli + config.timeoutMillis;
-
+			expiration = startTimeMilli + config.getIpfTimeoutMilli();
 		}
 
 		boolean complete = false;
 
-		if (desc.fragOffset() == 0)
-			processFirst(packet, desc);
+		if (desc.fragOffset() == 0) {
+			complete = processFirst(packet, desc);
 
-		else if (desc.isLastFrag())
+		} else if (desc.isLastFrag()) {
 			complete = processLast(packet, desc);
 
-		else
-			processMiddle(packet, desc);
+		} else {
+			complete = processMiddle(packet, desc);
+		}
 
 		return complete;
 	}
 
-	private void processCommon(ByteBuffer packet, IpfFragDescriptor desc) {
+	private void processCommon(ByteBuffer packet, IpfFragment desc) {
 		Track track = tracking[nextTrack++];
 		track.offset = desc.fragOffset();
 		track.length = desc.dataLength();
+		track.frameNo = frameNo;
 		track.timestamp = timeSource.timestamp();
 
+		Arrays.sort(tracking, 0, nextTrack);
 	}
 
-	private void processFirst(ByteBuffer packet, IpfFragDescriptor desc) {
+	private boolean processFirst(ByteBuffer packet, IpfFragment desc) {
 		hasFirst = true;
 		processCommon(packet, desc);
 
+		return true;
 	}
 
-	private void processMiddle(ByteBuffer packet, IpfFragDescriptor desc) {
+	private boolean processMiddle(ByteBuffer packet, IpfFragment desc) {
 		processCommon(packet, desc);
 
+		return true;
 	}
 
-	private boolean processLast(ByteBuffer packet, IpfFragDescriptor desc) {
+	private boolean processLast(ByteBuffer packet, IpfFragment desc) {
 		hasLast = true;
 		processCommon(packet, desc);
 
@@ -157,7 +166,7 @@ public class IpfReassembler {
 
 	public void reset(ByteBuffer key) {
 		this.nextTrack = 0;
-		this.expiration = timeSource.timestamp() + config.timeoutMillis;
+		this.expiration = timeSource.timestamp() + config.getIpfTimeoutMilli();
 		this.tableEntry.setEmpty(false);
 		this.tableEntry.setKey(key);
 

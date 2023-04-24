@@ -133,24 +133,28 @@ public class JavaPacketDispatcher
 	public <U> int dispatchPacket(int count, PcapProHandler.OfPacket<U> sink, U user) {
 		return super.dispatchNative(count, (ignore, pcapHdr, pktData) -> {
 
-			processAndSink(sink, user, pcapHdr, pktData);
+			try (var session = MemorySession.openShared()) {
+
+				Packet packet = processPacket(pcapHdr, pktData, session);
+				if (packet != null)
+					sink.handlePacket(user, packet);
+
+			}
 
 		}, MemoryAddress.NULL); // We don't pass user object to native dispatcher
 	}
 
-	protected <U> void processAndSink(
-			PcapProHandler.OfPacket<U> sink,
-			U user,
+	protected <U> Packet processPacket(
 			MemoryAddress pcapHdr,
-			MemoryAddress pktData) {
+			MemoryAddress pktData,
+			MemorySession session) {
 
 		/*
 		 * Initialize outside the try-catch to attempt to read caplen for any exceptions
 		 * thrown
 		 */
 		int caplen = 0, wirelen = 0;
-		try (var session = MemorySession.openShared()) {
-
+		try {
 			/* Pcap header fields */
 			caplen = config.abi.captureLength(pcapHdr);
 			wirelen = config.abi.wireLength(pcapHdr);
@@ -163,15 +167,27 @@ public class JavaPacketDispatcher
 
 			Packet packet = createSingletonPacket(mpkt, caplen, wirelen, timestamp);
 
-			receiveCaplenCounter += caplen;
-			receiveWirelenCounter += wirelen;
-			receivePacketCounter++;
+			incPacketReceived(caplen, wirelen);
 
-			sink.handlePacket(user, packet);
+			return packet;
 
 		} catch (Throwable e) {
+			incPacketDropped(caplen, wirelen);
 			onNativeCallbackException(e, caplen, wirelen);
+			return null;
 		}
+	}
+
+	protected void incPacketReceived(int caplen, int wirelen) {
+		receiveCaplenCounter += caplen;
+		receiveWirelenCounter += wirelen;
+		receivePacketCounter++;
+	}
+
+	protected void incPacketDropped(int caplen, int wirelen) {
+		droppedPacketCounter++;
+		droppedCaplenCounter += caplen;
+		droppedWirelenCounter += wirelen;
 	}
 
 	/**

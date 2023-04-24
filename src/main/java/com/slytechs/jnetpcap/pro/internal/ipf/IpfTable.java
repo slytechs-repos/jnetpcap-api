@@ -19,7 +19,8 @@ package com.slytechs.jnetpcap.pro.internal.ipf;
 
 import java.nio.ByteBuffer;
 
-import com.slytechs.protocol.descriptor.IpfFragDescriptor;
+import com.slytechs.jnetpcap.pro.IpfConfiguration;
+import com.slytechs.protocol.descriptor.IpfFragment;
 import com.slytechs.protocol.runtime.hash.CuckooHashTable;
 import com.slytechs.protocol.runtime.hash.HashTable;
 import com.slytechs.protocol.runtime.hash.HashTable.HashEntry;
@@ -34,6 +35,12 @@ import com.slytechs.protocol.runtime.hash.HashTable.HashEntry;
  */
 public class IpfTable {
 
+	/**
+	 * Allocate ipf buffer slice.
+	 *
+	 * @param index the index
+	 * @return the ipf reassembler
+	 */
 	private IpfReassembler allocateIpfBufferSlice(int index) {
 		int sliceSize = this.bufferSize / tableSize;
 		int off = sliceSize * index;
@@ -44,34 +51,59 @@ public class IpfTable {
 		return new IpfReassembler(slice, entry, config);
 	}
 
+	/** The buffer. */
 	private final ByteBuffer buffer;
+
+	/** The table. */
 	private final HashTable<IpfReassembler> table;
+
+	/** The buffer size. */
 	private final int bufferSize;
-	private final ByteBuffer key;
-	private final IpfConfig config;
+
+	/** The config. */
+	private final IpfConfiguration config;
+
+	/** The table size. */
 	private final int tableSize;
 
-	public IpfTable(IpfConfig config) {
-		this(config, ByteBuffer.allocateDirect(config.bufferSize));
+	/**
+	 * Instantiates a new ipf table.
+	 *
+	 * @param config the config
+	 */
+	public IpfTable(IpfConfiguration config) {
+		this(config, ByteBuffer.allocateDirect(config.getIpfBufferSize()));
 	}
 
-	public IpfTable(IpfConfig config, ByteBuffer buffer) {
+	/**
+	 * Instantiates a new ipf table.
+	 *
+	 * @param config the config
+	 * @param buffer the buffer
+	 */
+	public IpfTable(IpfConfiguration config, ByteBuffer buffer) {
 		this.config = config;
-		this.bufferSize = config.bufferSize;
+		this.bufferSize = config.getIpfBufferSize();
 		this.buffer = buffer;
-		this.key = ByteBuffer.allocateDirect(HashTable.MAX_KEY_SIZE_BYTES);
-		this.tableSize = config.tableSize;
+		this.tableSize = config.getIpfTableSize();
 
-		this.table = new CuckooHashTable<IpfReassembler>(config.tableSize)
+		this.table = new CuckooHashTable<IpfReassembler>(config.getIpfTableSize())
 				.enableStickyData(true);
 
 		this.table.fill(this::allocateIpfBufferSlice);
 	}
 
-	public IpfReassembler lookup(IpfFragDescriptor desc, long hashcode) {
+	/**
+	 * Lookup.
+	 *
+	 * @param desc     the desc
+	 * @param hashcode the hashcode
+	 * @return the ipf reassembler
+	 */
+	public IpfReassembler lookup(IpfFragment desc, long hashcode) {
 		var key = desc.keyBuffer();
 		assert key.remaining() > 0;
-		
+
 		int index = table.add(key, null, hashcode);
 		if (index == -1)
 			return null; // Out of table space
