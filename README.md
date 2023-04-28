@@ -13,7 +13,7 @@ To begin capturing packets, you can create an instance of the `Pcap` class, whic
 
 **jNetPcap Pro** also includes functionality for creating filters to capture only the packets that match certain criteria, such as a specific port, protocol, or IP address. Additionally, the library supports packet decoding and analysis for a variety of common protocols, including TCP, UDP, and ICMP wtih IP fragment reassembly if desired.
 
-> **Note!** TCP stream reassebly is provided by [**jNetWorks**][jnetworks] (Available soon!) library which is a more advanced network capture and analsysis SDK, and currently not available with **jNetPcap Pro**.
+> **Note!** TCP stream reassebly is provided by **jNetWorks** (Available soon!) library which is a more advanced network capture and analsysis SDK, and currently not available with **jNetPcap Pro**.
 
 ## How to use this library
 The **jNetPcap Pro** library provides the starting point for your application. 
