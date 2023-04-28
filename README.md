@@ -1,8 +1,22 @@
 # jNetPcap Pro
-A protocol enabled **jNetPcap** library with IP Fragment tracking and reassembly.
+A protocol enabled [**jNetPcap v2**][jnetpcap] extension with IP Fragment tracking and reassembly.
+
+## About
+
+**jNetPcap Pro** is a Java library that provides access to libpcap, a low-level network monitoring library. The library allows Java developers to write applications that can capture, read, and manipulate network packets in real-time.
+
+To use **jNetPcap Pro**, you need to download and install the library and add it to your Java project's classpath. Once you have done that, you can use the Java API provided by jNetPcap* to interact with network packets.
+
+The library includes a set of classes and methods that allow you to capture network packets, filter and search through them, extract and analyze packet data, and ultimately write custom network analysis applications.
+
+To begin capturing packets, you can create an instance of the `Pcap` class, which represents a network interface that the library will use to capture packets. Then you can create a `PcapPacketHandler` instance to process each packet as it is captured.
+
+**jNetPcap Pro** also includes functionality for creating filters to capture only the packets that match certain criteria, such as a specific port, protocol, or IP address. Additionally, the library supports packet decoding and analysis for a variety of common protocols, including TCP, UDP, and ICMP wtih IP fragment reassembly if desired.
+
+> **Note!** TCP stream reassebly is provided by [**jNetWorks**][jnetworks] (Available soon!) library which is a more advanced network capture and analsysis SDK, and currently not available with **jNetPcap Pro**.
 
 ## How to use this library
-The **jNetPcap Pro** library provides starting point for your application. 
+The **jNetPcap Pro** library provides the starting point for your application. 
 
 ### Prerequisites
 The library requires [**jnetpcap v2**][jnetpcap] open-source module and the [**core-protocols**][core-protocols] module which provides runtime and protocol support to **jNetPcap Pro**.
@@ -61,3 +75,4 @@ void main() throws PcapException {
 [core-protocols]: https://github.com/slytechs-repos/core-protocols
 [jnetpcap]: https://github.com/slytechs-repos/jnetpcap
 [jnetpcap-examples]: https://github.com/slytechs-repos/jnetpcap-examples
+[jnetworks]: https://github.com/slytechs-repos/jnetworks
