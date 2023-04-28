@@ -1,5 +1,5 @@
-# jNetPcap Pro
-A protocol enabled [**jNetPcap v2**][jnetpcap] extension with IP Fragment tracking and reassembly.
+# jNetPcap Pro (Protocol)
+A protocol enabled **jNetPcap** library with IP Fragment tracking and reassembly.
 
 ## About
 
