@@ -71,6 +71,29 @@ void main() throws PcapException {
 	}
 }
 ```
+Here is a sample of all the IPF options and how to setup. The dispatched `Ip4` containing packets will have IPv4 datagrams fully reassembled, and optionally you can supress individual IP fragments, tracking and many other IPF related options.:
+```java
+try (PcapPro pcap = PcapPro.openOffline(IP_FRAGMENTED_FILE)) {
+
+	/* Enable IP fragmentation reassembly and use many IPF options */
+	pcap
+			.enableIpf(true)
+			.enableIpfReassembly(true)
+			.enableIpfTracking(true)
+			.enableIpfAttachComplete(true)
+			.enableIpfAttachIncomplete(true)
+			.enableIpfPassthroughFragments(true)
+			.enableIpfPassthroughComplete(true)
+			.enableIpfPassthroughIncomplete(true)
+			.setIpfTimeoutOnLast(false) // Otherwise on timeout
+			.setIpfBufferSize(1, MemoryUnit.MEGABYTES)
+			.setIpfTableSize(16, CountUnit.KILO)
+			.setIpfMaxFragmentCount(16)
+			.setIpfTimeoutMilli(1200)
+			.setIpfMaxDgramSize(64, MemoryUnit.KILOBYTES)
+			.useIpfPacketTimesource()
+			.activateIpf(); // Or Pcap.activate() if using Pcap.create(...)
+```
 
 [core-protocols]: https://github.com/slytechs-repos/core-protocols
 [jnetpcap]: https://github.com/slytechs-repos/jnetpcap
