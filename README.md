@@ -83,7 +83,7 @@ pcapPro
 		.enableIpfPassthroughFragments(true) // Pass through original IP fragments
 		.enableIpfPassthroughComplete(true) // Pass through new reassembled dgrams
 		.enableIpfPassthroughIncomplete(true) // Pass through new incomplete dgrams
-		.setIpfTimeoutOnLast(false) // Otherwise on timeout on duration only
+		.setIpfTimeoutOnLast(false) // Otherwise only timeout on duration
 		.setIpfBufferSize(1, MemoryUnit.MEGABYTES) // Total reassembly buffer size
 		.setIpfTableSize(16, CountUnit.KILO) // How many hash table entries
 		.setIpfMaxFragmentCount(16) // Max number of IP fragments per hash entry
