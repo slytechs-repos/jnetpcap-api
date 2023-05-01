@@ -17,11 +17,13 @@
  */
 package com.slytechs.jnetpcap.pro;
 
+import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 
 import org.jnetpcap.PcapHandler;
 
 import com.slytechs.protocol.Packet;
+import com.slytechs.protocol.descriptor.IpfFragment;
 
 /**
  * Marker interface for all Pcap pro packet handlers.
@@ -47,6 +49,11 @@ public interface PcapProHandler extends PcapHandler {
 		 * @param packet packet data
 		 */
 		void handlePacket(U user, Packet packet);
+	}
+	
+	public interface IpfHandler {
+		
+		void handleIpf(IpfFragment frag, ByteBuffer carrier, ByteBuffer ipPayload);
 	}
 
 	/**

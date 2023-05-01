@@ -21,6 +21,7 @@ import java.io.File;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.lang.foreign.MemoryAddress;
 import java.util.Optional;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -478,6 +479,18 @@ public final class PcapPro extends NonSealedPcap implements IpfConfiguration {
 	}
 
 	/**
+	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enableIpfPassthrough(boolean)
+	 */
+	@Override
+	public PcapPro enableIpfPassthrough(boolean enable) {
+		checkIpfIsNotActive();
+
+		ipfConfig.enableIpfPassthrough(enable);
+
+		return this;
+	}
+
+	/**
 	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enableIpfPassthroughComplete(boolean)
 	 */
 	@Override
@@ -652,6 +665,14 @@ public final class PcapPro extends NonSealedPcap implements IpfConfiguration {
 	}
 
 	/**
+	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#getTimeoutQueueSize()
+	 */
+	@Override
+	public int getTimeoutQueueSize() {
+		return ipfConfig.getTimeoutQueueSize();
+	}
+
+	/**
 	 * @return
 	 * @see com.slytechs.jnetpcap.pro.internal.ipf.IpfConfig#getTimeSource()
 	 */
@@ -705,6 +726,14 @@ public final class PcapPro extends NonSealedPcap implements IpfConfiguration {
 	}
 
 	/**
+	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#isIpfPassthrough()
+	 */
+	@Override
+	public boolean isIpfPassthrough() {
+		return ipfConfig.isIpfPassthrough();
+	}
+
+	/**
 	 * @return
 	 * @see com.slytechs.jnetpcap.pro.internal.ipf.IpfConfig#isIpfPassthroughComplete()
 	 */
@@ -715,20 +744,20 @@ public final class PcapPro extends NonSealedPcap implements IpfConfiguration {
 
 	/**
 	 * @return
-	 * @see com.slytechs.jnetpcap.pro.internal.ipf.IpfConfig#isIpfPassthroughIncomplete()
-	 */
-	@Override
-	public boolean isIpfPassthroughIncomplete() {
-		return ipfConfig.isIpfPassthroughIncomplete();
-	}
-
-	/**
-	 * @return
 	 * @see com.slytechs.jnetpcap.pro.internal.ipf.IpfConfig#isIpfPassthroughFragments()
 	 */
 	@Override
 	public boolean isIpfPassthroughFragments() {
 		return ipfConfig.isIpfPassthroughFragments();
+	}
+
+	/**
+	 * @return
+	 * @see com.slytechs.jnetpcap.pro.internal.ipf.IpfConfig#isIpfPassthroughIncomplete()
+	 */
+	@Override
+	public boolean isIpfPassthroughIncomplete() {
+		return ipfConfig.isIpfPassthroughIncomplete();
 	}
 
 	/**
@@ -838,7 +867,7 @@ public final class PcapPro extends NonSealedPcap implements IpfConfiguration {
 	 */
 	public PcapPro setDescriptorType(PacketDescriptorType type) {
 		checkIpfIsNotActive();
-		
+
 		ipfConfig.descriptorType = type;
 		ipfConfig.dissector = PacketDissector.dissector(type);
 
@@ -888,11 +917,11 @@ public final class PcapPro extends NonSealedPcap implements IpfConfiguration {
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#setIpfIncompleteOnLast(boolean)
+	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#setIpfTimeoutOnLast(boolean)
 	 */
 	@Override
-	public PcapPro setIpfIncompleteOnLast(boolean lastOrTimeout) {
-		ipfConfig.setIpfIncompleteOnLast(lastOrTimeout);
+	public PcapPro setIpfTimeoutOnLast(boolean lastOrTimeout) {
+		ipfConfig.setIpfTimeoutOnLast(lastOrTimeout);
 
 		return this;
 	}
@@ -1013,6 +1042,16 @@ public final class PcapPro extends NonSealedPcap implements IpfConfiguration {
 	}
 
 	/**
+	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#setTimeoutQueueSize(int)
+	 */
+	@Override
+	public PcapPro setTimeoutQueueSize(int size) {
+		ipfConfig.setTimeoutQueueSize(size);
+
+		return this;
+	}
+
+	/**
 	 * Sets the timestamp unit which specifies the timestamp used by this pcap
 	 * handle.
 	 *
@@ -1077,22 +1116,34 @@ public final class PcapPro extends NonSealedPcap implements IpfConfiguration {
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enableIpfPassthrough(boolean)
+	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enableIpfThreadedMode(boolean)
 	 */
 	@Override
-	public PcapPro enableIpfPassthrough(boolean enable) {
-		checkIpfIsNotActive();
-
-		ipfConfig.enableIpfPassthrough(enable);
-
-		return this;
+	public IpfConfiguration enableIpfThreadedMode(boolean b) {
+		throw new UnsupportedOperationException("not implemented yet");
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#isIpfPassthrough()
+	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#isIpfThreadedMode()
 	 */
 	@Override
-	public boolean isIpfPassthrough() {
-		return ipfConfig.isIpfPassthrough();
+	public boolean isIpfThreadedMode() {
+		throw new UnsupportedOperationException("not implemented yet");
+	}
+
+	/**
+	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#setIpfThreadFacory(java.util.concurrent.ThreadFactory)
+	 */
+	@Override
+	public IpfConfiguration setIpfThreadFacory(ThreadFactory factory) {
+		throw new UnsupportedOperationException("not implemented yet");
+	}
+
+	/**
+	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#getThreadFactory()
+	 */
+	@Override
+	public ThreadFactory getThreadFactory() {
+		throw new UnsupportedOperationException("not implemented yet");
 	}
 }

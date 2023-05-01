@@ -17,6 +17,9 @@
  */
 package com.slytechs.jnetpcap.pro;
 
+import static com.slytechs.protocol.runtime.util.SystemProperties.*;
+
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import com.slytechs.protocol.runtime.time.TimestampSource;
@@ -31,6 +34,14 @@ import com.slytechs.protocol.runtime.util.MemoryUnit;
  */
 public interface IpfConfiguration {
 
+	/**
+	 * Defines if threads created by the default thread factory (and only default
+	 * thread factory) are daemon threads (default is true). When a different thread
+	 * factory is set, it must define its own {@code Thread.setDaemon(boolean)}
+	 * policy.
+	 */
+	boolean DEFAULT_THREAD_DAEMON = boolValue(IpfConfiguration.PROPERTY_IPF_DEFAULT_THREAD_DAEMON, true);
+
 	// @formatter:off
 	/** System property which defines the maximum IP datagram size (default is 64KB). */
 	String PROPERTY_IPF_MAX_DGRAM_BYTES        = "ipf.dgram.maxBytes";
@@ -44,6 +55,16 @@ public interface IpfConfiguration {
 	/** System property which defines timeout period during IPF reassembly/Tracking (default is 2 seconds). */
 	String PROPERTY_IPF_TIMEOUT                = "ipf.timeout";
 	
+	/** The property ipf timeout queue size. */
+	String PROPERTY_IPF_TIMEOUT_QUEUE_SIZE     = "ipf.timeout.queueSize";
+	
+	/** 
+	 * System property which determines IPF fragment timeout for incomplete reassembly (default false).
+	 * When true, IPF will stop reassembling when last fragment is seen even when Dgram is incomplete.
+	 * If false the IPF reassembly will timeout/stop when timeout interval expires.  
+	 */
+	String PROPERTY_IPF_TIMEOUT_ON_LAST     = "ipf.timeout.onLast";
+
 	/** System property which enables IPF data pass-through/forwarding (default is true). */
 	String PROPERTY_IPF_PASS                   = "ipf.pass";
 	
@@ -55,6 +76,17 @@ public interface IpfConfiguration {
 	
 	/** System property which enables reassembled and fully complete, IPF dgram injection/pass-through (default is false). */
 	String PROPERTY_IPF_PASS_DGRAMS_COMPLETE   = "ipf.pass.dgrams.complete";
+	
+	/**
+	 *  System property which enables threaded mode. In threaded mode, pcap is called using an internal
+	 *  thread and pcap dispatched packets are put on a dispatcher queue. Packets are take from the queue
+	 *  and dispatched to the user in user thread. Otherwise, Pcap is called in user thread and packets
+	 *  are also dispatched to user in original user thread. 
+	 *  */
+	String PROPERTY_IPF_THREADED_MODE          = "ipf.threadedMode";
+	
+	/** The property ipf threaded mode daemon. */
+	String PROPERTY_IPF_DEFAULT_THREAD_DAEMON  = "ipf.default.thread.daemon";
 	
 	/** System property which defines the maximum number of IP fragments which can be tracked at once. */
 	String PROPERTY_IPF_MAX_FRAGMENT_COUNT     = "ipf.fragment.maxCount";
@@ -73,13 +105,6 @@ public interface IpfConfiguration {
 	
 	/** System property which enables IPF fragment tracking (default false). */
 	String PROPERTY_IPF_ENABLE_TRACKING        = "ipf.enable.tracking";
-	
-	/** 
-	 * System property which determines IPF fragment timeout for incomplete reassembly (default false).
-	 * When true, IPF will stop reassembling when last fragment is seen even when Dgram is incomplete.
-	 * If false the IPF reassembly will timeout/stop when timeout interval expires.  
-	 */
-	String PROPERTY_IPF_INCOMPLETE_ON_LAST     = "ipf.incomplete.onLast";
 	// @formatter:on
 
 	/**
@@ -147,6 +172,14 @@ public interface IpfConfiguration {
 	 * @return the ipf configuration
 	 */
 	IpfConfiguration enableIpfTracking(boolean enable);
+
+	/**
+	 * Enable ipf passthrough dgram threaded.
+	 *
+	 * @param b the b
+	 * @return the ipf configuration
+	 */
+	IpfConfiguration enableIpfThreadedMode(boolean b);
 
 	/**
 	 * Gets the buffer size.
@@ -261,6 +294,13 @@ public interface IpfConfiguration {
 	boolean isIpfTrackingEnabled();
 
 	/**
+	 * Checks if is ipf passthrough dgram threaded.
+	 *
+	 * @return true, if is ipf passthrough dgram threaded
+	 */
+	boolean isIpfThreadedMode();
+
+	/**
 	 * Sets the ipf buffer size.
 	 *
 	 * @param size the size
@@ -275,7 +315,7 @@ public interface IpfConfiguration {
 	 * @param lastOrTimeout the last or timeout
 	 * @return the ipf configuration
 	 */
-	IpfConfiguration setIpfIncompleteOnLast(boolean lastOrTimeout);
+	IpfConfiguration setIpfTimeoutOnLast(boolean lastOrTimeout);
 
 	/**
 	 * Sets the ip max dgram size.
@@ -326,4 +366,35 @@ public interface IpfConfiguration {
 	 * @return the ipf configuration
 	 */
 	IpfConfiguration useIpfSystemTimesource();
+
+	/**
+	 * Use ipf thread facory.
+	 *
+	 * @param factory the factory
+	 * @return the ipf configuration
+	 */
+	IpfConfiguration setIpfThreadFacory(ThreadFactory factory);
+
+	/**
+	 * Gets the timeout queue size.
+	 *
+	 * @return the timeout queue size
+	 */
+	int getTimeoutQueueSize();
+
+	/**
+	 * Sets the timeout queue size.
+	 *
+	 * @param size the size
+	 * @return the ipf configuration
+	 */
+	IpfConfiguration setTimeoutQueueSize(int size);
+
+	/**
+	 * Gets the thread factory.
+	 *
+	 * @return the thread factory
+	 */
+	ThreadFactory getThreadFactory();
+
 }

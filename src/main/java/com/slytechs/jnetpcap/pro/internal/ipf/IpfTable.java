@@ -20,6 +20,7 @@ package com.slytechs.jnetpcap.pro.internal.ipf;
 import java.nio.ByteBuffer;
 
 import com.slytechs.jnetpcap.pro.IpfConfiguration;
+import com.slytechs.jnetpcap.pro.internal.ipf.JavaIpfDispatcher.PacketInserter;
 import com.slytechs.protocol.descriptor.IpfFragment;
 import com.slytechs.protocol.runtime.hash.CuckooHashTable;
 import com.slytechs.protocol.runtime.hash.HashTable;
@@ -66,13 +67,16 @@ public class IpfTable {
 	/** The table size. */
 	private final int tableSize;
 
+	private final TimeoutQueue<IpfReassembler> timeoutQueue;
+	private final PacketInserter packetInserter;
+
 	/**
 	 * Instantiates a new ipf table.
 	 *
 	 * @param config the config
 	 */
-	public IpfTable(IpfConfiguration config) {
-		this(config, ByteBuffer.allocateDirect(config.getIpfBufferSize()));
+	public IpfTable(IpfConfiguration config, PacketInserter packetInserter) {
+		this(config, ByteBuffer.allocateDirect(config.getIpfBufferSize()), packetInserter);
 	}
 
 	/**
@@ -81,8 +85,9 @@ public class IpfTable {
 	 * @param config the config
 	 * @param buffer the buffer
 	 */
-	public IpfTable(IpfConfiguration config, ByteBuffer buffer) {
+	public IpfTable(IpfConfiguration config, ByteBuffer buffer, PacketInserter packetInserter) {
 		this.config = config;
+		this.packetInserter = packetInserter;
 		this.bufferSize = config.getIpfBufferSize();
 		this.buffer = buffer;
 		this.tableSize = config.getIpfTableSize();
@@ -91,6 +96,7 @@ public class IpfTable {
 				.enableStickyData(true);
 
 		this.table.fill(this::allocateIpfBufferSlice);
+		this.timeoutQueue = new TimeoutQueue<>(config.getTimeoutQueueSize(), config.getTimeSource());
 	}
 
 	/**
@@ -102,7 +108,7 @@ public class IpfTable {
 	 */
 	public IpfReassembler lookup(IpfFragment desc, long hashcode) {
 		var key = desc.keyBuffer();
-		assert key.remaining() > 0;
+		assert key.remaining() > 0 : "key has no data";
 
 		int index = table.add(key, null, hashcode);
 		if (index == -1)
@@ -110,9 +116,17 @@ public class IpfTable {
 
 		var entry = table.get(index);
 		var ipf = entry.data();
-		if (ipf.isExpired())
+		if (ipf.isExpired()) {
 			ipf.reset(key);
 
+			final var registration = timeoutQueue.add(ipf, this::onIpfTimeout);
+			ipf.setCancelTimeoutRegistration(registration);
+		}
+
 		return ipf;
+	}
+
+	private void onIpfTimeout(IpfReassembler timedoutReassembler) {
+		timedoutReassembler.timeoutOnDurationExpired(packetInserter);
 	}
 }

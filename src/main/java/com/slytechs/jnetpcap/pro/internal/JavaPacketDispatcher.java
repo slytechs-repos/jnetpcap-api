@@ -121,6 +121,35 @@ public class JavaPacketDispatcher
 	}
 
 	/**
+	 * Creates the packet.
+	 *
+	 * @param mpacket   the packet
+	 * @param caplen    the caplen
+	 * @param wirelen   the wirelen
+	 * @param timestamp the timestamp
+	 * @return the packet
+	 */
+	protected Packet createSingletonPacket(ByteBuffer bpkt, int caplen, int wirelen, long timestamp) {
+
+		config.dissector.dissectPacket(bpkt, timestamp, caplen, wirelen);
+		config.dissector.writeDescriptor(singletonDescBuffer.clear());
+		config.dissector.reset();
+
+		Packet packet = singletonPacket;
+		PacketDescriptor desc = packet.descriptor();
+
+		packet.bind(bpkt.flip());
+		desc.bind(singletonDescBuffer.flip());
+
+		desc.frameNo(config.frameNo.getUsing(timestamp, portNo));
+		desc.timestampUnit(config.timestampUnit);
+		packet.setFormatter(config.formatter);
+		desc.timestampUnit(config.timestampUnit);
+
+		return packet;
+	}
+
+	/**
 	 * Dispatch packet.
 	 *
 	 * @param <U>   the generic type
@@ -176,6 +205,19 @@ public class JavaPacketDispatcher
 			onNativeCallbackException(e, caplen, wirelen);
 			return null;
 		}
+	}
+
+	protected <U> Packet processPacket(
+			ByteBuffer buffer,
+			int caplen,
+			int wirelen,
+			long timestamp) {
+
+		Packet packet = createSingletonPacket(buffer, caplen, wirelen, timestamp);
+
+		incPacketReceived(caplen, wirelen);
+
+		return packet;
 	}
 
 	protected void incPacketReceived(int caplen, int wirelen) {
