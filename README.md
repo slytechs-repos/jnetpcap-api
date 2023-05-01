@@ -76,6 +76,7 @@ Here is a sample of all the IPF options and how to setup. The dispatched `Ip4` c
 /* Enable IP fragmentation reassembly and use many IPF options */
 pcapPro
 		.enableIpf(true) // Enables both IPF reassembly and tracking
+		.enableIpfThreadedMode(true) // Capture and reassemble packets in worker thread
 		.enableIpfReassembly(true) // Default, but this is how you disable
 		.enableIpfTracking(true) // Default, but this is how you disable
 		.enableIpfAttachComplete(true) // Attach only complete dgrams to last IPF
@@ -83,12 +84,13 @@ pcapPro
 		.enableIpfPassthroughFragments(true) // Pass through original IP fragments
 		.enableIpfPassthroughComplete(true) // Pass through new reassembled dgrams
 		.enableIpfPassthroughIncomplete(true) // Pass through new incomplete dgrams
+		.setIpfThreadFacory(Thread::startVirtualThread) // Use a virtual thread
 		.setIpfTimeoutOnLast(false) // Otherwise only timeout on duration
 		.setIpfBufferSize(1, MemoryUnit.MEGABYTES) // Total reassembly buffer size
 		.setIpfTableSize(16, CountUnit.KILO) // How many hash table entries
 		.setIpfMaxFragmentCount(16) // Max number of IP fragments per hash entry
 		.setIpfTimeoutMilli(1200) // Timeout in system or packet time for incomplete dgrams
-		.setIpfMaxDgramSize(64, MemoryUnit.KILOBYTES) // Max reassembled IP dgram size 
+		.setIpfMaxDgramSize(64, MemoryUnit.KILOBYTES) // Max reassembled IP dgram size
 		.useIpfPacketTimesource() // Or System timesource
 		.activateIpf(); // Or Pcap.activate() if using Pcap.create(...)
 ```
