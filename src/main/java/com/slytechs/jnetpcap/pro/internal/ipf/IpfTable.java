@@ -20,7 +20,7 @@ package com.slytechs.jnetpcap.pro.internal.ipf;
 import java.nio.ByteBuffer;
 
 import com.slytechs.jnetpcap.pro.IpfConfiguration;
-import com.slytechs.jnetpcap.pro.internal.ipf.JavaIpfDispatcher.PacketInserter;
+import com.slytechs.jnetpcap.pro.internal.ipf.JavaIpfDispatcher.DatagramQueue;
 import com.slytechs.protocol.descriptor.IpfFragment;
 import com.slytechs.protocol.runtime.hash.CuckooHashTable;
 import com.slytechs.protocol.runtime.hash.HashTable;
@@ -68,15 +68,15 @@ public class IpfTable {
 	private final int tableSize;
 
 	private final TimeoutQueue<IpfReassembler> timeoutQueue;
-	private final PacketInserter packetInserter;
+	private final DatagramQueue datagramQueue;
 
 	/**
 	 * Instantiates a new ipf table.
 	 *
 	 * @param config the config
 	 */
-	public IpfTable(IpfConfiguration config, PacketInserter packetInserter) {
-		this(config, ByteBuffer.allocateDirect(config.getIpfBufferSize()), packetInserter);
+	public IpfTable(IpfConfiguration config, DatagramQueue datagramQueue) {
+		this(config, ByteBuffer.allocateDirect(config.getIpfBufferSize()), datagramQueue);
 	}
 
 	/**
@@ -85,9 +85,9 @@ public class IpfTable {
 	 * @param config the config
 	 * @param buffer the buffer
 	 */
-	public IpfTable(IpfConfiguration config, ByteBuffer buffer, PacketInserter packetInserter) {
+	public IpfTable(IpfConfiguration config, ByteBuffer buffer, DatagramQueue datagramQueue) {
 		this.config = config;
-		this.packetInserter = packetInserter;
+		this.datagramQueue = datagramQueue;
 		this.bufferSize = config.getIpfBufferSize();
 		this.buffer = buffer;
 		this.tableSize = config.getIpfTableSize();
@@ -115,18 +115,18 @@ public class IpfTable {
 			return null; // Out of table space
 
 		var entry = table.get(index);
-		var ipf = entry.data();
-		if (ipf.isExpired()) {
-			ipf.reset(key);
+		var reassembler = entry.data();
+		if (reassembler.isExpired()) {
+			reassembler.open(key);
 
-			final var registration = timeoutQueue.add(ipf, this::onIpfTimeout);
-			ipf.setCancelTimeoutRegistration(registration);
+			final var registration = timeoutQueue.add(reassembler, this::onIpfTimeout);
+			reassembler.setTimeoutRegistration(registration);
 		}
 
-		return ipf;
+		return reassembler;
 	}
 
 	private void onIpfTimeout(IpfReassembler timedoutReassembler) {
-		timedoutReassembler.timeoutOnDurationExpired(packetInserter);
+		timedoutReassembler.onTimeoutExpired(datagramQueue);
 	}
 }

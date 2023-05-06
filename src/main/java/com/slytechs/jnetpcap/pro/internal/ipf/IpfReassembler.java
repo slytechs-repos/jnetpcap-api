@@ -17,16 +17,22 @@
  */
 package com.slytechs.jnetpcap.pro.internal.ipf;
 
+import static com.slytechs.protocol.pack.core.constants.CoreConstants.*;
+
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.MemorySession;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import com.slytechs.jnetpcap.pro.IpfConfiguration;
-import com.slytechs.jnetpcap.pro.internal.ipf.JavaIpfDispatcher.PacketInserter;
+import com.slytechs.jnetpcap.pro.internal.ipf.JavaIpfDispatcher.DatagramQueue;
 import com.slytechs.jnetpcap.pro.internal.ipf.TimeoutQueue.Expirable;
 import com.slytechs.protocol.Registration;
 import com.slytechs.protocol.descriptor.IpfFragment;
+import com.slytechs.protocol.descriptor.IpfReassemblyLayout;
+import com.slytechs.protocol.descriptor.IpfTrackingLayout;
 import com.slytechs.protocol.runtime.hash.HashTable.HashEntry;
 import com.slytechs.protocol.runtime.time.TimestampSource;
 import com.slytechs.protocol.runtime.util.Detail;
@@ -92,6 +98,8 @@ public class IpfReassembler implements Expirable {
 
 	/** The entire storage ecaps + frag data */
 	private final ByteBuffer buffer;
+	private final MemorySegment mseg;
+	private MemorySession session;
 
 	/** The frag data only view of the main storage */
 	private final ByteBuffer ipPayloadView;
@@ -113,17 +121,30 @@ public class IpfReassembler implements Expirable {
 	private long expiration;
 
 	private long startTimeMilli = 0;
-	private int nextTrack = 0;
+	private long reassembledMilli;
 
-	private final IpfTrack[] tracking;
+	private int nextSegmentIndex = 0;
+	private final IpfSegment[] segments;
+
 	private boolean hasFirst;
 	private boolean hasLast;
 	private long frameNo;
+
 	/** Used to cancel entry on the timeout queue */
 	private Registration timeoutRegistration;
+
+	private boolean isIp4;
+	private boolean isReassembled;
 	private boolean isComplete;
+	private boolean isTimeoutOnLast;
+	private int observedSize;
+	private int reassembledBytes = 0;
+	private int holeBytes = 0;
+	private int overlapBytes = 0;
 
 	private final boolean isReassemblyEnabled;
+
+	private boolean isTimeout;
 
 	public IpfReassembler(
 			ByteBuffer buffer,
@@ -131,53 +152,110 @@ public class IpfReassembler implements Expirable {
 			IpfConfiguration config) {
 
 		this.buffer = buffer;
+		this.mseg = MemorySegment.ofBuffer(buffer);
 		this.ipPayloadView = buffer.slice(ENCAPS_HEADER_MAX_LENGTH, buffer.limit() - ENCAPS_HEADER_MAX_LENGTH);
 		this.encapsView = buffer.slice(0, ENCAPS_HEADER_MAX_LENGTH);
 		this.index = tableEntry.index();
 		this.tableEntry = tableEntry;
 		this.timeSource = config.getTimeSource();
 		this.config = config;
-		this.tracking = new IpfTrack[config.getIpfMaxFragmentCount()];
+		this.segments = new IpfSegment[config.getIpfMaxFragmentCount()];
 
 		this.isReassemblyEnabled = config.isIpfReassemblyEnabled();
+		this.isTimeoutOnLast = config.isIpfTimeoutOnLast();
 
 		IntStream
 				.range(0, config.getIpfMaxFragmentCount())
-				.forEach(i -> tracking[i] = new IpfTrack());
+				.forEach(i -> segments[i] = new IpfSegment());
 	}
 
-	public ByteBuffer buffer() {
-		return this.buffer;
+	void addDatagramToQueue(DatagramQueue queue) {
+
+		int caplen = buffer.remaining();
+		long timestamp = timeSource.timestamp();
+
+		/*
+		 * We create a new memory segment view of the buffer, but most importantly using
+		 * the memory session for this reassembly session. When we're done dispatching
+		 * packets, we close this session, which prevents any further access to the
+		 * underlying memory so we can safely begin reassembly of the next IP data-gram
+		 * when this hash table entry comes up again.
+		 */
+		MemorySegment mseg = MemorySegment.ofBuffer(buffer);
+		mseg = MemorySegment.ofAddress(mseg.address(), caplen, session);
+
+		queue.addDatagram(mseg, caplen, caplen, timestamp, this);
+
+	}
+
+	public void cancelTimeout() {
+		if (timeoutRegistration == null)
+			throw new IllegalStateException("timeout not set");
+
+		timeoutRegistration.unregister();
+		timeoutRegistration = null;
+	}
+
+	public void close() {
+
+		this.startTimeMilli = 0;
+		this.hasFirst = hasLast = false;
+		this.nextSegmentIndex = 0;
+		this.isReassembled = false;
+
+		Arrays.stream(segments).forEach(IpfSegment::reset);
+
+		/*
+		 * Revoke access to buffer's memory. If someone want to retain it, they have to
+		 * clone/copy the data before this entry is closed
+		 */
+		if (session != null) {
+			session.close();
+			session = null;
+		}
+
+		if (timeoutRegistration != null)
+			cancelTimeout();
+
+		markHashtableEntryUnavailable();
 	}
 
 	/**
-	 * @see java.lang.Comparable#compareTo(java.lang.Object)
+	 * @see com.slytechs.jnetpcap.pro.internal.ipf.TimeoutQueue.Expirable#expiration()
 	 */
 	@Override
-	public int compareTo(Long o) {
-		return (int) (expiration - o.longValue());
+	public long expiration() {
+		return this.expiration;
 	}
 
 	private void finishIfComplete() {
+		if (!hasLast || holeBytes > 0)
+			return;
 
-		/*
-		 * If the last segment is reassembled and we have no more holes left, we use
-		 * timeout registration, to trigger and do the following:
-		 * 
-		 * 1) Disengage the timeout queue entry
-		 * 
-		 * 2) Move the IPF entry from timeout queue to reassembled queue (done in
-		 * layered unregister() call)
-		 */
-		if (hasHole() == false) {
-			isComplete = true;
-		}
+		cancelTimeout();
+		resetHashtableKey();
+
+		this.isReassembled = true;
+		this.isComplete = true;
+		this.isTimeout = false;
+
+		buffer.position(encapsView.position());
+		buffer.limit(ENCAPS_HEADER_MAX_LENGTH + observedSize);
+
+		this.reassembledMilli = timeSource.millis() - startTimeMilli;
+
+		this.overlapBytes = IpfSegment.recalcOverlaps(segments, nextSegmentIndex);
 	}
 
-	private boolean hasHole() {
-		int holeSize = TrackUtil.calcHoleSize(tracking, nextTrack);
+	private void finishOnTimeout() {
+		this.isReassembled = true;
+		this.isComplete = false;
+		this.isTimeout = true;
 
-		return holeSize > 0;
+		buffer.position(encapsView.position());
+		buffer.limit(ENCAPS_HEADER_MAX_LENGTH + observedSize);
+
+		this.overlapBytes = IpfSegment.recalcOverlaps(segments, nextSegmentIndex);
 	}
 
 	public boolean isComplete() {
@@ -188,6 +266,29 @@ public class IpfReassembler implements Expirable {
 		return expiration < timeSource.timestamp();
 	}
 
+	/**
+	 * @return the isReassembled
+	 */
+	public boolean isReassembled() {
+		return isReassembled;
+	}
+
+	private void markHashtableEntryUnavailable() {
+		tableEntry.setEmpty(false);
+	}
+
+	public void open(ByteBuffer key) {
+		if (session != null)
+			throw new IllegalStateException("can not reset, still active");
+
+		this.expiration = timeSource.timestamp() + config.getIpfTimeoutMilli();
+		this.tableEntry.setKey(key);
+		this.session = MemorySession.openShared();
+
+		this.buffer.clear();
+		this.observedSize = 0;
+	}
+
 	private void processCommon(ByteBuffer packet, IpfFragment desc) {
 
 		/*
@@ -196,19 +297,21 @@ public class IpfReassembler implements Expirable {
 		 * When 1st frag arrives, it takes priority over middle fragment and will
 		 * override this frags headers.
 		 */
-		if (nextTrack == 0 && !hasFirst)
+		if (nextSegmentIndex == 0 && !hasFirst)
 			reassembleHeaders(packet, desc);
 
-		IpfTrack ipfTrack = tracking[nextTrack++];
-		ipfTrack.offset = desc.fragOffset();
-		ipfTrack.length = desc.dataLength();
-		ipfTrack.frameNo = frameNo;
-		ipfTrack.timestamp = timeSource.timestamp();
+		IpfSegment ipfSegment = segments[nextSegmentIndex++];
+		ipfSegment.offset = desc.fragOffset();
+		ipfSegment.length = desc.dataLength();
+		ipfSegment.frameNo = frameNo;
+		ipfSegment.timestamp = timeSource.timestamp();
 
-		Arrays.sort(tracking, 0, nextTrack);
+		Arrays.sort(segments, 0, nextSegmentIndex);
+
+		this.holeBytes = IpfSegment.calcHoleSize(segments, nextSegmentIndex);
 
 		if (isReassemblyEnabled)
-			reassembleFragment(ipfTrack, packet, ipfTrack.offset, ipfTrack.length, desc.dataOffset());
+			reassembleFragment(ipfSegment, packet, ipfSegment.offset, ipfSegment.length, desc.dataOffset());
 	}
 
 	private boolean processFirst(ByteBuffer packet, IpfFragment desc) {
@@ -223,20 +326,9 @@ public class IpfReassembler implements Expirable {
 		hasFirst = true;
 
 		processCommon(packet, desc);
+		finishIfComplete();
 
 		return true;
-	}
-
-	private void reassembleHeaders(ByteBuffer packet, IpfFragment desc) {
-		int ecapsLen = desc.headerAndRequiredOptionsLength();
-		int position = ENCAPS_HEADER_MAX_LENGTH - ecapsLen;
-		encapsView.clear();
-
-		/* Copy L2 and L3 headers + options to align with fragment data */
-		encapsView.put(position, packet, 0, ecapsLen);
-
-		encapsView.position(position);
-		buffer.position(position);
 	}
 
 	public boolean processFragment(long frameNo, ByteBuffer packet, IpfFragment desc) {
@@ -250,91 +342,90 @@ public class IpfReassembler implements Expirable {
 			expiration = startTimeMilli + config.getIpfTimeoutMilli();
 		}
 
-		boolean complete = false;
+		this.isIp4 = desc.isIp4();
+
+		boolean ok = false;
 
 		if (desc.fragOffset() == 0) {
-			complete = processFirst(packet, desc);
+			ok = processFirst(packet, desc);
 
 		} else if (desc.isLastFrag()) {
-			complete = processLast(packet, desc);
+			ok = processLast(packet, desc);
 
 		} else {
-			complete = processMiddle(packet, desc);
+			ok = processMiddle(packet, desc);
 		}
 
-		return complete;
+		return ok;
 	}
 
-	private void timeoutOnLast(ByteBuffer packet, IpfFragment desc) {
+	private boolean processLast(ByteBuffer packet, IpfFragment desc) {
+		hasLast = true;
 
+		processCommon(packet, desc);
+		finishIfComplete();
+
+		if (isTimeoutOnLast && !isComplete) {
+			cancelTimeout();
+			resetHashtableKey();
+
+			finishOnTimeout();
+		}
+
+		return true;
+	}
+
+	private boolean processMiddle(ByteBuffer packet, IpfFragment desc) {
+
+		processCommon(packet, desc);
+		finishIfComplete();
+
+		return true;
+	}
+
+	private void reassembleFragment(IpfSegment ipfSegment, ByteBuffer packet, int fragOffset, int length,
+			int dataOffset) {
+		ipPayloadView.put(fragOffset, packet, dataOffset, length);
+
+		this.reassembledBytes += length;
+
+		if (observedSize < fragOffset + length)
+			this.observedSize = fragOffset + length;
+	}
+
+	private void reassembleHeaders(ByteBuffer packet, IpfFragment desc) {
+		int ecapsLen = desc.headerAndRequiredOptionsLength() + desc.headerOffset();
+		int position = ENCAPS_HEADER_MAX_LENGTH - ecapsLen;
+		encapsView.clear();
+
+		/* Copy L2 and L3 headers + options to align with fragment data */
+		encapsView.put(position, packet, 0, ecapsLen);
+
+		encapsView.position(position);
+		buffer.position(position);
+	}
+
+	private void resetHashtableKey() {
+		this.tableEntry.clearKey();
+	}
+
+	/**
+	 * @param registration
+	 */
+	public void setTimeoutRegistration(Registration registration) {
+		timeoutRegistration = registration;
 	}
 
 	/**
 	 * Called from the timeout queue in the enclosing hash table. We're on the
 	 * timeout queue thread as well.
 	 */
-	public void timeoutOnDurationExpired(PacketInserter inserter) {
-
-		/*
-		 * First, we must reset the key, so any new fragments that come in after the
-		 * timeout, won't be matched with this entry and create concurrency issues by
-		 * modifying the buffer until we finish inserting/sending the packet.
-		 * 
-		 * We're on 2 separate threads here.
-		 */
+	public void onTimeoutExpired(DatagramQueue inserter) {
 		resetHashtableKey();
 
-		int caplen = buffer.remaining();
-		inserter.insertNewPacket(buffer, caplen, caplen, expiration, this::onTimedoutPacketInsertionCompletion);
-	}
+		finishOnTimeout();
 
-	private void resetHashtableKey() {
-
-	}
-
-	private void onTimedoutPacketInsertionCompletion(boolean success) {
-		markHashtableEntryAvailable();
-	}
-
-	private void markHashtableEntryAvailable() {
-		tableEntry.setEmpty(true);
-	}
-
-	private void markHashtableEntryUnavailable() {
-		tableEntry.setEmpty(false);
-	}
-
-	private boolean processLast(ByteBuffer packet, IpfFragment desc) {
-		hasLast = true;
-		processCommon(packet, desc);
-
-		return true;
-	}
-
-	private boolean processMiddle(ByteBuffer packet, IpfFragment desc) {
-		processCommon(packet, desc);
-
-		if (hasLast)
-			finishIfComplete();
-
-		return true;
-	}
-
-	private void reassembleFragment(IpfTrack ipfTrack, ByteBuffer packet, int fragOffset, int length, int dataOffset) {
-		ipPayloadView.put(fragOffset, packet, dataOffset, length);
-	}
-
-	public void reset(ByteBuffer key) {
-		this.nextTrack = 0;
-		this.expiration = timeSource.timestamp() + config.getIpfTimeoutMilli();
-		this.tableEntry.setKey(key);
-
-		markHashtableEntryUnavailable();
-
-		startTimeMilli = 0;
-		hasFirst = hasLast = false;
-
-		Arrays.stream(tracking).forEach(IpfTrack::reset);
+		addDatagramToQueue(inserter);
 	}
 
 	@Override
@@ -352,15 +443,70 @@ public class IpfReassembler implements Expirable {
 			open = close = "";
 		}
 
-		return IntStream.range(0, nextTrack)
-				.mapToObj(i -> tracking[i].toString(detail))
+		return IntStream.range(0, nextSegmentIndex)
+				.mapToObj(i -> segments[i].toString(detail))
 				.collect(Collectors.joining(sep, open, close));
 	}
 
 	/**
-	 * @param registration
+	 * @param desc
 	 */
-	public void setCancelTimeoutRegistration(Registration registration) {
-		timeoutRegistration = registration;
+	public int writeReassemblyDescriptor(ByteBuffer desc) {
+
+		IpfReassemblyLayout.IP_IS_REASSEMBLED.setBoolean(isReassembled, desc);
+		IpfReassemblyLayout.IP_IS_COMPLETE.setBoolean(isComplete, desc);
+		IpfReassemblyLayout.IP_IS_TIMEOUT.setBoolean(isTimeout, desc);
+		IpfReassemblyLayout.IP_TYPE.setBoolean(isIp4, desc);
+		IpfReassemblyLayout.IP_IS_HOLE.setBoolean(holeBytes > 0, desc);
+		IpfReassemblyLayout.IP_IS_OVERLAP.setBoolean(overlapBytes > 0, desc);
+
+		IpfReassemblyLayout.HOLE_BYTES.setShort((short) holeBytes, desc);
+		IpfReassemblyLayout.OVERLAP_BYTES.setShort((short) overlapBytes, desc);
+		IpfReassemblyLayout.REASSEMBLED_BYTES.setShort((short) observedSize, desc);
+		IpfReassemblyLayout.REASSEMBLED_MILLI.setShort((short) reassembledMilli, desc);
+
+		int recordCount = nextSegmentIndex;
+
+		IpfReassemblyLayout.TABLE_SIZE.setByte((byte) recordCount, desc);
+		for (int i = 0; i < segments.length; i++) {
+			IpfSegment track = segments[i];
+			IpfReassemblyLayout.FRAG_PKT_INDEX.setLong(track.frameNo, desc, i);
+			IpfReassemblyLayout.FRAG_OFFSET.setShort((short) track.offset, desc, i);
+			IpfReassemblyLayout.FRAG_LENGTH.setShort((short) track.length, desc, i);
+			IpfReassemblyLayout.FRAG_OVERLAY_BYTES.setShort((short) track.overlay, desc, i);
+		}
+
+		int len = DESC_IPF_REASSEMBLY_BYTE_MIN_SIZE + (DESC_IPF_REASSEMBLY_RECORD_SIZE * recordCount);
+
+		desc.position(desc.position() + len);
+
+		return len;
+	}
+
+	public int writeTrackingDescriptor(ByteBuffer desc) {
+
+		IpfTrackingLayout.IP_IS_REASSEMBLED.setBoolean(true, desc);
+		IpfTrackingLayout.IP_IS_COMPLETE.setBoolean(isComplete, desc);
+		IpfTrackingLayout.IP_IS_TIMEOUT.setBoolean(isTimeout, desc);
+		IpfTrackingLayout.IP_IS_HOLE.setBoolean(holeBytes > 0, desc);
+		IpfTrackingLayout.IP_IS_OVERLAP.setBoolean(overlapBytes > 0, desc);
+
+		IpfTrackingLayout.REASSEMBLED_BYTES.setShort((short) reassembledBytes, desc);
+		IpfTrackingLayout.HOLE_BYTES.setShort((short) holeBytes, desc);
+		IpfTrackingLayout.OVERLAP_BYTES.setShort((short) overlapBytes, desc);
+		IpfTrackingLayout.REASSEMBLED_MILLI.setLong(reassembledMilli, desc);
+
+		IpfTrackingLayout.TABLE_SIZE.setByte((byte) nextSegmentIndex, desc);
+		for (int i = 0; i < segments.length; i++) {
+			IpfSegment track = segments[i];
+			IpfTrackingLayout.FRAG_PKT_INDEX.setLong(track.frameNo, desc, i);
+			IpfTrackingLayout.FRAG_OFFSET.setShort((short) track.offset, desc, i);
+			IpfTrackingLayout.FRAG_LENGTH.setShort((short) track.length, desc, i);
+		}
+
+		final int len = 16 + (nextSegmentIndex * 16);
+		desc.position(desc.position() + len);
+
+		return len;
 	}
 }

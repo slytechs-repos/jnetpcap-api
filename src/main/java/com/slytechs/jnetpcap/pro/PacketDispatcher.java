@@ -15,14 +15,15 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.slytechs.jnetpcap.pro.internal;
+package com.slytechs.jnetpcap.pro;
 
 import java.lang.foreign.MemoryAddress;
 
 import org.jnetpcap.internal.PcapDispatcher;
 import org.jnetpcap.internal.PcapHeaderABI;
 
-import com.slytechs.jnetpcap.pro.PcapProHandler;
+import com.slytechs.jnetpcap.pro.internal.JavaPacketDispatcher;
+import com.slytechs.jnetpcap.pro.internal.PacketStatistics;
 import com.slytechs.protocol.Frame.FrameNumber;
 import com.slytechs.protocol.descriptor.PacketDissector;
 import com.slytechs.protocol.meta.PacketFormat;
@@ -134,53 +135,6 @@ public interface PacketDispatcher extends PcapDispatcher {
 	PacketDescriptorType getDescriptorType();
 
 	/**
-	 * Number of bytes that were dropped due to errors while receiving packets. If
-	 * byte count for any packet received and dropped is not available, the counter
-	 * will not reflect that correct value.
-	 * 
-	 * @return 64-bit counter
-	 */
-	long getDroppedCaplenCount();
-
-	/**
-	 * Number of packets that have been dropped due to errors when receiving
-	 * packets.
-	 * 
-	 * @return 64-bit counter
-	 */
-	long getDroppedPacketCount();
-
-	/**
-	 * Number of bytes seen on the wire that were dropped due to errors while
-	 * receiving packets. If byte count for any packet seen on wire and dropped is
-	 * not available, the counter will not reflect that correct value.
-	 * 
-	 * @return 64-bit counter
-	 */
-	long getDroppedWirelenCount();
-
-	/**
-	 * Number of total bytes received since the start of the pcap capture.
-	 * 
-	 * @return a 64-bit counter in units of bytes
-	 */
-	long getReceivedCaplenCount();
-
-	/**
-	 * Number of packets received since that start of the pcap capture.
-	 * 
-	 * @return a 64-bit counter
-	 */
-	long getReceivedPacketCount();
-
-	/**
-	 * Number of total bytes seen on the wire since the start of the pcap capture.
-	 * 
-	 * @return a 64-bit counter in units of bytes
-	 */
-	long getReceivedWirelenCount();
-
-	/**
 	 * Loop packet.
 	 *
 	 * @param <U>   the generic type
@@ -191,4 +145,5 @@ public interface PacketDispatcher extends PcapDispatcher {
 	 */
 	<U> int loopPacket(int count, PcapProHandler.OfPacket<U> sink, U user);
 
+	PacketStatistics getPacketStatistics();
 }

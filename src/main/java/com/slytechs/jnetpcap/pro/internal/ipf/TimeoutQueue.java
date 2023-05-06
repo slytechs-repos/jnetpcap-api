@@ -31,8 +31,8 @@ import com.slytechs.protocol.runtime.time.TimestampSource;
  */
 public class TimeoutQueue<E extends Expirable> {
 
-	public interface Expirable extends Comparable<Long> {
-
+	public interface Expirable {
+		long expiration();
 	}
 
 	private class Entry implements Expirable {
@@ -46,16 +46,16 @@ public class TimeoutQueue<E extends Expirable> {
 
 		}
 
-		/**
-		 * @see java.lang.Comparable#compareTo(java.lang.Object)
-		 */
-		@Override
-		public int compareTo(Long o) {
-			return e.compareTo(o);
-		}
-
 		public void doAction() {
 			action.accept(e);
+		}
+
+		/**
+		 * @see com.slytechs.jnetpcap.pro.internal.ipf.TimeoutQueue.Expirable#expiration()
+		 */
+		@Override
+		public long expiration() {
+			return e.expiration();
 		}
 	}
 
@@ -64,7 +64,7 @@ public class TimeoutQueue<E extends Expirable> {
 
 	public TimeoutQueue(int size, TimestampSource timeSource) {
 		this.timeSource = timeSource;
-		this.queue = new PriorityBlockingQueue<>(size);
+		this.queue = new PriorityBlockingQueue<>(size, (o1, o2) -> (int) (o1.expiration() - o2.expiration()));
 	}
 
 	public Registration add(E e, Consumer<E> action) {

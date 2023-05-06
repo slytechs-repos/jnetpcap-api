@@ -18,11 +18,13 @@
 package com.slytechs.jnetpcap.pro.internal.ipf;
 
 import com.slytechs.protocol.runtime.util.Detail;
+import com.slytechs.protocol.runtime.util.IntSegment;
 
-class IpfTrack implements Comparable<IpfTrack> {
+class IpfSegment implements Comparable<IpfSegment>, IntSegment {
 
 	int offset;
 	int length;
+	int overlay;
 	long timestamp;
 	long frameNo;
 
@@ -30,28 +32,33 @@ class IpfTrack implements Comparable<IpfTrack> {
 	 * @see java.lang.Comparable#compareTo(java.lang.Object)
 	 */
 	@Override
-	public int compareTo(IpfTrack o) {
+	public int compareTo(IpfSegment o) {
 		return this.offset - o.offset;
 	}
 
+	@Override
 	public int start() {
 		return offset;
 	}
 
+	@Override
 	public int end() {
 		return offset + length - 1;
 	}
 
-	public int endInclusive() {
+	@Override
+	public int endExclusive() {
 		return offset + length;
 	}
 
+	@Override
 	public int length() {
 		return length();
 	}
 
 	public void reset() {
-
+		offset = length = overlay = 0;
+		frameNo = -1;
 	}
 
 	/**
@@ -73,4 +80,13 @@ class IpfTrack implements Comparable<IpfTrack> {
 			return "%4d-%4d (%4d bytes)".formatted(offset, (offset + length - 1), length);
 
 	}
+
+	public static int calcHoleSize(IpfSegment[] tracks, int limit) {
+		return IntSegment.disjoint(tracks, 0, limit);
+	}
+
+	public static int recalcOverlaps(IpfSegment[] tracking, int trackCount) {
+		return IntSegment.intersection(tracking, 0, trackCount, (t0, t1, v) -> t1.overlay += v);
+	}
+
 }

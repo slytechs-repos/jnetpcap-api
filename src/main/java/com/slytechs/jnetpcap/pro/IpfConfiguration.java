@@ -17,9 +17,6 @@
  */
 package com.slytechs.jnetpcap.pro;
 
-import static com.slytechs.protocol.runtime.util.SystemProperties.*;
-
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import com.slytechs.protocol.runtime.time.TimestampSource;
@@ -33,14 +30,6 @@ import com.slytechs.protocol.runtime.util.MemoryUnit;
  * @author repos@slytechs.com
  */
 public interface IpfConfiguration {
-
-	/**
-	 * Defines if threads created by the default thread factory (and only default
-	 * thread factory) are daemon threads (default is true). When a different thread
-	 * factory is set, it must define its own {@code Thread.setDaemon(boolean)}
-	 * policy.
-	 */
-	boolean DEFAULT_THREAD_DAEMON = boolValue(IpfConfiguration.PROPERTY_IPF_DEFAULT_THREAD_DAEMON, true);
 
 	// @formatter:off
 	/** System property which defines the maximum IP datagram size (default is 64KB). */
@@ -63,39 +52,28 @@ public interface IpfConfiguration {
 	 * When true, IPF will stop reassembling when last fragment is seen even when Dgram is incomplete.
 	 * If false the IPF reassembly will timeout/stop when timeout interval expires.  
 	 */
-	String PROPERTY_IPF_TIMEOUT_ON_LAST     = "ipf.timeout.onLast";
-
-	/** System property which enables IPF data pass-through/forwarding (default is true). */
-	String PROPERTY_IPF_PASS                   = "ipf.pass";
+	String PROPERTY_IPF_TIMEOUT_ON_LAST        = "ipf.timeout.onLast";
 	
 	/** System property which enables original IPF fragment pass-through (default is true). */
-	String PROPERTY_IPF_PASS_FRAGMENTS         = "ipf.pass.fragments";
+	String PROPERTY_IPF_FRAGS_PASS         = "ipf.frags.passthrough";
+	
+	/** System property which enables IPF data pass-through/forwarding (default is true). */
+	String PROPERTY_IPF_DGRAMS_SEND                 = "ipf.dgrams";
 	
 	/** System property which enables reassembled but incomplete, IPF dgram injection/pass-through (default is false). */
-	String PROPERTY_IPF_PASS_DGRAMS_INCOMPLETE = "ipf.pass.dgrams.incomplete";
+	String PROPERTY_IPF_DGRAMS_SEND_INCOMPLETE      = "ipf.dgrams.incomplete";
 	
 	/** System property which enables reassembled and fully complete, IPF dgram injection/pass-through (default is false). */
-	String PROPERTY_IPF_PASS_DGRAMS_COMPLETE   = "ipf.pass.dgrams.complete";
-	
-	/**
-	 *  System property which enables threaded mode. In threaded mode, pcap is called using an internal
-	 *  thread and pcap dispatched packets are put on a dispatcher queue. Packets are take from the queue
-	 *  and dispatched to the user in user thread. Otherwise, Pcap is called in user thread and packets
-	 *  are also dispatched to user in original user thread. 
-	 *  */
-	String PROPERTY_IPF_THREADED_MODE          = "ipf.threadedMode";
-	
-	/** The property ipf threaded mode daemon. */
-	String PROPERTY_IPF_DEFAULT_THREAD_DAEMON  = "ipf.default.thread.daemon";
+	String PROPERTY_IPF_DGRAMS_SEND_COMPLETE        = "ipf.dgrams.complete";
 	
 	/** System property which defines the maximum number of IP fragments which can be tracked at once. */
 	String PROPERTY_IPF_MAX_FRAGMENT_COUNT     = "ipf.fragment.maxCount";
 	
 	/** System property which enables attachment of reassembled dgram to the last IP fragment (default is true). */
-	String PROPERTY_IPF_ATTACH_COMPLETE        = "ipf.attach.complete";
+	String PROPERTY_IPF_FRAGS_PASS_COMPLETE        = "ipf.attach.complete";
 	
 	/** System property which enables attachment of partially reassembled IP dgram to the last IP fragment (default is true). */
-	String PROPERTY_IPF_ATTACH_INCOMPLETE      = "ipf.attach.incomplete";
+	String PROPERTY_IPF_FRAGS_PASS_INCOMPLETE      = "ipf.attach.incomplete";
 	
 	/** System property which enables IPF fragment tracking and reassembly (default is false). */
 	String PROPERTY_IPF_ENABLE                 = "ipf.enable";
@@ -139,7 +117,7 @@ public interface IpfConfiguration {
 	 * @param enable the passDgramsComplete to set
 	 * @return the ipf configuration
 	 */
-	IpfConfiguration enableIpfPassthroughComplete(boolean enable);
+	IpfConfiguration enableIpfPassComplete(boolean enable);
 
 	/**
 	 * Sets the ipf pass fragments.
@@ -147,7 +125,7 @@ public interface IpfConfiguration {
 	 * @param enable the passFragments to set
 	 * @return the ipf configuration
 	 */
-	IpfConfiguration enableIpfPassthroughFragments(boolean enable);
+	IpfConfiguration enableIpfFragments(boolean enable);
 
 	/**
 	 * Sets the ipf pass incomplete.
@@ -155,7 +133,7 @@ public interface IpfConfiguration {
 	 * @param enable the passDgramsIncomplete to set
 	 * @return the ipf configuration
 	 */
-	IpfConfiguration enableIpfPassthroughIncomplete(boolean enable);
+	IpfConfiguration enableIpfIncomplete(boolean enable);
 
 	/**
 	 * Enable ipf reassembly.
@@ -172,14 +150,6 @@ public interface IpfConfiguration {
 	 * @return the ipf configuration
 	 */
 	IpfConfiguration enableIpfTracking(boolean enable);
-
-	/**
-	 * Enable ipf passthrough dgram threaded.
-	 *
-	 * @param b the b
-	 * @return the ipf configuration
-	 */
-	IpfConfiguration enableIpfThreadedMode(boolean b);
 
 	/**
 	 * Gets the buffer size.
@@ -217,6 +187,13 @@ public interface IpfConfiguration {
 	long getIpfTimeoutMilli();
 
 	/**
+	 * Gets the timeout queue size.
+	 *
+	 * @return the timeout queue size
+	 */
+	int getTimeoutQueueSize();
+
+	/**
 	 * Gets the time source.
 	 *
 	 * @return the timeSource
@@ -249,7 +226,7 @@ public interface IpfConfiguration {
 	 *
 	 * @return true, if is ipf incomplete on last
 	 */
-	boolean isIpfIncompleteOnLast();
+	boolean isIpfTimeoutOnLast();
 
 	/**
 	 * Checks if is ipf passthrough.
@@ -263,21 +240,21 @@ public interface IpfConfiguration {
 	 *
 	 * @return the passDgramsComplete
 	 */
-	boolean isIpfPassthroughComplete();
-
-	/**
-	 * Checks if is pass dgrams incomplete.
-	 *
-	 * @return the passDgramsIncomplete
-	 */
-	boolean isIpfPassthroughIncomplete();
+	boolean isIpfSendComplete();
 
 	/**
 	 * Checks if is pass fragments.
 	 *
 	 * @return the passFragments
 	 */
-	boolean isIpfPassthroughFragments();
+	boolean isIpfPassFragments();
+
+	/**
+	 * Checks if is pass dgrams incomplete.
+	 *
+	 * @return the passDgramsIncomplete
+	 */
+	boolean isIpfSendIncomplete();
 
 	/**
 	 * Checks if is enable ipf reassembly.
@@ -294,13 +271,6 @@ public interface IpfConfiguration {
 	boolean isIpfTrackingEnabled();
 
 	/**
-	 * Checks if is ipf passthrough dgram threaded.
-	 *
-	 * @return true, if is ipf passthrough dgram threaded
-	 */
-	boolean isIpfThreadedMode();
-
-	/**
 	 * Sets the ipf buffer size.
 	 *
 	 * @param size the size
@@ -308,14 +278,6 @@ public interface IpfConfiguration {
 	 * @return the ipf configuration
 	 */
 	IpfConfiguration setIpfBufferSize(long size, MemoryUnit unit);
-
-	/**
-	 * Sets the ipf incomplete on last.
-	 *
-	 * @param lastOrTimeout the last or timeout
-	 * @return the ipf configuration
-	 */
-	IpfConfiguration setIpfTimeoutOnLast(boolean lastOrTimeout);
 
 	/**
 	 * Sets the ip max dgram size.
@@ -354,6 +316,22 @@ public interface IpfConfiguration {
 	IpfConfiguration setIpfTimeout(long timeout, TimeUnit unit);
 
 	/**
+	 * Sets the ipf incomplete on last.
+	 *
+	 * @param lastOrTimeout the last or timeout
+	 * @return the ipf configuration
+	 */
+	IpfConfiguration setIpfTimeoutOnLast(boolean lastOrTimeout);
+
+	/**
+	 * Sets the timeout queue size.
+	 *
+	 * @param size the size
+	 * @return the ipf configuration
+	 */
+	IpfConfiguration setTimeoutQueueSize(int size);
+
+	/**
 	 * Use ipf packet timesource.
 	 *
 	 * @return the ipf configuration
@@ -366,35 +344,5 @@ public interface IpfConfiguration {
 	 * @return the ipf configuration
 	 */
 	IpfConfiguration useIpfSystemTimesource();
-
-	/**
-	 * Use ipf thread facory.
-	 *
-	 * @param factory the factory
-	 * @return the ipf configuration
-	 */
-	IpfConfiguration setIpfThreadFacory(ThreadFactory factory);
-
-	/**
-	 * Gets the timeout queue size.
-	 *
-	 * @return the timeout queue size
-	 */
-	int getTimeoutQueueSize();
-
-	/**
-	 * Sets the timeout queue size.
-	 *
-	 * @param size the size
-	 * @return the ipf configuration
-	 */
-	IpfConfiguration setTimeoutQueueSize(int size);
-
-	/**
-	 * Gets the thread factory.
-	 *
-	 * @return the thread factory
-	 */
-	ThreadFactory getThreadFactory();
 
 }

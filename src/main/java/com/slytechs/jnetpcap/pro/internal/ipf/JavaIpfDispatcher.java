@@ -23,22 +23,16 @@ import java.lang.foreign.MemorySession;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Exchanger;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.function.IntSupplier;
 
-import org.jnetpcap.constant.PcapConstants;
-
-import com.slytechs.jnetpcap.pro.IpfConfiguration;
 import com.slytechs.jnetpcap.pro.PcapProHandler.OfPacket;
 import com.slytechs.jnetpcap.pro.internal.JavaPacketDispatcher;
 import com.slytechs.protocol.Packet;
 import com.slytechs.protocol.descriptor.IpfFragDissector;
 import com.slytechs.protocol.descriptor.IpfFragment;
+import com.slytechs.protocol.descriptor.IpfReassembly;
 import com.slytechs.protocol.pack.core.constants.CoreConstants;
 import com.slytechs.protocol.runtime.hash.Checksums;
-import com.slytechs.protocol.runtime.internal.util.function.BooleanConsumer;
+import com.slytechs.protocol.runtime.util.Detail;
 
 /**
  * The Class JavaIpfDispatcher.
@@ -49,60 +43,48 @@ import com.slytechs.protocol.runtime.internal.util.function.BooleanConsumer;
  */
 public final class JavaIpfDispatcher extends JavaPacketDispatcher implements IpfDispatcher {
 
-	public interface PacketInserter {
-		void insertNewPacket(ByteBuffer packet, int caplen, int wirelen, long timestamp, BooleanConsumer result);
+	private static class ReassembledDatagram {
+
+		private MemorySegment mseg;
+		private int caplen;
+		private int wirelen;
+		private long timestamp;
+		private IpfReassembler reassembler;
+
+		ReassembledDatagram(MemorySegment mseg, int caplen, int wirelen, long timestamp, IpfReassembler reassembler) {
+			this.caplen = caplen;
+			this.wirelen = wirelen;
+			this.timestamp = timestamp;
+			this.mseg = mseg;
+			this.reassembler = reassembler;
+		}
+
+	}
+
+	public interface DatagramQueue {
+		void addDatagram(MemorySegment mseg, int caplen, int wirelen, long expiration, IpfReassembler reassembler);
 	}
 
 	/** The ipf dissector. */
 	private final IpfFragDissector ipfDissector = new IpfFragDissector();
 
 	/** The ipf desc buffer. */
-	private final ByteBuffer ipfDescBuffer = ByteBuffer.allocateDirect(CoreConstants.DESC_IPF_FRAG_BYTE_SIZE);
+	private final ByteBuffer fragDescBuffer = ByteBuffer.allocateDirect(CoreConstants.DESC_IPF_FRAG_BYTE_SIZE);
+	private final ByteBuffer reassemblyDescBuffer = ByteBuffer.allocateDirect(
+			CoreConstants.DESC_IPF_REASSEMBLY_BYTE_SIZE);
 
 	/** The ipf desc. */
-	private final IpfFragment ipfDesc = new IpfFragment(ipfDescBuffer);
+	private final IpfFragment fragDesc = new IpfFragment(fragDescBuffer);
+	private final IpfReassembly reassemblyDesc = new IpfReassembly(reassemblyDescBuffer);
 
 	/** The ipf table. */
 	private final IpfTable ipfTable;
 
 	/** The ipf config. */
-	private final IpfConfiguration ipfConfig;
+	private final IpfConfig.EffectiveConfig ipfConfig;
 
-	private final BlockingQueue<Packet> dispatcherQueue;
-	private final Thread thread;
-	private final boolean isThreadedMode;
-
-	/** Threaded mode native call (dispatch/loop) exchanger */
-	private final Exchanger<IntSupplier> nativeCallExchanger = new Exchanger<>();
-
-	/** Threaded mode native call (dispatch/loop) result exchanger */
-	private final Exchanger<Integer> nativeCallResultExchanger = new Exchanger<>();
-
-	final NativeCallback QUEUE_CALLBACK = new NativeCallback() {
-		/**
-		 * @see org.jnetpcap.PcapHandler.NativeCallback#nativeCallback(java.lang.foreign.MemoryAddress,
-		 *      java.lang.foreign.MemoryAddress, java.lang.foreign.MemoryAddress)
-		 */
-		@Override
-		public void nativeCallback(MemoryAddress ignore, MemoryAddress pcapHdr, MemoryAddress pktData) {
-
-			try (var session = MemorySession.openShared()) {
-
-				if (ipfConfig.isIpfPassthrough() && ipfConfig.isIpfPassthroughFragments()) {
-
-					Packet packet = JavaIpfDispatcher.super.processPacket(pcapHdr, pktData, session);
-
-					if (processIpfPacket(packet))
-						dispatcherQueue.offer(packet);
-
-				} else {
-					processIpfNative(pcapHdr, pktData, session);
-				}
-
-			}
-
-		}
-	};
+	/** The insert queue. */
+	private final BlockingQueue<ReassembledDatagram> dgramQueue;
 
 	/**
 	 * Instantiates a new java ipf dispatcher.
@@ -111,46 +93,18 @@ public final class JavaIpfDispatcher extends JavaPacketDispatcher implements Ipf
 	 * @param breakDispatch the break dispatch
 	 * @param config        the config
 	 */
-	public JavaIpfDispatcher(MemoryAddress pcapHandle, Runnable breakDispatch, IpfConfig config) {
+	public JavaIpfDispatcher(
+			MemoryAddress pcapHandle,
+			Runnable breakDispatch,
+			IpfConfig config) {
 		super(pcapHandle, breakDispatch, config);
 
-		if (!config.isIpfEnabled())
-			throw new IllegalStateException("IPF processing is disabled");
+		if (config.isIpfEnabled() == false)
+			throw new IllegalStateException("IPF is disabled");
 
-		this.ipfConfig = config;
-		this.dispatcherQueue = new ArrayBlockingQueue<>(config.getTimeoutQueueSize());
-		this.ipfTable = new IpfTable(config, this::insertPacket);
-		this.isThreadedMode = config.isIpfThreadedMode();
-
-		this.thread = isThreadedMode
-				? config.getThreadFactory().newThread(this::runThreadedMode)
-				: null;
-	}
-
-	/**
-	 * Allows a new packet to be inserted into the dispatch stream of packets. The
-	 * new packet will processed like any other received directly from Pcap and will
-	 * dispatched to the user handler, in a new thread or user thread, depending on
-	 * which flags were set.
-	 *
-	 * @param buffer    the buffer
-	 * @param caplen    the caplen
-	 * @param wirelen   the wirelen
-	 * @param timestamp the timestamp
-	 * @param result    the result
-	 */
-	public void insertPacket(ByteBuffer buffer, int caplen, int wirelen, long timestamp,
-			BooleanConsumer result) {
-
-		/* Let normal packet dispatcher process the packet dissection, etc... */
-		Packet packet = super.processPacket(buffer, caplen, wirelen, timestamp);
-
-		/*
-		 * Add to queue to be dispatched from a dispatcher thread. We can not dispatch
-		 * from this thread, as this maybe the timeout queue thread, which we can not
-		 * tie up in user land.
-		 */
-		result.accept(dispatcherQueue.add(packet));
+		this.ipfConfig = config.computeEffectiveConfig();
+		this.ipfTable = new IpfTable(config, this::sendMemorySegment);
+		this.dgramQueue = new ArrayBlockingQueue<>(config.getTimeoutQueueSize());
 	}
 
 	/**
@@ -163,69 +117,11 @@ public final class JavaIpfDispatcher extends JavaPacketDispatcher implements Ipf
 	 * @return the int
 	 */
 	protected <U> int dispatchIpf(int count, OfPacket<U> sink, U user) {
-		try {
-			if (isThreadedMode)
-				return captureIpfThreaded(() -> dispatchNative(count, QUEUE_CALLBACK, MemoryAddress.NULL),
-						sink,
-						user);
-			else
-				return dispatchIpfNonThreaded(count, sink, user);
+		return super.dispatchNative(count, (ignore, pcapHdr, pktData) -> {
 
-		} catch (InterruptedException e) {
-			super.interrupt();
+			sinkIpfNative0(pcapHdr, pktData, sink, user);
 
-			return PcapConstants.PCAP_ERROR_BREAK;
-		}
-	}
-
-	private <U> int dispatchIpfNonThreaded(int count, OfPacket<U> sink, U user) {
-		return super.dispatchNative(count, (MemoryAddress ignore, MemoryAddress pcapHdr,
-				MemoryAddress pktData) ->
-		{
-
-			try (var session = MemorySession.openShared()) {
-
-				if (ipfConfig.isIpfPassthrough() && ipfConfig.isIpfPassthroughFragments()) {
-
-					Packet packet = super.processPacket(pcapHdr, pktData, session);
-
-					if (processIpfPacket(packet))
-						sink.handlePacket(user, packet);
-
-				} else {
-					processIpfNative(pcapHdr, pktData, session);
-				}
-
-			}
-
-		}, MemoryAddress.NULL);
-	}
-
-	private <U> int captureIpfThreaded(IntSupplier action, OfPacket<U> sink, U user) throws InterruptedException {
-
-		/* Initiate capture to dispatch queue in dispatcher thread */
-		nativeCallExchanger.exchange(action);
-
-		/*
-		 * Drain the dispatcher queue in user thread and when queue is empty, check to
-		 * see if the capture in dispatcher thread has ended (by exchanging a packet
-		 * count, ie. result of Pcap.dispatch/loop).
-		 * 
-		 * The loop exits when packet capture in dispatcher thread is done, or an
-		 * interrupt occurs.
-		 */
-		for (;;) {
-			try {
-				Packet packet = dispatcherQueue.poll();
-
-				if (packet == null)
-					return nativeCallResultExchanger.exchange(null, 1, TimeUnit.MILLISECONDS);
-
-				sink.handlePacket(user, packet);
-
-				// Exchanger timeout, native call still in progress
-			} catch (TimeoutException e) {}
-		}
+		}, MemoryAddress.NULL); // We don't pass user object to native dispatcher
 	}
 
 	/**
@@ -244,6 +140,12 @@ public final class JavaIpfDispatcher extends JavaPacketDispatcher implements Ipf
 		return this.dispatchIpf(count, sink, user);
 	}
 
+	private void sendMemorySegment(MemorySegment mseg, int caplen, int wirelen, long expiration,
+			IpfReassembler reassembler) {
+		ReassembledDatagram req = new ReassembledDatagram(mseg, caplen, wirelen, expiration, reassembler);
+		dgramQueue.offer(req);
+	}
+
 	/**
 	 * Loop ipf.
 	 *
@@ -254,43 +156,11 @@ public final class JavaIpfDispatcher extends JavaPacketDispatcher implements Ipf
 	 * @return the int
 	 */
 	protected <U> int loopIpf(int count, OfPacket<U> sink, U user) {
-
-		try {
-			if (isThreadedMode)
-				return captureIpfThreaded(() -> loopNative(count, QUEUE_CALLBACK, MemoryAddress.NULL),
-						sink,
-						user);
-			else
-				return loopIpfNonThreaded(count, sink, user);
-
-		} catch (InterruptedException e) {
-			super.interrupt();
-
-			return PcapConstants.PCAP_ERROR_BREAK;
-		}
-
-	}
-
-	private <U> int loopIpfNonThreaded(int count, OfPacket<U> sink, U user) {
 		return super.loopNative(count, (ignore, pcapHdr, pktData) -> {
 
-			try (var session = MemorySession.openShared()) {
-
-				if (ipfConfig.isIpfPassthrough() && ipfConfig.isIpfPassthroughFragments()) {
-
-					Packet packet = super.processPacket(pcapHdr, pktData, session);
-
-					if (processIpfPacket(packet))
-						sink.handlePacket(user, packet);
-
-				} else {
-					processIpfNative(pcapHdr, pktData, session);
-				}
-
-			}
+			sinkIpfNative0(pcapHdr, pktData, sink, user);
 
 		}, MemoryAddress.NULL); // We don't pass user object to native dispatcher
-
 	}
 
 	/**
@@ -307,38 +177,6 @@ public final class JavaIpfDispatcher extends JavaPacketDispatcher implements Ipf
 	@Override
 	public <U> int loopPacket(int count, OfPacket<U> sink, U user) {
 		return this.loopIpf(count, sink, user);
-	}
-
-	/**
-	 * Process ipf buffer.
-	 *
-	 * @param frameNo   the frame no
-	 * @param packetBuf the packet buf
-	 * @param caplen    the caplen
-	 * @param wirelen   the wirelen
-	 * @param ts        the ts
-	 * @return the ipf fragment
-	 */
-	protected IpfFragment processIpfBuffer(long frameNo, ByteBuffer packetBuf, int caplen, int wirelen, long ts) {
-		ipfDissector.reset();
-		boolean isIpf = ipfDissector.dissectPacket(packetBuf, ts, caplen, wirelen) > 0;
-		if (!isIpf)
-			return null; // No more space in IPF table
-
-		ipfDissector.writeDescriptor(ipfDescBuffer.clear());
-		ipfDescBuffer.flip();
-		ipfDesc.bind(ipfDescBuffer);
-
-		long ipfHashcode = Checksums.crc32(ipfDesc.keyBuffer());
-
-		var reassembler = ipfTable.lookup(ipfDesc, ipfHashcode);
-		if (reassembler == null)
-			return null; // Drop, out of table space
-
-		if (reassembler.processFragment(frameNo, packetBuf, ipfDesc))
-			return ipfDesc;
-
-		return null; // Processing failed
 	}
 
 	/**
@@ -364,7 +202,7 @@ public final class JavaIpfDispatcher extends JavaPacketDispatcher implements Ipf
 			MemorySegment mpkt = MemorySegment.ofAddress(pktData, caplen, session);
 			ByteBuffer buf = mpkt.asByteBuffer();
 
-			boolean isSuccess = (processIpfBuffer(-1, buf, caplen, wirelen, timestamp) != null);
+			boolean isSuccess = (zreassembleFromBuffer(-1, buf, caplen, wirelen, timestamp) != null);
 
 			if (isSuccess)
 				incPacketReceived(caplen, wirelen);
@@ -385,41 +223,221 @@ public final class JavaIpfDispatcher extends JavaPacketDispatcher implements Ipf
 	 *
 	 * @param packet the packet
 	 * @return true, if successful
+	 * @throws IpfReassemblyException
 	 */
-	protected synchronized boolean processIpfPacket(Packet packet) {
+	protected IpfReassembler processIpfPacket(Packet packet) throws IpfReassemblyException {
 		ByteBuffer buf = packet.buffer();
 		int caplen = packet.captureLength();
 		int wirelen = packet.wireLength();
 		long ts = packet.timestamp();
 		long frameNo = packet.descriptor().frameNo();
 
-		IpfFragment ipfDesc = processIpfBuffer(frameNo, buf, caplen, wirelen, ts);
-		if (ipfDesc != null) {
-			super.incPacketReceived(caplen, wirelen);
-
-			if (ipfConfig.isIpfTrackingEnabled())
-				packet.descriptor().addDescriptor(ipfDesc);
-
-		} else
-			super.incPacketDropped(caplen, wirelen);
-
-		return (ipfDesc != null);
+		return zreassembleFromBuffer(frameNo, buf, caplen, wirelen, ts);
 	}
 
-	private void runThreadedMode() {
+	private <U> void sinkIpfNative0(MemoryAddress pcapHdr, MemoryAddress pktData, OfPacket<U> sink, U user) {
 
-		try {
-			for (;;) {
-				var nativeCall = nativeCallExchanger.exchange(null);
+		try (var session = MemorySession.openShared()) {
 
-				int packetCount = nativeCall.getAsInt();
+			if (ipfConfig.pass) {
+				/*
+				 * On frag pass through, we create a packet object right away since we are
+				 * passing the packet no matter if its IPF or not fragmented. It needs to be
+				 * forwarded either way.
+				 */
 
-				nativeCallResultExchanger.exchange(packetCount);
+				Packet packet = super.processPacket(pcapHdr, pktData, session);
 
+				/* Assign packet time, if that config option is applied, otherwise ignored */
+				ipfConfig.getTimeSource().timestamp(packet.timestamp());
+
+				try {
+					IpfReassembler toClose = processIpfPacket(packet);
+
+					packet.descriptor().addDescriptor(fragDesc);
+
+					/*
+					 * OK, we have an IPF fragment so sink as IPF frag (ie. attache IPF tracking or
+					 * reassembly).
+					 */
+					sinkIpfPacket0(packet, sink, user);
+
+					/*
+					 * If null, means there is an inserted packet on the packet queue which will
+					 * close when done
+					 */
+					if (toClose != null)
+						toClose.close();
+
+				} catch (IpfReassemblyException e) {
+					e.printStackTrace();
+					super.onNativeCallbackException(new RuntimeException(e));
+
+					sink.handlePacket(user, packet);
+				}
+
+			} else {
+				/*
+				 * On no-frags pass, we process native memory to gather IPF information in
+				 * tables.
+				 */
+				processIpfNative(pcapHdr, pktData, session);
 			}
-		} catch (InterruptedException e) {
-			super.interrupt();
 		}
+	}
+
+	private <U> void sinkIpfPacket0(Packet packet, OfPacket<U> sink, U user) {
+		/*
+		 * OK, we have an IPF fragment so we need to attach
+		 */
+
+		sink.handlePacket(user, packet);
+
+		/*
+		 * We check the IP data-gram queue, if any. These data-gram get turned into
+		 * packets and dispatched after the last packet was sent to the sink. Packets on
+		 * this queue can end up because, we have fully reassembled data-gram, or
+		 * because of timeout queue expiration, and manual insertion (future).
+		 */
+		ReassembledDatagram dgram = null;
+		while ((dgram = dgramQueue.poll()) != null) {
+			sinkIpDatagram(dgram, sink, user);
+		}
+	}
+
+	private <U> void sinkIpDatagram(ReassembledDatagram dgram, OfPacket<U> sink, U user) {
+		IpfReassembler reassembler = dgram.reassembler;
+		ByteBuffer buf = dgram.mseg.asByteBuffer();
+
+		Packet packet = super.processPacket(buf, dgram.mseg, dgram.caplen, dgram.wirelen, dgram.timestamp);
+
+		reassembler.writeReassemblyDescriptor(reassemblyDescBuffer.clear());
+		reassemblyDescBuffer.flip();
+		reassemblyDesc.bind(reassemblyDescBuffer);
+
+		packet.descriptor().addDescriptor(reassemblyDesc);
+
+		sink.handlePacket(user, packet);
+
+		/* Close and reset the reassembler for the next IPF data-gram reassembly */
+		reassembler.close();
+	}
+
+	/**
+	 * Process ipf buffer.
+	 *
+	 * @param frameNo   the frame no
+	 * @param packetBuf the packet buf
+	 * @param caplen    the caplen
+	 * @param wirelen   the wirelen
+	 * @param ts        the ts
+	 * @return the ipf fragment
+	 */
+	protected IpfReassembler zreassembleFromBuffer(long frameNo, ByteBuffer packetBuf, int caplen, int wirelen,
+			long ts) throws IpfReassemblyException {
+
+		/*
+		 * We're single threaded and we reuse the descriptor, so prepare it for another
+		 * fragment
+		 */
+
+		ipfDissector.reset();
+
+		/*
+		 * Create an IPF descriptor with specific IPF fragment information, this may be
+		 * provided by native libraries as well, that is why everything is passed using
+		 * a native memory descriptors.
+		 */
+
+		if (ipfDissector.dissectPacket(packetBuf, ts, caplen, wirelen) == 0)
+			return null; // Not an IPF packet
+
+		/* Do the Java descriptor bindings so we have a java descriptor */
+
+		ipfDissector.writeDescriptor(fragDescBuffer.clear());
+		fragDescBuffer.flip();
+		fragDesc.bind(fragDescBuffer);
+
+		/* Calculate a hashcode on key TUPLE values */
+		ByteBuffer key = fragDesc.keyBuffer();
+		long ipfHashcode = Checksums.crc32(key);
+
+		/* Find existing or create a new IPF table entry (in hash table) */
+		var reassembler = ipfTable.lookup(fragDesc, ipfHashcode);
+		if (reassembler == null)
+			throw new IpfReassemblyException("out hashtable space for IPF reassembly [frameNo=%d]"
+					.formatted(frameNo));
+
+		/* Do actual reassembly */
+		if (!reassembler.processFragment(frameNo, packetBuf, fragDesc))
+			throw new IpfReassemblyException("IPF processing failed [frameNo=%d, ipfDescriptor=%s]"
+					.formatted(frameNo, fragDesc.toString(Detail.LOW)));
+
+		/*
+		 * Reassembler sets a 'reassembled' flag when done or timeout on last fragment
+		 */
+
+		if (!reassembler.isReassembled())
+			return null; // We're not ready to close yet
+
+		IpfReassembler toClose = reassembler;
+
+		/*
+		 * Here we send entirely new packet which is built from the reassembled IP
+		 * fragment data by the reassembler. The new packet is put on a send queue which
+		 * is drained after this IP fragment is dispatched, and if there are any packets
+		 * on the queue will be sent as well. We have 2 options, once the reassembler
+		 * determines that reassembly is finished. Complete means that reassembler saw
+		 * and reassembled all IP fragments and we have a complete IP data-gram to send.
+		 * Incomplete means that not all fragments were seen and reassembled, so holes
+		 * in data buffer exists. This can occur if the option {@code
+		 * IpfConfiguration.setTimeoutOnLast(boolean)} is set.
+		 */
+
+		if (reassembler.isComplete() && ipfConfig.dgramsComplete) {
+
+			/* Add completely reassembled buffer/packet to the dispatcher send queue */
+			reassembler.addDatagramToQueue(this::sendMemorySegment);
+			toClose = null; // Closed after packet processed from queue
+
+		} else if (!reassembler.isComplete() && ipfConfig.dgramsIncomplete) {
+
+			/* Add partially reassembled buffer/packet to the dispatcher send queue */
+			reassembler.addDatagramToQueue(this::sendMemorySegment);
+			toClose = null; // Closed after packet processed from queue
+		}
+
+		/*
+		 * Here we attach to each IP fragment a IpfReassembly descriptor which has a
+		 * pointer to the IP data-gram reassembled buffer, tracking information and
+		 * numerous flags. Unlike, above Dgram packets which were inserted as new
+		 * packets, this information is attached to existing IP fragment we just
+		 * processed, so all we have to do is add the descriptor.
+		 */
+
+		if (ipfConfig.passComplete) {
+
+			reassembler.writeReassemblyDescriptor(reassemblyDescBuffer.clear());
+			reassemblyDescBuffer.flip();
+			reassemblyDesc.bind(reassemblyDescBuffer);
+
+			fragDesc.addDescriptor(reassemblyDesc);
+
+		} else if (ipfConfig.passIncomplete) {
+
+			reassembler.writeReassemblyDescriptor(reassemblyDescBuffer.clear());
+			reassemblyDescBuffer.flip();
+			reassemblyDesc.bind(reassemblyDescBuffer);
+
+			fragDesc.addDescriptor(reassemblyDesc);
+		}
+
+		/*
+		 * If toClose is null because we added a reassembled datagram to the dispatch
+		 * queue, otherwise, we return the IPF's reassembler so it can be closed
+		 * immediately after the IPF is sent directly with attached reassembler data
+		 */
+		return toClose;
 	}
 
 }

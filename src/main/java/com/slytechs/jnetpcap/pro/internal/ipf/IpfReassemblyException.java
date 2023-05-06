@@ -22,26 +22,15 @@ package com.slytechs.jnetpcap.pro.internal.ipf;
  * @author repos@slytechs.com
  *
  */
-final class TrackUtil {
+public class IpfReassemblyException extends Exception {
 
-	public static int calcHoleSize(IpfTrack[] tracks, int limit) {
-		int holeSize = 0;
+	private static final long serialVersionUID = -4119643911938328725L;
 
-		int off = 0;
-		for (int i = 0; i < limit; i++) {
-			IpfTrack track = tracks[i];
-			int start = track.start();
-
-			if (start > off)
-				holeSize += start - off;
-
-			off = track.endInclusive();
-		}
-
-		return holeSize;
-	}
-
-	private TrackUtil() {
+	/**
+	 * @param message
+	 */
+	public IpfReassemblyException(String message) {
+		super(message);
 	}
 
 }

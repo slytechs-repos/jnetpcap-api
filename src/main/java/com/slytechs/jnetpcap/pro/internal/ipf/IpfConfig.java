@@ -19,14 +19,15 @@ package com.slytechs.jnetpcap.pro.internal.ipf;
 
 import static com.slytechs.protocol.runtime.util.SystemProperties.*;
 
-import java.util.Objects;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
+import org.jnetpcap.internal.PcapHeaderABI;
+
 import com.slytechs.jnetpcap.pro.IpfConfiguration;
-import com.slytechs.jnetpcap.pro.internal.PacketDispatcher.PacketDispatcherConfig;
+import com.slytechs.jnetpcap.pro.PacketDispatcher.PacketDispatcherConfig;
 import com.slytechs.protocol.runtime.time.TimestampSource;
 import com.slytechs.protocol.runtime.time.TimestampSource.AssignableTimestampSource;
+import com.slytechs.protocol.runtime.time.TimestampUnit;
 import com.slytechs.protocol.runtime.util.CountUnit;
 import com.slytechs.protocol.runtime.util.MemoryUnit;
 
@@ -39,43 +40,97 @@ import com.slytechs.protocol.runtime.util.MemoryUnit;
  */
 public class IpfConfig extends PacketDispatcherConfig implements IpfConfiguration {
 
-	/** The Constant DEFAULT_THREAD_FACTORY. */
-	private static final ThreadFactory DEFAULT_THREAD_FACTORY = r -> {
-		var t = new Thread(r);
-
-		t.setDaemon(DEFAULT_THREAD_DAEMON);
-
-		return t;
-	};
-
 	// @formatter:off
+	
+	/* Hashtable and IP reassembler properties */
 	private int     maxDgramBytes         = intValue (PROPERTY_IPF_MAX_DGRAM_BYTES,        64,  MemoryUnit.KILOBYTES);
-	private int     bufferSize            = intValue (PROPERTY_IPF_BUFFER_SIZE,            16, MemoryUnit.MEGABYTES);
-	private int     tableSize             = intValue (PROPERTY_IPF_TABLE_SIZE,             256,  CountUnit.COUNT);
+	private int     bufferSize            = intValue (PROPERTY_IPF_BUFFER_SIZE,            16,  MemoryUnit.MEGABYTES);
+	private int     tableSize             = intValue (PROPERTY_IPF_TABLE_SIZE,             256, CountUnit.COUNT);
 	private int     maxFragmentCount      = intValue (PROPERTY_IPF_MAX_FRAGMENT_COUNT,     16,  CountUnit.COUNT);
-	private int     timeoutQueueSize      = intValue (PROPERTY_IPF_TIMEOUT_QUEUE_SIZE,     1024,  CountUnit.COUNT);
+
+	/* Timeout Queue properties */
 	private long    timeoutMillis         = longValue(PROPERTY_IPF_TIMEOUT,                2000);
 	private boolean timeoutOnLast         = boolValue(PROPERTY_IPF_TIMEOUT_ON_LAST,        false);
+	private int     timeoutQueueSize      = intValue (PROPERTY_IPF_TIMEOUT_QUEUE_SIZE,     256, CountUnit.COUNT);
+
+	/* IPF modes */
 	private boolean enableIpf             = boolValue(PROPERTY_IPF_ENABLE,                 false);
 	private boolean enableIpfTracking     = boolValue(PROPERTY_IPF_ENABLE_TRACKING,        true);
 	private boolean enableIpfReassembly   = boolValue(PROPERTY_IPF_ENABLE_REASSEMBLY,      true);
-	private boolean passthrough           = boolValue(PROPERTY_IPF_PASS,                   true);
-	private boolean passFragments         = boolValue(PROPERTY_IPF_PASS_FRAGMENTS,         true);
-	private boolean passDgramsIncomplete  = boolValue(PROPERTY_IPF_PASS_DGRAMS_INCOMPLETE, false);
-	private boolean passDgramsComplete    = boolValue(PROPERTY_IPF_PASS_DGRAMS_COMPLETE,   false);
-	private boolean threadedMode          = boolValue(PROPERTY_IPF_THREADED_MODE,          false);
-	private boolean attachComplete        = boolValue(PROPERTY_IPF_ATTACH_COMPLETE,        true);
-	private boolean attachIncomplete      = boolValue(PROPERTY_IPF_ATTACH_INCOMPLETE,      false);
+
+	/* Fragment pass-through and reassembly buffer attachment to fragment properties */
+	private boolean fragsPass             = boolValue(PROPERTY_IPF_FRAGS_PASS,             false);
+	private boolean fragsPassIncomplete   = boolValue(PROPERTY_IPF_FRAGS_PASS_INCOMPLETE,  true);
+	private boolean fragsPassComplete     = boolValue(PROPERTY_IPF_FRAGS_PASS_COMPLETE,    true);
+	
+	/* Datagram dispatcher send properties - dgrams are inserted into dispatcher stream */
+	private boolean dgramsSend            = boolValue(PROPERTY_IPF_DGRAMS_SEND,            true);
+	private boolean dgramsSendIncomplete  = boolValue(PROPERTY_IPF_DGRAMS_SEND_INCOMPLETE, false);
+	private boolean dgramsSendComplete    = boolValue(PROPERTY_IPF_DGRAMS_SEND_COMPLETE,   true);
 	// @formatter:on
 
 	/** Initialized in constructor, either system or packet time */
 	private AssignableTimestampSource timeSource;
 
-	/** The thread factory used when configured in threaded-mode. */
-	private ThreadFactory threadFactory = DEFAULT_THREAD_FACTORY;
+	/**
+	 * Effective or the result of combining of all the main properties and modes
+	 */
+	public class EffectiveConfig {
 
+		final boolean pass;
+		final boolean dgramsComplete;
+		final boolean dgramsIncomplete; // On timeout-duration or timeout-last
+		final boolean tracking;
+		final boolean passComplete;
+		final boolean passIncomplete; // On timeout-last
+		final AssignableTimestampSource timeSource;
+
+		/**
+		 * Compute an effective configuration. Based on all of the configuration
+		 * options, compute which modes and options are actu
+		 */
+		EffectiveConfig() {
+			this.pass = fragsPass;
+			this.passComplete = enableIpfReassembly && fragsPassComplete;
+			this.passIncomplete = enableIpfReassembly && fragsPassIncomplete && timeoutOnLast;
+
+			this.dgramsComplete = dgramsSend && enableIpfReassembly && dgramsSendComplete;
+			this.dgramsIncomplete = dgramsSend && enableIpfReassembly && dgramsSendIncomplete;
+
+			this.tracking = enableIpfTracking && fragsPass;
+			this.timeSource = IpfConfig.this.timeSource;
+		}
+
+		/**
+		 * 
+		 */
+		public AssignableTimestampSource getTimeSource() {
+			return timeSource;
+		}
+		
+		public PcapHeaderABI getPcapAbi() {
+			return abi;
+		}
+		
+		public TimestampUnit getTimestampUnit() {
+			return timestampUnit;
+		}
+	}
+
+	/**
+	 * Instantiates a new ipf config.
+	 */
 	public IpfConfig() {
 		useIpfSystemTimesource();
+	}
+
+	/**
+	 * Compute effective config.
+	 *
+	 * @return the effective config
+	 */
+	EffectiveConfig computeEffectiveConfig() {
+		return new EffectiveConfig();
 	}
 
 	/**
@@ -93,7 +148,7 @@ public class IpfConfig extends PacketDispatcherConfig implements IpfConfiguratio
 	 */
 	@Override
 	public IpfConfiguration enableIpfAttachComplete(boolean ipfAttachComplete) {
-		this.attachComplete = ipfAttachComplete;
+		this.fragsPassComplete = ipfAttachComplete;
 		return this;
 	}
 
@@ -102,7 +157,7 @@ public class IpfConfig extends PacketDispatcherConfig implements IpfConfiguratio
 	 */
 	@Override
 	public IpfConfiguration enableIpfAttachIncomplete(boolean ipfAttachIncomplete) {
-		this.attachIncomplete = ipfAttachIncomplete;
+		this.fragsPassIncomplete = ipfAttachIncomplete;
 		return this;
 	}
 
@@ -111,35 +166,35 @@ public class IpfConfig extends PacketDispatcherConfig implements IpfConfiguratio
 	 */
 	@Override
 	public IpfConfiguration enableIpfPassthrough(boolean enable) {
-		this.passthrough = enable;
+		this.dgramsSend = enable;
 
 		return this;
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enableIpfPassthroughComplete(boolean)
+	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enableIpfPassComplete(boolean)
 	 */
 	@Override
-	public IpfConfiguration enableIpfPassthroughComplete(boolean passDgramsComplete) {
-		this.passDgramsComplete = passDgramsComplete;
+	public IpfConfiguration enableIpfPassComplete(boolean passDgramsComplete) {
+		this.dgramsSendComplete = passDgramsComplete;
 		return this;
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enableIpfPassthroughFragments(boolean)
+	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enableIpfFragments(boolean)
 	 */
 	@Override
-	public IpfConfiguration enableIpfPassthroughFragments(boolean passFragments) {
-		this.passFragments = passFragments;
+	public IpfConfiguration enableIpfFragments(boolean passFragments) {
+		this.fragsPass = passFragments;
 		return this;
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enableIpfPassthroughIncomplete(boolean)
+	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enableIpfIncomplete(boolean)
 	 */
 	@Override
-	public IpfConfiguration enableIpfPassthroughIncomplete(boolean passDgramsIncomplete) {
-		this.passDgramsIncomplete = passDgramsIncomplete;
+	public IpfConfiguration enableIpfIncomplete(boolean passDgramsIncomplete) {
+		this.dgramsSendIncomplete = passDgramsIncomplete;
 		return this;
 	}
 
@@ -224,7 +279,7 @@ public class IpfConfig extends PacketDispatcherConfig implements IpfConfiguratio
 	 */
 	@Override
 	public boolean isIpfAttachComplete() {
-		return attachComplete;
+		return fragsPassComplete;
 	}
 
 	/**
@@ -232,7 +287,7 @@ public class IpfConfig extends PacketDispatcherConfig implements IpfConfiguratio
 	 */
 	@Override
 	public boolean isIpfAttachIncomplete() {
-		return attachIncomplete;
+		return fragsPassIncomplete;
 	}
 
 	/**
@@ -244,40 +299,40 @@ public class IpfConfig extends PacketDispatcherConfig implements IpfConfiguratio
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#isIpfIncompleteOnLast()
+	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#isIpfTimeoutOnLast()
 	 */
 	@Override
-	public boolean isIpfIncompleteOnLast() {
+	public boolean isIpfTimeoutOnLast() {
 		return timeoutOnLast;
 	}
 
 	@Override
 	public boolean isIpfPassthrough() {
-		return passthrough;
+		return dgramsSend;
 	}
 
 	/**
 	 * @return the passDgramsComplete
 	 */
 	@Override
-	public boolean isIpfPassthroughComplete() {
-		return passDgramsComplete;
+	public boolean isIpfSendComplete() {
+		return dgramsSendComplete;
 	}
 
 	/**
 	 * @return the passFragments
 	 */
 	@Override
-	public boolean isIpfPassthroughFragments() {
-		return passFragments;
+	public boolean isIpfPassFragments() {
+		return fragsPass;
 	}
 
 	/**
 	 * @return the passDgramsIncomplete
 	 */
 	@Override
-	public boolean isIpfPassthroughIncomplete() {
-		return passDgramsIncomplete;
+	public boolean isIpfSendIncomplete() {
+		return dgramsSendIncomplete;
 	}
 
 	/**
@@ -390,41 +445,5 @@ public class IpfConfig extends PacketDispatcherConfig implements IpfConfiguratio
 		timeSource = TimestampSource.system();
 
 		return this;
-	}
-
-	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enableIpfThreadedMode(boolean)
-	 */
-	@Override
-	public IpfConfiguration enableIpfThreadedMode(boolean b) {
-		threadedMode = b;
-
-		return this;
-	}
-
-	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#isIpfThreadedMode()
-	 */
-	@Override
-	public boolean isIpfThreadedMode() {
-		return threadedMode;
-	}
-
-	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#setIpfThreadFacory(java.util.concurrent.ThreadFactory)
-	 */
-	@Override
-	public IpfConfiguration setIpfThreadFacory(ThreadFactory factory) {
-		this.threadFactory = Objects.requireNonNullElse(factory, DEFAULT_THREAD_FACTORY);
-
-		return this;
-	}
-
-	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#getThreadFactory()
-	 */
-	@Override
-	public ThreadFactory getThreadFactory() {
-		return threadFactory;
 	}
 }

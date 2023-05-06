@@ -19,7 +19,7 @@ package com.slytechs.jnetpcap.pro.internal.ipf;
 
 import java.lang.foreign.MemoryAddress;
 
-import com.slytechs.jnetpcap.pro.internal.PacketDispatcher;
+import com.slytechs.jnetpcap.pro.PacketDispatcher;
 
 /**
  * @author Sly Technologies Inc
