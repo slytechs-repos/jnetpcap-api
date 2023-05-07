@@ -15,15 +15,12 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.slytechs.jnetpcap.pro;
+package com.slytechs.jnetpcap.pro.internal;
 
-import java.lang.foreign.MemoryAddress;
-
-import org.jnetpcap.internal.PcapDispatcher;
 import org.jnetpcap.internal.PcapHeaderABI;
 
-import com.slytechs.jnetpcap.pro.internal.JavaPacketDispatcher;
-import com.slytechs.jnetpcap.pro.internal.PacketStatistics;
+import com.slytechs.jnetpcap.pro.PacketStatistics;
+import com.slytechs.jnetpcap.pro.PcapProHandler;
 import com.slytechs.protocol.Frame.FrameNumber;
 import com.slytechs.protocol.descriptor.PacketDissector;
 import com.slytechs.protocol.meta.PacketFormat;
@@ -36,7 +33,7 @@ import com.slytechs.protocol.runtime.time.TimestampUnit;
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  */
-public interface PacketDispatcher extends PcapDispatcher {
+public interface PacketDispatcher {
 
 	public class PacketDispatcherConfig {
 
@@ -68,11 +65,9 @@ public interface PacketDispatcher extends PcapDispatcher {
 	 * @return the packet dispatcher
 	 */
 	static PacketDispatcher javaPacketDispatcher(
-			MemoryAddress pcapHandle,
-			Runnable breakDispatch,
 			PacketDispatcherConfig config) {
 
-		return new JavaPacketDispatcher(pcapHandle, breakDispatch, config);
+		return new PacketDispatcherJava(config);
 	}
 
 	/**
@@ -84,8 +79,6 @@ public interface PacketDispatcher extends PcapDispatcher {
 	 * @return the packet dispatcher
 	 */
 	static PacketDispatcher nativePacketDispatcher(
-			MemoryAddress pcapHandle,
-			Runnable breakDispatch,
 			PacketDispatcherConfig config) {
 		throw new UnsupportedOperationException();
 	}
@@ -99,14 +92,12 @@ public interface PacketDispatcher extends PcapDispatcher {
 	 * @return the packet dispatcher
 	 */
 	static PacketDispatcher packetDispatcher(
-			MemoryAddress pcapHandle,
-			Runnable breakDispatch,
 			PacketDispatcherConfig config) {
 
 		if (isNativePacketDispatcherSupported())
-			return nativePacketDispatcher(pcapHandle, breakDispatch, config);
+			return nativePacketDispatcher(config);
 		else
-			return javaPacketDispatcher(pcapHandle, breakDispatch, config);
+			return javaPacketDispatcher(config);
 	}
 
 	/**

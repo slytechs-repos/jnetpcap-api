@@ -36,15 +36,20 @@ import org.jnetpcap.PcapIf;
 import org.jnetpcap.constant.PcapDlt;
 import org.jnetpcap.constant.PcapTStampPrecision;
 import org.jnetpcap.internal.NonSealedPcap;
+import org.jnetpcap.internal.PcapDispatcher;
 import org.jnetpcap.internal.PcapHeaderABI;
+import org.jnetpcap.internal.StandardPcapDispatcher;
 
+import com.slytechs.jnetpcap.pro.PacketProcessor.PostProcessor;
+import com.slytechs.jnetpcap.pro.PacketProcessor.PostProcessor.PostFactory;
+import com.slytechs.jnetpcap.pro.PacketProcessor.PreProcessor;
+import com.slytechs.jnetpcap.pro.PacketProcessor.PreProcessor.PreFactory;
 import com.slytechs.jnetpcap.pro.PcapProHandler.OfPacketConsumer;
-import com.slytechs.jnetpcap.pro.internal.JavaPacketDispatcher;
-import com.slytechs.jnetpcap.pro.internal.PacketStatistics;
+import com.slytechs.jnetpcap.pro.internal.PacketDispatcherJava;
 import com.slytechs.jnetpcap.pro.internal.PacketStatisticsImpl;
 import com.slytechs.jnetpcap.pro.internal.ipf.IpfConfig;
-import com.slytechs.jnetpcap.pro.internal.ipf.IpfDispatcher;
-import com.slytechs.jnetpcap.pro.internal.ipf.JavaIpfDispatcher;
+import com.slytechs.jnetpcap.pro.internal.ipf.IpfPostProcessor;
+import com.slytechs.jnetpcap.pro.internal.ipf.IpfPostProcessorJava;
 import com.slytechs.protocol.Frame.FrameNumber;
 import com.slytechs.protocol.descriptor.PacketDissector;
 import com.slytechs.protocol.meta.PacketFormat;
@@ -298,12 +303,45 @@ public final class PcapPro extends NonSealedPcap implements IpfConfiguration, Pa
 		return Pcap0_4.openOffline(PcapPro::new, fname);
 	}
 
-	/** The packet dispatcher. */
-	private PacketDispatcher packetDispatcher;
-	private PacketStatistics stats = new PacketStatisticsImpl();
-
 	/** The ipf config. */
 	private final IpfConfig ipfConfig = new IpfConfig();
+	private PacketStatistics stats = new PacketStatisticsImpl();
+
+	/** The packet dispatcher. */
+	private PacketDispatcherJava postProcessorCommon;
+
+	private final PcapDispatcher preProcessorRoot;
+	private PcapDispatcher preProcessor;
+
+	private final Stack<PacketProcessor<?>> preProcessors = new Stack<>();
+	private final Stack<PacketProcessor<?>> postProcessors = new Stack<>();
+
+	public <T extends PostProcessor> T install(PostFactory<T> factory) {
+		return null;
+	}
+
+	public <T extends PreProcessor> T install(PreFactory<T> factory) {
+
+		T preProcessor = factory.newInstance(this::installPreProcessor);
+
+		return preProcessor;
+	}
+
+	private void installPreProcessor(PreProcessor preProcessor) {
+		if (!(preProcessor instanceof PacketProcessor<?> processor))
+			throw new IllegalArgumentException("invalid pre-processor [%s]"
+					.formatted(preProcessor.getClass()));
+
+		preProcessors.push(processor);
+
+		this.preProcessor = processor.newInstance(this.preProcessor);
+	}
+
+	public <T extends PacketProcessor<T> & PostProcessor> T postInstall(T postProcessor) {
+		postProcessors.push(postProcessor);
+
+		return postProcessor;
+	}
 
 	/**
 	 * Instantiates a new pcap pro.
@@ -315,6 +353,9 @@ public final class PcapPro extends NonSealedPcap implements IpfConfiguration, Pa
 	PcapPro(MemoryAddress pcapHandle, String name, PcapHeaderABI abi) {
 		super(pcapHandle, name, abi);
 		ipfConfig.abi = abi;
+
+		this.preProcessorRoot = new StandardPcapDispatcher(pcapHandle, this::breakloop);
+		this.preProcessor = this.preProcessorRoot;
 
 		setDescriptorType(PacketDescriptorType.TYPE2);
 
@@ -338,19 +379,21 @@ public final class PcapPro extends NonSealedPcap implements IpfConfiguration, Pa
 
 	private PcapPro activateIpfIfNeeded() {
 
-		if (ipfConfig.isIpfEnabled() && !(packetDispatcher instanceof IpfDispatcher))
-			this.packetDispatcher = new JavaIpfDispatcher(
-					getPcapHandle(),
-					this::breakloop,
+		if (ipfConfig.isIpfEnabled() && !(postProcessorCommon instanceof IpfPostProcessor)) {
+			var ipf = new IpfPostProcessorJava(
 					ipfConfig);
+			ipf.setPcapDispatcher(preProcessor);
 
-		this.stats = packetDispatcher.getPacketStatistics();
+			this.postProcessorCommon = ipf;
+		}
+
+		this.stats = postProcessorCommon.getPacketStatistics();
 
 		return this;
 	}
 
 	private void checkIpfIsNotActive() throws IllegalStateException {
-		if (ipfConfig.isIpfEnabled() && packetDispatcher instanceof IpfDispatcher)
+		if (ipfConfig.isIpfEnabled() && postProcessorCommon instanceof IpfPostProcessor)
 			throw new IllegalStateException("IPF already active");
 	}
 
@@ -451,7 +494,7 @@ public final class PcapPro extends NonSealedPcap implements IpfConfiguration, Pa
 	 * @since libpcap 0.4
 	 */
 	public <U> int dispatch(int count, PcapProHandler.OfPacket<U> handler, U user) {
-		return packetDispatcher.dispatchPacket(count, handler, user);
+		return postProcessorCommon.dispatchPacket(count, handler, user);
 	}
 
 	/**
@@ -601,7 +644,7 @@ public final class PcapPro extends NonSealedPcap implements IpfConfiguration, Pa
 
 	/**
 	 * @return
-	 * @see com.slytechs.jnetpcap.pro.internal.PacketStatistics#getDroppedCaplenCount()
+	 * @see com.slytechs.jnetpcap.pro.PacketStatistics#getDroppedCaplenCount()
 	 */
 	@Override
 	public long getDroppedCaplenCount() {
@@ -610,7 +653,7 @@ public final class PcapPro extends NonSealedPcap implements IpfConfiguration, Pa
 
 	/**
 	 * @return
-	 * @see com.slytechs.jnetpcap.pro.internal.PacketStatistics#getDroppedPacketCount()
+	 * @see com.slytechs.jnetpcap.pro.PacketStatistics#getDroppedPacketCount()
 	 */
 	@Override
 	public long getDroppedPacketCount() {
@@ -619,7 +662,7 @@ public final class PcapPro extends NonSealedPcap implements IpfConfiguration, Pa
 
 	/**
 	 * @return
-	 * @see com.slytechs.jnetpcap.pro.internal.PacketStatistics#getDroppedWirelenCount()
+	 * @see com.slytechs.jnetpcap.pro.PacketStatistics#getDroppedWirelenCount()
 	 */
 	@Override
 	public long getDroppedWirelenCount() {
@@ -673,7 +716,7 @@ public final class PcapPro extends NonSealedPcap implements IpfConfiguration, Pa
 
 	/**
 	 * @return
-	 * @see com.slytechs.jnetpcap.pro.internal.PacketStatistics#getReceivedCaplenCount()
+	 * @see com.slytechs.jnetpcap.pro.PacketStatistics#getReceivedCaplenCount()
 	 */
 	@Override
 	public long getReceivedCaplenCount() {
@@ -682,7 +725,7 @@ public final class PcapPro extends NonSealedPcap implements IpfConfiguration, Pa
 
 	/**
 	 * @return
-	 * @see com.slytechs.jnetpcap.pro.internal.PacketStatistics#getReceivedPacketCount()
+	 * @see com.slytechs.jnetpcap.pro.PacketStatistics#getReceivedPacketCount()
 	 */
 	@Override
 	public long getReceivedPacketCount() {
@@ -691,7 +734,7 @@ public final class PcapPro extends NonSealedPcap implements IpfConfiguration, Pa
 
 	/**
 	 * @return
-	 * @see com.slytechs.jnetpcap.pro.internal.PacketStatistics#getReceivedWirelenCount()
+	 * @see com.slytechs.jnetpcap.pro.PacketStatistics#getReceivedWirelenCount()
 	 */
 	@Override
 	public long getReceivedWirelenCount() {
@@ -721,7 +764,7 @@ public final class PcapPro extends NonSealedPcap implements IpfConfiguration, Pa
 	 * @return the uncaught exception
 	 */
 	public Optional<Throwable> getUncaughtException() {
-		return Optional.ofNullable(packetDispatcher.getUncaughtException());
+		return Optional.ofNullable(preProcessor.getUncaughtException());
 	}
 
 	/**
@@ -890,7 +933,7 @@ public final class PcapPro extends NonSealedPcap implements IpfConfiguration, Pa
 	 * @since libpcap 0.4
 	 */
 	public <U> int loop(int count, PcapProHandler.OfPacket<U> handler, U user) {
-		return packetDispatcher.loopPacket(count, handler, user);
+		return postProcessorCommon.loopPacket(count, handler, user);
 	}
 
 	/**
@@ -905,12 +948,12 @@ public final class PcapPro extends NonSealedPcap implements IpfConfiguration, Pa
 		ipfConfig.descriptorType = type;
 		ipfConfig.dissector = PacketDissector.dissector(type);
 
-		this.packetDispatcher = new JavaPacketDispatcher(
-				getPcapHandle(),
-				this::breakloop,
+		var disp = new PacketDispatcherJava(
 				ipfConfig);
+		disp.setPcapDispatcher(preProcessor);
 
-		this.stats = packetDispatcher.getPacketStatistics();
+		this.postProcessorCommon = disp;
+		this.stats = postProcessorCommon.getPacketStatistics();
 
 		return this;
 	}
@@ -1163,11 +1206,4 @@ public final class PcapPro extends NonSealedPcap implements IpfConfiguration, Pa
 		return this;
 	}
 
-	private final Stack<PacketDispatcher> stack = new Stack<>();
-
-	public <T extends PacketDispatcher> T push(T newDispatcher) {
-		stack.push(newDispatcher);
-
-		return newDispatcher;
-	}
 }

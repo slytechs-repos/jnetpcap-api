@@ -17,6 +17,8 @@
  */
 package com.slytechs.jnetpcap.pro.internal;
 
+import com.slytechs.jnetpcap.pro.PacketStatistics;
+
 /**
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
@@ -38,7 +40,7 @@ public class PacketStatisticsImpl implements PacketStatistics {
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.internal.PacketStatistics#getDroppedCaplenCount()
+	 * @see com.slytechs.jnetpcap.pro.PacketStatistics#getDroppedCaplenCount()
 	 */
 	@Override
 	public long getDroppedCaplenCount() {
@@ -46,7 +48,7 @@ public class PacketStatisticsImpl implements PacketStatistics {
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.internal.PacketStatistics#getDroppedPacketCount()
+	 * @see com.slytechs.jnetpcap.pro.PacketStatistics#getDroppedPacketCount()
 	 */
 	@Override
 	public long getDroppedPacketCount() {
@@ -54,7 +56,7 @@ public class PacketStatisticsImpl implements PacketStatistics {
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.internal.PacketStatistics#getDroppedWirelenCount()
+	 * @see com.slytechs.jnetpcap.pro.PacketStatistics#getDroppedWirelenCount()
 	 */
 	@Override
 	public long getDroppedWirelenCount() {
@@ -62,7 +64,7 @@ public class PacketStatisticsImpl implements PacketStatistics {
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.internal.PacketStatistics#getReceivedCaplenCount()
+	 * @see com.slytechs.jnetpcap.pro.PacketStatistics#getReceivedCaplenCount()
 	 */
 	@Override
 	public long getReceivedCaplenCount() {
@@ -70,7 +72,7 @@ public class PacketStatisticsImpl implements PacketStatistics {
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.internal.PacketStatistics#getReceivedPacketCount()
+	 * @see com.slytechs.jnetpcap.pro.PacketStatistics#getReceivedPacketCount()
 	 */
 	@Override
 	public long getReceivedPacketCount() {
@@ -78,7 +80,7 @@ public class PacketStatisticsImpl implements PacketStatistics {
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.internal.PacketStatistics#getReceivedWirelenCount()
+	 * @see com.slytechs.jnetpcap.pro.PacketStatistics#getReceivedWirelenCount()
 	 */
 	@Override
 	public long getReceivedWirelenCount() {

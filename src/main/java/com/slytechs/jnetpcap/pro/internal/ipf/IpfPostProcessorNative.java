@@ -22,7 +22,7 @@ import java.lang.foreign.MemoryAddress;
 import org.jnetpcap.internal.PcapForeignDowncall;
 import org.jnetpcap.internal.PcapForeignInitializer;
 
-import com.slytechs.jnetpcap.pro.internal.JavaPacketDispatcher;
+import com.slytechs.jnetpcap.pro.internal.PacketDispatcherJava;
 
 /**
  * @author Sly Technologies Inc
@@ -30,9 +30,9 @@ import com.slytechs.jnetpcap.pro.internal.JavaPacketDispatcher;
  * @author Mark Bednarczyk
  *
  */
-public class NativeIpfDispatcher
-		extends JavaPacketDispatcher
-		implements IpfDispatcher {
+public class IpfPostProcessorNative
+		extends PacketDispatcherJava
+		implements IpfPostProcessor {
 
 	private MemoryAddress ipfTable;
 
@@ -41,18 +41,16 @@ public class NativeIpfDispatcher
 	 * @param breakDispatch
 	 * @param descriptorType
 	 */
-	public NativeIpfDispatcher(
-			MemoryAddress pcapHandle,
-			Runnable breakDispatch,
+	public IpfPostProcessorNative(
 			PacketDispatcherConfig config) {
 
-		super(pcapHandle, breakDispatch, config);
+		super(config);
 	}
 
 	private static final PcapForeignDowncall ipf_allocate_table;
 
 	static {
-		try (var foreign = new PcapForeignInitializer(NativeIpfDispatcher.class)) {
+		try (var foreign = new PcapForeignInitializer(IpfPostProcessorNative.class)) {
 			ipf_allocate_table = foreign.downcall("ipf_allocate_table(IJ)A");
 		}
 	}

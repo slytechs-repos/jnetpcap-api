@@ -20,7 +20,7 @@ package com.slytechs.jnetpcap.pro.internal.ipf;
 import java.nio.ByteBuffer;
 
 import com.slytechs.jnetpcap.pro.IpfConfiguration;
-import com.slytechs.jnetpcap.pro.internal.ipf.JavaIpfDispatcher.DatagramQueue;
+import com.slytechs.jnetpcap.pro.internal.ipf.IpfPostProcessorJava.DatagramQueue;
 import com.slytechs.protocol.descriptor.IpfFragment;
 import com.slytechs.protocol.runtime.hash.CuckooHashTable;
 import com.slytechs.protocol.runtime.hash.HashTable;
@@ -42,21 +42,21 @@ public class IpfTable {
 	 * @param index the index
 	 * @return the ipf reassembler
 	 */
-	private IpfReassembler allocateIpfBufferSlice(int index) {
+	private IpfDgramReassembler allocateIpfBufferSlice(int index) {
 		int sliceSize = this.bufferSize / tableSize;
 		int off = sliceSize * index;
 
 		ByteBuffer slice = buffer.slice(off, sliceSize);
-		HashEntry<IpfReassembler> entry = table.get(index);
+		HashEntry<IpfDgramReassembler> entry = table.get(index);
 
-		return new IpfReassembler(slice, entry, config);
+		return new IpfDgramReassembler(slice, entry, config);
 	}
 
 	/** The buffer. */
 	private final ByteBuffer buffer;
 
 	/** The table. */
-	private final HashTable<IpfReassembler> table;
+	private final HashTable<IpfDgramReassembler> table;
 
 	/** The buffer size. */
 	private final int bufferSize;
@@ -67,7 +67,7 @@ public class IpfTable {
 	/** The table size. */
 	private final int tableSize;
 
-	private final TimeoutQueue<IpfReassembler> timeoutQueue;
+	private final TimeoutQueue<IpfDgramReassembler> timeoutQueue;
 	private final DatagramQueue datagramQueue;
 
 	/**
@@ -92,7 +92,7 @@ public class IpfTable {
 		this.buffer = buffer;
 		this.tableSize = config.getIpfTableSize();
 
-		this.table = new CuckooHashTable<IpfReassembler>(config.getIpfTableSize())
+		this.table = new CuckooHashTable<IpfDgramReassembler>(config.getIpfTableSize())
 				.enableStickyData(true);
 
 		this.table.fill(this::allocateIpfBufferSlice);
@@ -106,7 +106,7 @@ public class IpfTable {
 	 * @param hashcode the hashcode
 	 * @return the ipf reassembler
 	 */
-	public IpfReassembler lookup(IpfFragment desc, long hashcode) {
+	public IpfDgramReassembler lookup(IpfFragment desc, long hashcode) {
 		var key = desc.keyBuffer();
 		assert key.remaining() > 0 : "key has no data";
 
@@ -126,7 +126,7 @@ public class IpfTable {
 		return reassembler;
 	}
 
-	private void onIpfTimeout(IpfReassembler timedoutReassembler) {
+	private void onIpfTimeout(IpfDgramReassembler timedoutReassembler) {
 		timedoutReassembler.onTimeoutExpired(datagramQueue);
 	}
 }

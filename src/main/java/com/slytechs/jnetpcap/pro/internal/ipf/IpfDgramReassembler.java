@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import com.slytechs.jnetpcap.pro.IpfConfiguration;
-import com.slytechs.jnetpcap.pro.internal.ipf.JavaIpfDispatcher.DatagramQueue;
+import com.slytechs.jnetpcap.pro.internal.ipf.IpfPostProcessorJava.DatagramQueue;
 import com.slytechs.jnetpcap.pro.internal.ipf.TimeoutQueue.Expirable;
 import com.slytechs.protocol.Registration;
 import com.slytechs.protocol.descriptor.IpfFragment;
@@ -89,7 +89,7 @@ import com.slytechs.protocol.runtime.util.Detail;
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  */
-public class IpfReassembler implements Expirable {
+public class IpfDgramReassembler implements Expirable {
 
 	private static final int ENCAPS_HEADER_MAX_LENGTH = 128;
 
@@ -116,7 +116,7 @@ public class IpfReassembler implements Expirable {
 	 * accurately.
 	 */
 	private final TimestampSource timeSource;
-	private final HashEntry<IpfReassembler> tableEntry;
+	private final HashEntry<IpfDgramReassembler> tableEntry;
 	private final IpfConfiguration config;
 	private long expiration;
 
@@ -146,9 +146,9 @@ public class IpfReassembler implements Expirable {
 
 	private boolean isTimeout;
 
-	public IpfReassembler(
+	public IpfDgramReassembler(
 			ByteBuffer buffer,
-			HashEntry<IpfReassembler> tableEntry,
+			HashEntry<IpfDgramReassembler> tableEntry,
 			IpfConfiguration config) {
 
 		this.buffer = buffer;
@@ -190,7 +190,8 @@ public class IpfReassembler implements Expirable {
 
 	public void cancelTimeout() {
 		if (timeoutRegistration == null)
-			throw new IllegalStateException("timeout not set");
+			throw new IllegalStateException("timeout not set [#%d]"
+					.formatted(index));
 
 		timeoutRegistration.unregister();
 		timeoutRegistration = null;
@@ -202,6 +203,7 @@ public class IpfReassembler implements Expirable {
 		this.hasFirst = hasLast = false;
 		this.nextSegmentIndex = 0;
 		this.isReassembled = false;
+		this.expiration = 0;
 
 		Arrays.stream(segments).forEach(IpfSegment::reset);
 
@@ -217,7 +219,9 @@ public class IpfReassembler implements Expirable {
 		if (timeoutRegistration != null)
 			cancelTimeout();
 
-		markHashtableEntryUnavailable();
+		markHashtableEntryAvailable();
+
+//		System.out.println("close [#%d]".formatted(index));
 	}
 
 	/**
@@ -277,6 +281,10 @@ public class IpfReassembler implements Expirable {
 		tableEntry.setEmpty(false);
 	}
 
+	private void markHashtableEntryAvailable() {
+		tableEntry.setEmpty(true);
+	}
+
 	public void open(ByteBuffer key) {
 		if (session != null)
 			throw new IllegalStateException("can not reset, still active");
@@ -287,6 +295,11 @@ public class IpfReassembler implements Expirable {
 
 		this.buffer.clear();
 		this.observedSize = 0;
+
+		markHashtableEntryUnavailable();
+
+//		System.out.println("open [#%d]".formatted(index));
+
 	}
 
 	private void processCommon(ByteBuffer packet, IpfFragment desc) {
@@ -335,6 +348,10 @@ public class IpfReassembler implements Expirable {
 		this.frameNo = frameNo;
 
 		if (!desc.isFrag())
+			return false;
+
+		/* No more room for fragments */
+		if (nextSegmentIndex == segments.length)
 			return false;
 
 		if (startTimeMilli == 0) {

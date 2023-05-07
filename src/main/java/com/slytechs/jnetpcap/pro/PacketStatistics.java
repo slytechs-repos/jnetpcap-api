@@ -15,7 +15,9 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.slytechs.jnetpcap.pro.internal;
+package com.slytechs.jnetpcap.pro;
+
+import com.slytechs.jnetpcap.pro.internal.PacketStatisticsImpl;
 
 /**
  * @author Sly Technologies Inc

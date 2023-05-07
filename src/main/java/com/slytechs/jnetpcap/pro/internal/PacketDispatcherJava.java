@@ -23,9 +23,9 @@ import java.lang.foreign.MemorySession;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-import org.jnetpcap.internal.StandardPcapDispatcher;
+import org.jnetpcap.internal.PcapDispatcher;
 
-import com.slytechs.jnetpcap.pro.PacketDispatcher;
+import com.slytechs.jnetpcap.pro.PacketStatistics;
 import com.slytechs.jnetpcap.pro.PcapProHandler;
 import com.slytechs.protocol.Packet;
 import com.slytechs.protocol.descriptor.PacketDescriptor;
@@ -40,8 +40,7 @@ import com.slytechs.protocol.pack.core.constants.PacketDescriptorType;
  * @author Mark Bednarczyk
  *
  */
-public class JavaPacketDispatcher
-		extends StandardPcapDispatcher
+public class PacketDispatcherJava
 		implements PacketDispatcher {
 
 	/** The Constant DESC_BUFFER_SIZE. */
@@ -60,6 +59,8 @@ public class JavaPacketDispatcher
 
 	protected final PacketStatisticsImpl stats = (PacketStatisticsImpl) PacketStatistics.newInstance();
 
+	protected PcapDispatcher pcapDispatcher;
+
 	/**
 	 * Instantiates a new packet dispatcher.
 	 *
@@ -67,11 +68,8 @@ public class JavaPacketDispatcher
 	 * @param breakDispatch  the break dispatch
 	 * @param descriptorType the descriptor type
 	 */
-	public JavaPacketDispatcher(
-			MemoryAddress pcapHandle,
-			Runnable breakDispatch,
+	public PacketDispatcherJava(
 			PacketDispatcherConfig config) {
-		super(pcapHandle, breakDispatch);
 
 		this.config = config;
 		this.singletonDescBuffer = ByteBuffer
@@ -79,6 +77,10 @@ public class JavaPacketDispatcher
 				.order(ByteOrder.nativeOrder());
 
 		this.singletonPacket = new Packet(config.descriptorType.newDescriptor());
+	}
+
+	public void setPcapDispatcher(PcapDispatcher pcapDispatcher) {
+		this.pcapDispatcher = pcapDispatcher;
 	}
 
 	/**
@@ -154,7 +156,7 @@ public class JavaPacketDispatcher
 	 */
 	@Override
 	public <U> int dispatchPacket(int count, PcapProHandler.OfPacket<U> sink, U user) {
-		return super.dispatchNative(count, (ignore, pcapHdr, pktData) -> {
+		return pcapDispatcher.dispatchNative(count, (ignore, pcapHdr, pktData) -> {
 
 			try (var session = MemorySession.openShared()) {
 
@@ -190,12 +192,12 @@ public class JavaPacketDispatcher
 
 			Packet packet = createSingletonPacket(mpkt, caplen, wirelen, timestamp);
 
-			incPacketReceived(caplen, wirelen);
+			stats.incReceived(caplen, wirelen, 1);
 
 			return packet;
 
 		} catch (Throwable e) {
-			incPacketDropped(caplen, wirelen);
+			stats.incDropped(caplen, wirelen, 1);
 			onNativeCallbackException(e, caplen, wirelen);
 			return null;
 		}
@@ -254,7 +256,7 @@ public class JavaPacketDispatcher
 	 */
 	@Override
 	public <U> int loopPacket(int count, PcapProHandler.OfPacket<U> sink, U user) {
-		return super.loopNative(count, (ignore, pcapHdr, pktData) -> {
+		return pcapDispatcher.loopNative(count, (ignore, pcapHdr, pktData) -> {
 
 			/*
 			 * Initialize outside the try-catch to attempt to read caplen for any exceptions
@@ -290,18 +292,18 @@ public class JavaPacketDispatcher
 		if (e instanceof RuntimeException runtime)
 			onNativeCallbackException(runtime, caplen, wirelen);
 		else
-			onNativeCallbackException(new IllegalStateException("unable to process packet", e));
+			pcapDispatcher.onNativeCallbackException(new IllegalStateException("unable to process packet", e));
 	}
 
 	private void onNativeCallbackException(RuntimeException e, int caplen, int wirelen) {
 		stats.incDropped(caplen, wirelen, 1);
 
-		super.onNativeCallbackException(e);
+		pcapDispatcher.onNativeCallbackException(e);
 	}
 
 	/**
 	 * @return
-	 * @see com.slytechs.jnetpcap.pro.internal.PacketStatistics#getDroppedCaplenCount()
+	 * @see com.slytechs.jnetpcap.pro.PacketStatistics#getDroppedCaplenCount()
 	 */
 	public long getDroppedCaplenCount() {
 		return stats.getDroppedCaplenCount();
@@ -309,7 +311,7 @@ public class JavaPacketDispatcher
 
 	/**
 	 * @return
-	 * @see com.slytechs.jnetpcap.pro.internal.PacketStatistics#getDroppedPacketCount()
+	 * @see com.slytechs.jnetpcap.pro.PacketStatistics#getDroppedPacketCount()
 	 */
 	public long getDroppedPacketCount() {
 		return stats.getDroppedPacketCount();
@@ -317,7 +319,7 @@ public class JavaPacketDispatcher
 
 	/**
 	 * @return
-	 * @see com.slytechs.jnetpcap.pro.internal.PacketStatistics#getDroppedWirelenCount()
+	 * @see com.slytechs.jnetpcap.pro.PacketStatistics#getDroppedWirelenCount()
 	 */
 	public long getDroppedWirelenCount() {
 		return stats.getDroppedWirelenCount();
@@ -325,7 +327,7 @@ public class JavaPacketDispatcher
 
 	/**
 	 * @return
-	 * @see com.slytechs.jnetpcap.pro.internal.PacketStatistics#getReceivedCaplenCount()
+	 * @see com.slytechs.jnetpcap.pro.PacketStatistics#getReceivedCaplenCount()
 	 */
 	public long getReceivedCaplenCount() {
 		return stats.getReceivedCaplenCount();
@@ -333,7 +335,7 @@ public class JavaPacketDispatcher
 
 	/**
 	 * @return
-	 * @see com.slytechs.jnetpcap.pro.internal.PacketStatistics#getReceivedPacketCount()
+	 * @see com.slytechs.jnetpcap.pro.PacketStatistics#getReceivedPacketCount()
 	 */
 	public long getReceivedPacketCount() {
 		return stats.getReceivedPacketCount();
@@ -341,7 +343,7 @@ public class JavaPacketDispatcher
 
 	/**
 	 * @return
-	 * @see com.slytechs.jnetpcap.pro.internal.PacketStatistics#getReceivedWirelenCount()
+	 * @see com.slytechs.jnetpcap.pro.PacketStatistics#getReceivedWirelenCount()
 	 */
 	public long getReceivedWirelenCount() {
 		return stats.getReceivedWirelenCount();

@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 import org.jnetpcap.internal.PcapHeaderABI;
 
 import com.slytechs.jnetpcap.pro.IpfConfiguration;
-import com.slytechs.jnetpcap.pro.PacketDispatcher.PacketDispatcherConfig;
+import com.slytechs.jnetpcap.pro.internal.PacketDispatcher.PacketDispatcherConfig;
 import com.slytechs.protocol.runtime.time.TimestampSource;
 import com.slytechs.protocol.runtime.time.TimestampSource.AssignableTimestampSource;
 import com.slytechs.protocol.runtime.time.TimestampUnit;
