@@ -22,8 +22,11 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.MemorySession;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.concurrent.TimeoutException;
 
+import org.jnetpcap.PcapException;
 import org.jnetpcap.internal.PcapDispatcher;
+import org.jnetpcap.util.PcapPacketRef;
 
 import com.slytechs.jnetpcap.pro.CaptureStatistics;
 import com.slytechs.jnetpcap.pro.PcapProHandler;
@@ -181,7 +184,7 @@ public class MainPacketDispatcher
 		 */
 		int caplen = 0, wirelen = 0;
 		try {
-			
+
 			/* Pcap header fields */
 			caplen = config.abi.captureLength(pcapHdr);
 			wirelen = config.abi.wireLength(pcapHdr);
@@ -354,11 +357,84 @@ public class MainPacketDispatcher
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.PacketDispatcher#getPacketStatistics()
+	 * @see com.slytechs.jnetpcap.pro.PacketDispatcher#getCaptureStatistics()
 	 */
 	@Override
-	public CaptureStatistics getPacketStatistics() {
+	public CaptureStatistics getCaptureStatistics() {
 		return stats;
+	}
+
+	private MemorySession oneTimeSession;
+
+	/**
+	 * @see com.slytechs.jnetpcap.pro.internal.PacketDispatcher#nextExPacket()
+	 */
+	@Override
+	public Packet nextExPacket() throws PcapException, TimeoutException {
+		PcapPacketRef packetRef = pcapDispatcher.nextEx();
+
+		MemoryAddress pcapHdr = packetRef.header().address();
+		MemoryAddress pktData = packetRef.data().address();
+
+		int caplen = 0, wirelen = 0;
+
+		/* Pcap header fields */
+		caplen = config.abi.captureLength(pcapHdr);
+		wirelen = config.abi.wireLength(pcapHdr);
+		long tvSec = config.abi.tvSec(pcapHdr);
+		long tvUsec = config.abi.tvUsec(pcapHdr);
+
+		long timestamp = config.timestampUnit.ofSecond(tvSec, tvUsec);
+
+		MemorySegment mpkt = MemorySegment.ofAddress(pktData, caplen, getOnetimeMemorySession());
+
+		Packet packet = createSingletonPacket(mpkt, caplen, wirelen, timestamp);
+
+		stats.incReceived(caplen, wirelen, 1);
+
+		return packet;
+	}
+
+	/**
+	 * Gets the onetime memory session. The memory session mimics how Pcap next and
+	 * nextEx returned packet's behave. They are only valid until the next call.
+	 *
+	 * @return the onetime memory session
+	 */
+	private MemorySession getOnetimeMemorySession() {
+		if (oneTimeSession != null)
+			oneTimeSession.close();
+
+		return oneTimeSession = MemorySession.openShared();
+	}
+
+	/**
+	 * @see com.slytechs.jnetpcap.pro.internal.PacketDispatcher#nextPacket()
+	 */
+	@Override
+	public Packet nextPacket() throws PcapException {
+		PcapPacketRef packetRef = pcapDispatcher.next();
+
+		MemoryAddress pcapHdr = packetRef.header().address();
+		MemoryAddress pktData = packetRef.data().address();
+
+		int caplen = 0, wirelen = 0;
+
+		/* Pcap header fields */
+		caplen = config.abi.captureLength(pcapHdr);
+		wirelen = config.abi.wireLength(pcapHdr);
+		long tvSec = config.abi.tvSec(pcapHdr);
+		long tvUsec = config.abi.tvUsec(pcapHdr);
+
+		long timestamp = config.timestampUnit.ofSecond(tvSec, tvUsec);
+
+		MemorySegment mpkt = MemorySegment.ofAddress(pktData, caplen, getOnetimeMemorySession());
+
+		Packet packet = createSingletonPacket(mpkt, caplen, wirelen, timestamp);
+
+		stats.incReceived(caplen, wirelen, 1);
+
+		return packet;
 	}
 
 }

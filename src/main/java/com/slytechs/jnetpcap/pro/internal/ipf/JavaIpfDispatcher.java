@@ -119,7 +119,7 @@ public final class JavaIpfDispatcher extends AbstractPacketDispatcher implements
 		this.ipfTable = new IpfTable(config, this::sendMemorySegment);
 		this.dgramQueue = new ArrayBlockingQueue<>(config.getTimeoutQueueSize());
 		this.abi = pcap.abi();
-		this.packetStats = (CaptureStatisticsImpl) getPacketStatistics();
+		this.packetStats = (CaptureStatisticsImpl) getCaptureStatistics();
 	}
 
 	/**

@@ -23,6 +23,7 @@ import java.lang.foreign.MemoryAddress;
 import java.util.Optional;
 import java.util.Stack;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
 import org.jnetpcap.Pcap0_4;
@@ -41,6 +42,7 @@ import org.jnetpcap.internal.NonSealedPcap;
 import org.jnetpcap.internal.PcapDispatcher;
 import org.jnetpcap.internal.PcapHeaderABI;
 import org.jnetpcap.internal.StandardPcapDispatcher;
+import org.jnetpcap.util.PcapPacketRef;
 
 import com.slytechs.jnetpcap.pro.PcapConfigurator.PostFactory;
 import com.slytechs.jnetpcap.pro.PcapConfigurator.PostProcessor;
@@ -52,6 +54,7 @@ import com.slytechs.jnetpcap.pro.internal.MainPacketDispatcher;
 import com.slytechs.jnetpcap.pro.internal.PacketDispatcher;
 import com.slytechs.jnetpcap.pro.internal.PacketDispatcherConfig;
 import com.slytechs.protocol.Frame.FrameNumber;
+import com.slytechs.protocol.Packet;
 import com.slytechs.protocol.descriptor.PacketDissector;
 import com.slytechs.protocol.meta.PacketFormat;
 import com.slytechs.protocol.pack.core.constants.PacketDescriptorType;
@@ -673,6 +676,119 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	}
 
 	/**
+	 * @see org.jnetpcap.Pcap0_4#next()
+	 */
+	@Override
+	public PcapPacketRef next() throws PcapException {
+		return preProcessor.next();
+	}
+
+	/**
+	 * @see org.jnetpcap.Pcap0_8#nextEx()
+	 */
+	@Override
+	public PcapPacketRef nextEx() throws PcapException, TimeoutException {
+		return preProcessor.nextEx();
+	}
+
+	/**
+	 * Read the next packet from a pcap handle.
+	 * <p>
+	 * reads the next packet and returns a success/failure indication. If the packet
+	 * was read without problems, the pointer pointed to by the pktHeader argument
+	 * is set to point to the pcap_pkthdr struct for the packet, and the pointer
+	 * pointed to by the pktData argument is set to point to the data in the packet.
+	 * The struct pcap_pkthdr and the packet data are not to be freed by the caller,
+	 * and are not guaranteed to be valid after the next call to {@link #nextEx},
+	 * {@link #next}, {@link #loop}, or {@link #dispatch}; if the full needs them to
+	 * remain valid, it must make a copy of them. *
+	 * </p>
+	 * <p>
+	 * The bytes of data from the packet begin with a link-layer header. The format
+	 * of the link-layer header is indicated by the return value of the
+	 * {@code datalink} routine when handed the pcap_t value also passed to
+	 * {@code loop} or {@code dispatch}. https://www.tcpdump.org/linktypes.html
+	 * lists the values {@code datalink} can return and describes the packet formats
+	 * that correspond to those values. The value it returns will be valid for all
+	 * packets received unless and until {@code setDatalink} is called; after a
+	 * successful call to {@code setDatalink}, all subsequent packets will have a
+	 * link-layer header of the type specified by the link-layer header type value
+	 * passed to {@code setDatalink}.
+	 * </p>
+	 * <p>
+	 * Do NOT assume that the packets for a given capture or ``savefile`` will have
+	 * any given link-layer header type, such as DLT_EN10MB for Ethernet. For
+	 * example, the "any" device on Linux will have a link-layer header type of
+	 * DLT_LINUX_SLL or DLT_LINUX_SLL2 even if all devices on the system at the time
+	 * the "any" device is opened have some other data link type, such as DLT_EN10MB
+	 * for Ethernet.
+	 * </p>
+	 *
+	 * @return a native pcap packet reference or null if packets are being read from
+	 *         a ``savefile'' and there are no more packets to read from the
+	 *         savefile.
+	 * @throws PcapException    any pcap errors such as not activated, etc.
+	 * @throws TimeoutException if packets are being read from a live capture and
+	 *                          the packet buffer timeout expired
+	 * @since Pcap 0.8
+	 */
+	public Packet nextExPacket() throws PcapException, TimeoutException {
+		return postProcessor.nextExPacket();
+	}
+
+	/**
+	 * read the next packet from a handle.
+	 * 
+	 * <p>
+	 * reads the next packet (by calling dispatch with a cnt of 1) and returns a
+	 * u_char pointer to the data in that packet. The packet data is not to be freed
+	 * by the caller, and is not guaranteed to be valid after the next call to
+	 * nextEx, next, loop, or dispatch; if the full needs it to remain valid, it
+	 * must make a copy of it. The pcap_pkthdr structure pointed to by h is filled
+	 * in with the appropriate values for the packet.
+	 * </p>
+	 * 
+	 * <p>
+	 * The bytes of data from the packet begin with a link-layer header. The format
+	 * of the link-layer header is indicated by the return value of the
+	 * {@code datalink} routine when handed the pcap_t value also passed to
+	 * {@code loop} or {@code dispatch}. https://www.tcpdump.org/linktypes.html
+	 * lists the values {@code datalink} can return and describes the packet formats
+	 * that correspond to those values. The value it returns will be valid for all
+	 * packets received unless and until {@code setDatalink} is called; after a
+	 * successful call to {@code setDatalink}, all subsequent packets will have a
+	 * link-layer header of the type specified by the link-layer header type value
+	 * passed to {@code setDatalink}.
+	 * </p>
+	 * 
+	 * <p>
+	 * Do NOT assume that the packets for a given capture or ``savefile`` will have
+	 * any given link-layer header type, such as DLT_EN10MB for Ethernet. For
+	 * example, the "any" device on Linux will have a link-layer header type of
+	 * DLT_LINUX_SLL or DLT_LINUX_SLL2 even if all devices on the system at the time
+	 * the "any" device is opened have some other data link type, such as DLT_EN10MB
+	 * for Ethernet.
+	 * </p>
+	 *
+	 * @return a pointer to the packet data on success, and returns NULL if no
+	 *         packets were read from a live capture (if, for example, they were
+	 *         discarded because they didn't pass the packet filter, or if, on
+	 *         platforms that support a packet buffer timeout that starts before any
+	 *         packets arrive, the timeout expires before any packets arrive, or if
+	 *         the file descriptor for the capture device is in non-blocking mode
+	 *         and no packets were available to be read), or if no more packets are
+	 *         available in a ``savefile.'' Unfortunately, there is no way to
+	 *         determine whether an error occurred or not.
+	 * @throws PcapException Unfortunately, there is no way to determine whether an
+	 *                       error occurred or not so exception may be due to no
+	 *                       packets being captured and not an actual error.
+	 * @since libpcap 0.4
+	 */
+	public Packet nextPacket() throws PcapException {
+		return postProcessor.nextPacket();
+	}
+
+	/**
 	 * Sets the descriptor type.
 	 *
 	 * @param type the type
@@ -682,7 +798,7 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 		config.descriptorType = type;
 		config.dissector = PacketDissector.dissector(type);
 
-		this.stats = postProcessorRoot.getPacketStatistics();
+		this.stats = postProcessorRoot.getCaptureStatistics();
 
 		return this;
 	}

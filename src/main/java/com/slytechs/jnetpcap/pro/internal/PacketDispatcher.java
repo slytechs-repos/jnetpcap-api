@@ -21,6 +21,9 @@ import java.lang.foreign.MemoryAddress;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.MemorySession;
 import java.nio.ByteBuffer;
+import java.util.concurrent.TimeoutException;
+
+import org.jnetpcap.PcapException;
 
 import com.slytechs.jnetpcap.pro.CaptureStatistics;
 import com.slytechs.jnetpcap.pro.PcapProHandler;
@@ -125,7 +128,7 @@ public interface PacketDispatcher {
 	 */
 	<U> int loopPacket(int count, PcapProHandler.OfPacket<U> sink, U user);
 
-	CaptureStatistics getPacketStatistics();
+	CaptureStatistics getCaptureStatistics();
 
 	<U> Packet processPacket(
 			MemoryAddress pcapHdr,
@@ -140,4 +143,8 @@ public interface PacketDispatcher {
 			long timestamp);
 
 	void onNativeCallbackException(Throwable e, int caplen, int wirelen);
+
+	Packet nextExPacket() throws PcapException, TimeoutException;
+
+	Packet nextPacket() throws PcapException;
 }

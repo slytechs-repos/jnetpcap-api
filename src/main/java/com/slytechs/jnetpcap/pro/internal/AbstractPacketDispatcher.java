@@ -22,11 +22,13 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.MemorySession;
 import java.nio.ByteBuffer;
 import java.util.Objects;
+import java.util.concurrent.TimeoutException;
 
+import org.jnetpcap.PcapException;
 import org.jnetpcap.internal.PcapDispatcher;
 
-import com.slytechs.jnetpcap.pro.PcapConfigurator;
 import com.slytechs.jnetpcap.pro.CaptureStatistics;
+import com.slytechs.jnetpcap.pro.PcapConfigurator;
 import com.slytechs.jnetpcap.pro.PcapProHandler.OfPacket;
 import com.slytechs.protocol.Packet;
 import com.slytechs.protocol.descriptor.PacketDissector;
@@ -50,7 +52,7 @@ public class AbstractPacketDispatcher extends AbstractPcapDispatcher implements 
 
 	public AbstractPacketDispatcher(PacketDispatcher packetDispatcher, PcapDispatcher pcapDispatcher) {
 		super(pcapDispatcher);
-		
+
 		this.packetDispatcher = Objects.requireNonNull(packetDispatcher, "packetDispatcher");
 	}
 
@@ -102,11 +104,11 @@ public class AbstractPacketDispatcher extends AbstractPcapDispatcher implements 
 
 	/**
 	 * @return
-	 * @see com.slytechs.jnetpcap.pro.internal.PacketDispatcher#getPacketStatistics()
+	 * @see com.slytechs.jnetpcap.pro.internal.PacketDispatcher#getCaptureStatistics()
 	 */
 	@Override
-	public CaptureStatistics getPacketStatistics() {
-		return packetDispatcher.getPacketStatistics();
+	public CaptureStatistics getCaptureStatistics() {
+		return packetDispatcher.getCaptureStatistics();
 	}
 
 	@Override
@@ -122,6 +124,16 @@ public class AbstractPacketDispatcher extends AbstractPcapDispatcher implements 
 	@Override
 	public void onNativeCallbackException(Throwable e, int caplen, int wirelen) {
 		packetDispatcher.onNativeCallbackException(e, caplen, wirelen);
+	}
+
+	@Override
+	public Packet nextExPacket() throws PcapException, TimeoutException {
+		return packetDispatcher.nextExPacket();
+	}
+
+	@Override
+	public Packet nextPacket() throws PcapException {
+		return packetDispatcher.nextPacket();
 	}
 
 }

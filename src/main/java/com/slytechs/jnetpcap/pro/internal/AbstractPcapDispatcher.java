@@ -20,9 +20,12 @@ package com.slytechs.jnetpcap.pro.internal;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.lang.foreign.MemoryAddress;
 import java.util.Objects;
+import java.util.concurrent.TimeoutException;
 
+import org.jnetpcap.PcapException;
 import org.jnetpcap.internal.PcapDispatcher;
 import org.jnetpcap.internal.PcapHeaderABI;
+import org.jnetpcap.util.PcapPacketRef;
 
 /**
  * @author Sly Technologies Inc
@@ -45,8 +48,9 @@ public class AbstractPcapDispatcher implements PcapDispatcher {
 		this.pcapDispatcher = Objects.requireNonNull(pcapDispatcher, "pcapDispatcher");
 	}
 
-	protected PcapDispatcher getPcapDispatcher() {
-		return pcapDispatcher;
+	@Override
+	public PcapHeaderABI abi() {
+		return getPcapDispatcher().abi();
 	}
 
 	/**
@@ -57,6 +61,15 @@ public class AbstractPcapDispatcher implements PcapDispatcher {
 	@Override
 	public int captureLength(MemoryAddress address) {
 		return getPcapDispatcher().captureLength(address);
+	}
+
+	/**
+	 * 
+	 * @see org.jnetpcap.internal.PcapDispatcher#close()
+	 */
+	@Override
+	public void close() {
+		getPcapDispatcher().close();
 	}
 
 	/**
@@ -86,6 +99,19 @@ public class AbstractPcapDispatcher implements PcapDispatcher {
 		return getPcapDispatcher().dispatchRaw(count, callbackFunc, userData);
 	}
 
+	protected PcapDispatcher getPcapDispatcher() {
+		return pcapDispatcher;
+	}
+
+	/**
+	 * @return
+	 * @see org.jnetpcap.internal.PcapDispatcher#getUncaughtException()
+	 */
+	@Override
+	public RuntimeException getUncaughtException() {
+		return getPcapDispatcher().getUncaughtException();
+	}
+
 	/**
 	 * @param address
 	 * @return
@@ -94,6 +120,15 @@ public class AbstractPcapDispatcher implements PcapDispatcher {
 	@Override
 	public int headerLength(MemoryAddress address) {
 		return getPcapDispatcher().headerLength(address);
+	}
+
+	/**
+	 * 
+	 * @see org.jnetpcap.internal.PcapDispatcher#interrupt()
+	 */
+	@Override
+	public void interrupt() {
+		getPcapDispatcher().interrupt();
 	}
 
 	/**
@@ -124,33 +159,6 @@ public class AbstractPcapDispatcher implements PcapDispatcher {
 	}
 
 	/**
-	 * @return
-	 * @see org.jnetpcap.internal.PcapDispatcher#getUncaughtException()
-	 */
-	@Override
-	public RuntimeException getUncaughtException() {
-		return getPcapDispatcher().getUncaughtException();
-	}
-
-	/**
-	 * @param exceptionHandler
-	 * @see org.jnetpcap.internal.PcapDispatcher#setUncaughtExceptionHandler(java.lang.Thread.UncaughtExceptionHandler)
-	 */
-	@Override
-	public void setUncaughtExceptionHandler(UncaughtExceptionHandler exceptionHandler) {
-		getPcapDispatcher().setUncaughtExceptionHandler(exceptionHandler);
-	}
-
-	/**
-	 * 
-	 * @see org.jnetpcap.internal.PcapDispatcher#close()
-	 */
-	@Override
-	public void close() {
-		getPcapDispatcher().close();
-	}
-
-	/**
 	 * @param user
 	 * @param header
 	 * @param packet
@@ -160,6 +168,16 @@ public class AbstractPcapDispatcher implements PcapDispatcher {
 	@Override
 	public void nativeCallback(MemoryAddress user, MemoryAddress header, MemoryAddress packet) {
 		getPcapDispatcher().nativeCallback(user, header, packet);
+	}
+
+	@Override
+	public PcapPacketRef next() throws PcapException {
+		return pcapDispatcher.next();
+	}
+
+	@Override
+	public PcapPacketRef nextEx() throws PcapException, TimeoutException {
+		return pcapDispatcher.nextEx();
 	}
 
 	/**
@@ -172,17 +190,12 @@ public class AbstractPcapDispatcher implements PcapDispatcher {
 	}
 
 	/**
-	 * 
-	 * @see org.jnetpcap.internal.PcapDispatcher#interrupt()
+	 * @param exceptionHandler
+	 * @see org.jnetpcap.internal.PcapDispatcher#setUncaughtExceptionHandler(java.lang.Thread.UncaughtExceptionHandler)
 	 */
 	@Override
-	public void interrupt() {
-		getPcapDispatcher().interrupt();
-	}
-
-	@Override
-	public PcapHeaderABI abi() {
-		return getPcapDispatcher().abi();
+	public void setUncaughtExceptionHandler(UncaughtExceptionHandler exceptionHandler) {
+		getPcapDispatcher().setUncaughtExceptionHandler(exceptionHandler);
 	}
 
 }
