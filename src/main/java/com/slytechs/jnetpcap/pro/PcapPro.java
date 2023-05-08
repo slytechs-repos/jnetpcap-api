@@ -315,6 +315,8 @@ public final class PcapPro extends NonSealedPcap implements PacketStatistics {
 	private final Stack<PcapConfigurator<?>> preProcessors = new Stack<>();
 	private final Stack<PcapConfigurator<?>> postProcessors = new Stack<>();
 
+	private boolean isActive;
+
 	/**
 	 * Instantiates a new pcap pro.
 	 *
@@ -336,8 +338,6 @@ public final class PcapPro extends NonSealedPcap implements PacketStatistics {
 		setDescriptorType(PacketDescriptorType.TYPE2);
 	}
 
-	private boolean isActive;
-
 	@Override
 	public void activate() throws PcapException {
 		if (isActive)
@@ -354,6 +354,16 @@ public final class PcapPro extends NonSealedPcap implements PacketStatistics {
 		} finally {
 			this.isActive = true;
 		}
+	}
+
+	private void checkIfActive() throws IllegalStateException {
+		if (!isActive)
+			throw new IllegalStateException("inactive - must use Pcap.activate()");
+	}
+
+	private void checkIfInactive() throws IllegalStateException {
+		if (isActive)
+			throw new IllegalStateException("handle already active");
 	}
 
 	/**
@@ -437,16 +447,6 @@ public final class PcapPro extends NonSealedPcap implements PacketStatistics {
 		checkIfActive();
 
 		return postProcessor.dispatchPacket(count, handler, user);
-	}
-
-	private void checkIfActive() throws IllegalStateException {
-		if (!isActive)
-			throw new IllegalStateException("inactive - must use Pcap.activate()");
-	}
-
-	private void checkIfInactive() throws IllegalStateException {
-		if (isActive)
-			throw new IllegalStateException("handle already active");
 	}
 
 	/**
@@ -561,12 +561,10 @@ public final class PcapPro extends NonSealedPcap implements PacketStatistics {
 		return preProcessor;
 	}
 
-	private void installMainPacketProcessor() {
-		/*
-		 * Main processor already created, we just need to connect it up the pcap
-		 * dispatchers (ie. PreProcessors) that are already installed and configured.
-		 */
-		postProcessorRoot.setPcapDispatcher(preProcessor);
+	private void installAllPostProcessors() {
+		postProcessors.stream()
+				.filter(c -> c.isEnabled())
+				.forEach(this::installPostProcessor);
 	}
 
 	private void installAllPreProcessors() {
@@ -575,10 +573,12 @@ public final class PcapPro extends NonSealedPcap implements PacketStatistics {
 				.forEach(this::installPreProcessor);
 	}
 
-	private void installAllPostProcessors() {
-		postProcessors.stream()
-				.filter(c -> c.isEnabled())
-				.forEach(this::installPostProcessor);
+	private void installMainPacketProcessor() {
+		/*
+		 * Main processor already created, we just need to connect it up the pcap
+		 * dispatchers (ie. PreProcessors) that are already installed and configured.
+		 */
+		postProcessorRoot.setPcapDispatcher(preProcessor);
 	}
 
 	private void installPostProcessor(PcapConfigurator<?> processor) {
@@ -769,6 +769,39 @@ public final class PcapPro extends NonSealedPcap implements PacketStatistics {
 		super.setUncaughtExceptionHandler(exceptionHandler);
 
 		return this;
+	}
+
+	/**
+	 * Uninstall selectively pre or post packet processors. The processors are
+	 * removed from the install queues and will not be installed at the time of
+	 * activation.
+	 *
+	 * @param preProcessors  the pre processors
+	 * @param postProcessors the post processors
+	 * @return the pcap pro
+	 */
+	public PcapPro uninstall(boolean preProcessors, boolean postProcessors) {
+		checkIfInactive();
+
+		if (preProcessors)
+			this.preProcessors.clear();
+
+		if (postProcessors)
+			this.postProcessors.clear();
+
+		return this;
+	}
+
+	/**
+	 * Uninstall all pre and post packet processors. The processors are removed from
+	 * the installation queues and will not be installed at the time of activation.
+	 *
+	 * @return reference to this pcap handle
+	 */
+	public PcapPro uninstallAll() {
+		checkIfInactive();
+
+		return uninstall(true, true);
 	}
 
 }
