@@ -22,13 +22,14 @@ import java.lang.foreign.MemoryAddress;
 import java.util.Objects;
 
 import org.jnetpcap.internal.PcapDispatcher;
+import org.jnetpcap.internal.PcapHeaderABI;
 
 /**
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  *
  */
-public class AbstractPreProcessor implements PcapDispatcher {
+public class AbstractPcapDispatcher implements PcapDispatcher {
 
 	public interface PcapDispatcherFactory {
 		PcapDispatcher newInstance(PcapDispatcher source, Object context);
@@ -36,8 +37,16 @@ public class AbstractPreProcessor implements PcapDispatcher {
 
 	private final PcapDispatcher pcapDispatcher;
 
-	public AbstractPreProcessor(PcapDispatcher pcapDispatcher) {
+	protected AbstractPcapDispatcher() {
+		this.pcapDispatcher = null;
+	}
+
+	protected AbstractPcapDispatcher(PcapDispatcher pcapDispatcher) {
 		this.pcapDispatcher = Objects.requireNonNull(pcapDispatcher, "pcapDispatcher");
+	}
+
+	protected PcapDispatcher getPcapDispatcher() {
+		return pcapDispatcher;
 	}
 
 	/**
@@ -47,7 +56,7 @@ public class AbstractPreProcessor implements PcapDispatcher {
 	 */
 	@Override
 	public int captureLength(MemoryAddress address) {
-		return pcapDispatcher.captureLength(address);
+		return getPcapDispatcher().captureLength(address);
 	}
 
 	/**
@@ -61,7 +70,7 @@ public class AbstractPreProcessor implements PcapDispatcher {
 	 */
 	@Override
 	public int dispatchNative(int count, NativeCallback handler, MemoryAddress user) {
-		return pcapDispatcher.dispatchNative(count, handler, user);
+		return getPcapDispatcher().dispatchNative(count, handler, user);
 	}
 
 	/**
@@ -74,7 +83,7 @@ public class AbstractPreProcessor implements PcapDispatcher {
 	 */
 	@Override
 	public int dispatchRaw(int count, MemoryAddress callbackFunc, MemoryAddress userData) {
-		return pcapDispatcher.dispatchRaw(count, callbackFunc, userData);
+		return getPcapDispatcher().dispatchRaw(count, callbackFunc, userData);
 	}
 
 	/**
@@ -84,7 +93,7 @@ public class AbstractPreProcessor implements PcapDispatcher {
 	 */
 	@Override
 	public int headerLength(MemoryAddress address) {
-		return pcapDispatcher.headerLength(address);
+		return getPcapDispatcher().headerLength(address);
 	}
 
 	/**
@@ -98,7 +107,7 @@ public class AbstractPreProcessor implements PcapDispatcher {
 	 */
 	@Override
 	public int loopNative(int count, NativeCallback handler, MemoryAddress user) {
-		return pcapDispatcher.loopNative(count, handler, user);
+		return getPcapDispatcher().loopNative(count, handler, user);
 	}
 
 	/**
@@ -111,7 +120,7 @@ public class AbstractPreProcessor implements PcapDispatcher {
 	 */
 	@Override
 	public int loopRaw(int count, MemoryAddress callbackFunc, MemoryAddress userData) {
-		return pcapDispatcher.loopRaw(count, callbackFunc, userData);
+		return getPcapDispatcher().loopRaw(count, callbackFunc, userData);
 	}
 
 	/**
@@ -120,7 +129,7 @@ public class AbstractPreProcessor implements PcapDispatcher {
 	 */
 	@Override
 	public RuntimeException getUncaughtException() {
-		return pcapDispatcher.getUncaughtException();
+		return getPcapDispatcher().getUncaughtException();
 	}
 
 	/**
@@ -129,7 +138,7 @@ public class AbstractPreProcessor implements PcapDispatcher {
 	 */
 	@Override
 	public void setUncaughtExceptionHandler(UncaughtExceptionHandler exceptionHandler) {
-		pcapDispatcher.setUncaughtExceptionHandler(exceptionHandler);
+		getPcapDispatcher().setUncaughtExceptionHandler(exceptionHandler);
 	}
 
 	/**
@@ -138,7 +147,7 @@ public class AbstractPreProcessor implements PcapDispatcher {
 	 */
 	@Override
 	public void close() {
-		pcapDispatcher.close();
+		getPcapDispatcher().close();
 	}
 
 	/**
@@ -150,7 +159,7 @@ public class AbstractPreProcessor implements PcapDispatcher {
 	 */
 	@Override
 	public void nativeCallback(MemoryAddress user, MemoryAddress header, MemoryAddress packet) {
-		pcapDispatcher.nativeCallback(user, header, packet);
+		getPcapDispatcher().nativeCallback(user, header, packet);
 	}
 
 	/**
@@ -159,7 +168,7 @@ public class AbstractPreProcessor implements PcapDispatcher {
 	 */
 	@Override
 	public void onNativeCallbackException(RuntimeException e) {
-		pcapDispatcher.onNativeCallbackException(e);
+		getPcapDispatcher().onNativeCallbackException(e);
 	}
 
 	/**
@@ -168,7 +177,12 @@ public class AbstractPreProcessor implements PcapDispatcher {
 	 */
 	@Override
 	public void interrupt() {
-		pcapDispatcher.interrupt();
+		getPcapDispatcher().interrupt();
+	}
+
+	@Override
+	public PcapHeaderABI abi() {
+		return getPcapDispatcher().abi();
 	}
 
 }

@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.jnetpcap.internal.PcapHeaderABI;
 
-import com.slytechs.jnetpcap.pro.PacketProcessor.PreProcessor;
+import com.slytechs.jnetpcap.pro.PcapConfigurator.PreProcessor;
 import com.slytechs.jnetpcap.pro.internal.PacketPlayerPreProcessor;
 import com.slytechs.protocol.runtime.time.TimestampUnit;
 import com.slytechs.protocol.runtime.util.SystemProperties;
@@ -31,7 +31,7 @@ import com.slytechs.protocol.runtime.util.SystemProperties;
  * @author repos@slytechs.com
  *
  */
-public class PacketPlayer extends PacketProcessor<PacketPlayer> implements PreProcessor {
+public class PacketPlayer extends PcapConfigurator<PacketPlayer> implements PreProcessor {
 
 	private static final String PREFIX = "packet.player";
 	public static final String PROPERTY_PACKET_PLAYER_ENABLE = PREFIX + ".enable";
@@ -47,8 +47,8 @@ public class PacketPlayer extends PacketProcessor<PacketPlayer> implements PrePr
 	/**
 	 * 
 	 */
-	public PacketPlayer(PreInstaller installer) {
-		super(PREFIX, PacketPlayerPreProcessor::new, installer);
+	public PacketPlayer() {
+		super(PREFIX, PacketPlayerPreProcessor::new);
 	}
 
 	public PacketPlayer useCurrentTime() {

@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 import org.jnetpcap.internal.PcapHeaderABI;
 
 import com.slytechs.jnetpcap.pro.IpfConfiguration;
-import com.slytechs.jnetpcap.pro.internal.PacketDispatcher.PacketDispatcherConfig;
+import com.slytechs.jnetpcap.pro.internal.PacketDispatcherConfig;
 import com.slytechs.protocol.runtime.time.TimestampSource;
 import com.slytechs.protocol.runtime.time.TimestampSource.AssignableTimestampSource;
 import com.slytechs.protocol.runtime.time.TimestampUnit;
@@ -54,9 +54,9 @@ public class IpfConfig extends PacketDispatcherConfig implements IpfConfiguratio
 	private int     timeoutQueueSize      = intValue (PROPERTY_IPF_TIMEOUT_QUEUE_SIZE,     256, CountUnit.COUNT);
 
 	/* IPF modes */
-	private boolean enableIpf             = boolValue(PROPERTY_IPF_ENABLE,                 false);
-	private boolean enableIpfTracking     = boolValue(PROPERTY_IPF_ENABLE_TRACKING,        true);
-	private boolean enableIpfReassembly   = boolValue(PROPERTY_IPF_ENABLE_REASSEMBLY,      true);
+	private boolean enable             = boolValue(PROPERTY_IPF_ENABLE,                 false);
+	private boolean enableTracking     = boolValue(PROPERTY_IPF_ENABLE_TRACKING,        true);
+	private boolean enableReassembly   = boolValue(PROPERTY_IPF_ENABLE_REASSEMBLY,      true);
 
 	/* Fragment pass-through and reassembly buffer attachment to fragment properties */
 	private boolean fragsPass             = boolValue(PROPERTY_IPF_FRAGS_PASS,             false);
@@ -64,9 +64,9 @@ public class IpfConfig extends PacketDispatcherConfig implements IpfConfiguratio
 	private boolean fragsPassComplete     = boolValue(PROPERTY_IPF_FRAGS_PASS_COMPLETE,    true);
 	
 	/* Datagram dispatcher send properties - dgrams are inserted into dispatcher stream */
-	private boolean dgramsSend            = boolValue(PROPERTY_IPF_DGRAMS_SEND,            true);
-	private boolean dgramsSendIncomplete  = boolValue(PROPERTY_IPF_DGRAMS_SEND_INCOMPLETE, false);
-	private boolean dgramsSendComplete    = boolValue(PROPERTY_IPF_DGRAMS_SEND_COMPLETE,   true);
+	private boolean dgramSend            = boolValue(PROPERTY_IPF_DGRAMS_SEND,            true);
+	private boolean dgramSendIncomplete  = boolValue(PROPERTY_IPF_DGRAMS_SEND_INCOMPLETE, false);
+	private boolean dgramSendComplete    = boolValue(PROPERTY_IPF_DGRAMS_SEND_COMPLETE,   true);
 	// @formatter:on
 
 	/** Initialized in constructor, either system or packet time */
@@ -91,13 +91,13 @@ public class IpfConfig extends PacketDispatcherConfig implements IpfConfiguratio
 		 */
 		EffectiveConfig() {
 			this.pass = fragsPass;
-			this.passComplete = enableIpfReassembly && fragsPassComplete;
-			this.passIncomplete = enableIpfReassembly && fragsPassIncomplete && timeoutOnLast;
+			this.passComplete = enableReassembly && fragsPassComplete;
+			this.passIncomplete = enableReassembly && fragsPassIncomplete && timeoutOnLast;
 
-			this.dgramsComplete = dgramsSend && enableIpfReassembly && dgramsSendComplete;
-			this.dgramsIncomplete = dgramsSend && enableIpfReassembly && dgramsSendIncomplete;
+			this.dgramsComplete = dgramSend && enableReassembly && dgramSendComplete;
+			this.dgramsIncomplete = dgramSend && enableReassembly && dgramSendIncomplete;
 
-			this.tracking = enableIpfTracking && fragsPass;
+			this.tracking = enableTracking && fragsPass;
 			this.timeSource = IpfConfig.this.timeSource;
 		}
 
@@ -121,7 +121,7 @@ public class IpfConfig extends PacketDispatcherConfig implements IpfConfiguratio
 	 * Instantiates a new ipf config.
 	 */
 	public IpfConfig() {
-		useIpfSystemTimesource();
+		useSystemTimesource();
 	}
 
 	/**
@@ -134,86 +134,86 @@ public class IpfConfig extends PacketDispatcherConfig implements IpfConfiguratio
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enableIpf(boolean)
+	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enable(boolean)
 	 */
 	@Override
-	public IpfConfiguration enableIpf(boolean enable) {
-		this.enableIpf = enable;
+	public IpfConfiguration enable(boolean enable) {
+		this.enable = enable;
 
 		return this;
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enableIpfAttachComplete(boolean)
+	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enableAttachComplete(boolean)
 	 */
 	@Override
-	public IpfConfiguration enableIpfAttachComplete(boolean ipfAttachComplete) {
+	public IpfConfiguration enableAttachComplete(boolean ipfAttachComplete) {
 		this.fragsPassComplete = ipfAttachComplete;
 		return this;
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enableIpfAttachIncomplete(boolean)
+	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enableAttachIncomplete(boolean)
 	 */
 	@Override
-	public IpfConfiguration enableIpfAttachIncomplete(boolean ipfAttachIncomplete) {
+	public IpfConfiguration enableAttachIncomplete(boolean ipfAttachIncomplete) {
 		this.fragsPassIncomplete = ipfAttachIncomplete;
 		return this;
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enableIpfPassthrough(boolean)
+	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enablePassthrough(boolean)
 	 */
 	@Override
-	public IpfConfiguration enableIpfPassthrough(boolean enable) {
-		this.dgramsSend = enable;
+	public IpfConfiguration enablePassthrough(boolean enable) {
+		this.dgramSend = enable;
 
 		return this;
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enableIpfPassComplete(boolean)
+	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enableSendComplete(boolean)
 	 */
 	@Override
-	public IpfConfiguration enableIpfPassComplete(boolean passDgramsComplete) {
-		this.dgramsSendComplete = passDgramsComplete;
+	public IpfConfiguration enableSendComplete(boolean passDgramsComplete) {
+		this.dgramSendComplete = passDgramsComplete;
 		return this;
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enableIpfFragments(boolean)
+	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enableFragments(boolean)
 	 */
 	@Override
-	public IpfConfiguration enableIpfFragments(boolean passFragments) {
+	public IpfConfiguration enableFragments(boolean passFragments) {
 		this.fragsPass = passFragments;
 		return this;
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enableIpfIncomplete(boolean)
+	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enableSendIncomplete(boolean)
 	 */
 	@Override
-	public IpfConfiguration enableIpfIncomplete(boolean passDgramsIncomplete) {
-		this.dgramsSendIncomplete = passDgramsIncomplete;
+	public IpfConfiguration enableSendIncomplete(boolean passDgramsIncomplete) {
+		this.dgramSendIncomplete = passDgramsIncomplete;
 		return this;
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enableIpfReassembly(boolean)
+	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enableReassembly(boolean)
 	 */
 	@Override
-	public IpfConfiguration enableIpfReassembly(boolean enable) {
-		this.enableIpfReassembly = enable;
+	public IpfConfiguration enableReassembly(boolean enable) {
+		this.enableReassembly = enable;
 
 		return this;
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enableIpfTracking(boolean)
+	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enableTracking(boolean)
 	 */
 	@Override
-	public IpfConfiguration enableIpfTracking(boolean enable) {
-		this.enableIpfTracking = enable;
+	public IpfConfiguration enableTracking(boolean enable) {
+		this.enableTracking = enable;
 
 		return this;
 	}
@@ -222,7 +222,7 @@ public class IpfConfig extends PacketDispatcherConfig implements IpfConfiguratio
 	 * @return the bufferSize
 	 */
 	@Override
-	public int getIpfBufferSize() {
+	public int getBufferSize() {
 		return bufferSize;
 	}
 
@@ -230,7 +230,7 @@ public class IpfConfig extends PacketDispatcherConfig implements IpfConfiguratio
 	 * @return the ipMaxDgramBytes
 	 */
 	@Override
-	public int getIpfMaxDgramBytes() {
+	public int getMaxDgramBytes() {
 		return maxDgramBytes;
 	}
 
@@ -238,7 +238,7 @@ public class IpfConfig extends PacketDispatcherConfig implements IpfConfiguratio
 	 * @return the ipfMaxFragTrackCount
 	 */
 	@Override
-	public int getIpfMaxFragmentCount() {
+	public int getMaxFragmentCount() {
 		return maxFragmentCount;
 	}
 
@@ -246,7 +246,7 @@ public class IpfConfig extends PacketDispatcherConfig implements IpfConfiguratio
 	 * @return the tableSize
 	 */
 	@Override
-	public int getIpfTableSize() {
+	public int getTableSize() {
 		return tableSize;
 	}
 
@@ -254,7 +254,7 @@ public class IpfConfig extends PacketDispatcherConfig implements IpfConfiguratio
 	 * @return the timeoutMillis
 	 */
 	@Override
-	public long getIpfTimeoutMilli() {
+	public long getTimeoutMilli() {
 		return timeoutMillis;
 	}
 
@@ -278,7 +278,7 @@ public class IpfConfig extends PacketDispatcherConfig implements IpfConfiguratio
 	 * @return the ipfAttachComplete
 	 */
 	@Override
-	public boolean isIpfAttachComplete() {
+	public boolean isAttachComplete() {
 		return fragsPassComplete;
 	}
 
@@ -286,7 +286,7 @@ public class IpfConfig extends PacketDispatcherConfig implements IpfConfiguratio
 	 * @return the ipfAttachIncomplete
 	 */
 	@Override
-	public boolean isIpfAttachIncomplete() {
+	public boolean isAttachIncomplete() {
 		return fragsPassIncomplete;
 	}
 
@@ -294,36 +294,36 @@ public class IpfConfig extends PacketDispatcherConfig implements IpfConfiguratio
 	 * @return the enableIpf
 	 */
 	@Override
-	public boolean isIpfEnabled() {
-		return enableIpf;
+	public boolean isEnabled() {
+		return enable;
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#isIpfTimeoutOnLast()
+	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#isTimeoutOnLast()
 	 */
 	@Override
-	public boolean isIpfTimeoutOnLast() {
+	public boolean isTimeoutOnLast() {
 		return timeoutOnLast;
 	}
 
 	@Override
-	public boolean isIpfPassthrough() {
-		return dgramsSend;
+	public boolean isPassthrough() {
+		return dgramSend;
 	}
 
 	/**
 	 * @return the passDgramsComplete
 	 */
 	@Override
-	public boolean isIpfSendComplete() {
-		return dgramsSendComplete;
+	public boolean isSendComplete() {
+		return dgramSendComplete;
 	}
 
 	/**
 	 * @return the passFragments
 	 */
 	@Override
-	public boolean isIpfPassFragments() {
+	public boolean isPassFragments() {
 		return fragsPass;
 	}
 
@@ -331,32 +331,32 @@ public class IpfConfig extends PacketDispatcherConfig implements IpfConfiguratio
 	 * @return the passDgramsIncomplete
 	 */
 	@Override
-	public boolean isIpfSendIncomplete() {
-		return dgramsSendIncomplete;
+	public boolean isSendIncomplete() {
+		return dgramSendIncomplete;
 	}
 
 	/**
 	 * @return the enableIpfReassembly
 	 */
 	@Override
-	public boolean isIpfReassemblyEnabled() {
-		return enableIpfReassembly;
+	public boolean isReassemblyEnabled() {
+		return enableReassembly;
 	}
 
 	/**
 	 * @return the enableIpfTracking
 	 */
 	@Override
-	public boolean isIpfTrackingEnabled() {
-		return enableIpfTracking;
+	public boolean isTrackingEnabled() {
+		return enableTracking;
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#setIpfBufferSize(long,
+	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#setBufferSize(long,
 	 *      com.slytechs.protocol.runtime.util.MemoryUnit)
 	 */
 	@Override
-	public IpfConfiguration setIpfBufferSize(long size, MemoryUnit unit) {
+	public IpfConfiguration setBufferSize(long size, MemoryUnit unit) {
 		this.bufferSize = unit.toBytesAsInt(size);
 		this.tableSize = bufferSize / maxDgramBytes;
 
@@ -364,21 +364,21 @@ public class IpfConfig extends PacketDispatcherConfig implements IpfConfiguratio
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#setIpfTimeoutOnLast(boolean)
+	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#setTimeoutOnLast(boolean)
 	 */
 	@Override
-	public IpfConfiguration setIpfTimeoutOnLast(boolean lastOrTimeout) {
+	public IpfConfiguration setTimeoutOnLast(boolean lastOrTimeout) {
 		this.timeoutOnLast = lastOrTimeout;
 
 		return this;
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#setIpfMaxDgramSize(long,
+	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#setMaxDgramSize(long,
 	 *      com.slytechs.protocol.runtime.util.MemoryUnit)
 	 */
 	@Override
-	public IpfConfiguration setIpfMaxDgramSize(long size, MemoryUnit unit) {
+	public IpfConfiguration setMaxDgramSize(long size, MemoryUnit unit) {
 		this.maxDgramBytes = unit.toBytesAsInt(size);
 		this.bufferSize = tableSize * maxDgramBytes;
 
@@ -386,20 +386,20 @@ public class IpfConfig extends PacketDispatcherConfig implements IpfConfiguratio
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#setIpfMaxFragmentCount(int)
+	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#setMaxFragmentCount(int)
 	 */
 	@Override
-	public IpfConfiguration setIpfMaxFragmentCount(int ipfMaxFragTrackCount, CountUnit unit) {
+	public IpfConfiguration setMaxFragmentCount(int ipfMaxFragTrackCount, CountUnit unit) {
 		this.maxFragmentCount = ipfMaxFragTrackCount;
 		return this;
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#setIpfTableSize(long,
+	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#setTableSize(long,
 	 *      com.slytechs.protocol.runtime.util.CountUnit)
 	 */
 	@Override
-	public IpfConfiguration setIpfTableSize(long size, CountUnit unit) {
+	public IpfConfiguration setTableSize(long size, CountUnit unit) {
 		this.tableSize = unit.toCountAsInt(size);
 		this.bufferSize = tableSize * maxDgramBytes;
 
@@ -407,11 +407,11 @@ public class IpfConfig extends PacketDispatcherConfig implements IpfConfiguratio
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#setIpfTimeout(long,
+	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#setTimeout(long,
 	 *      java.util.concurrent.TimeUnit)
 	 */
 	@Override
-	public IpfConfiguration setIpfTimeout(long timeout, TimeUnit unit) {
+	public IpfConfiguration setTimeout(long timeout, TimeUnit unit) {
 		this.timeoutMillis = unit.toMillis(timeout);
 
 		return this;
@@ -428,20 +428,20 @@ public class IpfConfig extends PacketDispatcherConfig implements IpfConfiguratio
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#useIpfPacketTimesource()
+	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#usePacketTimesource()
 	 */
 	@Override
-	public IpfConfiguration useIpfPacketTimesource() {
+	public IpfConfiguration usePacketTimesource() {
 		timeSource = TimestampSource.assignable();
 
 		return this;
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#useIpfSystemTimesource()
+	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#useSystemTimesource()
 	 */
 	@Override
-	public IpfConfiguration useIpfSystemTimesource() {
+	public IpfConfiguration useSystemTimesource() {
 		timeSource = TimestampSource.system();
 
 		return this;

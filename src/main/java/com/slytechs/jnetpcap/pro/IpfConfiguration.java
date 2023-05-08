@@ -91,7 +91,7 @@ public interface IpfConfiguration {
 	 * @param enable the enable
 	 * @return the ipf configuration
 	 */
-	IpfConfiguration enableIpf(boolean enable);
+	IpfConfiguration enable(boolean enable);
 
 	/**
 	 * Sets the ipf attach complete.
@@ -99,7 +99,7 @@ public interface IpfConfiguration {
 	 * @param enable the ipfAttachComplete to set
 	 * @return the ipf configuration
 	 */
-	IpfConfiguration enableIpfAttachComplete(boolean enable);
+	IpfConfiguration enableAttachComplete(boolean enable);
 
 	/**
 	 * Sets the ipf attach incomplete.
@@ -107,9 +107,9 @@ public interface IpfConfiguration {
 	 * @param enable the ipfAttachIncomplete to set
 	 * @return the ipf configuration
 	 */
-	IpfConfiguration enableIpfAttachIncomplete(boolean enable);
+	IpfConfiguration enableAttachIncomplete(boolean enable);
 
-	IpfConfiguration enableIpfPassthrough(boolean enable);
+	IpfConfiguration enablePassthrough(boolean enable);
 
 	/**
 	 * Sets the ipf pass complete.
@@ -117,7 +117,7 @@ public interface IpfConfiguration {
 	 * @param enable the passDgramsComplete to set
 	 * @return the ipf configuration
 	 */
-	IpfConfiguration enableIpfPassComplete(boolean enable);
+	IpfConfiguration enableSendComplete(boolean enable);
 
 	/**
 	 * Sets the ipf pass fragments.
@@ -125,7 +125,7 @@ public interface IpfConfiguration {
 	 * @param enable the passFragments to set
 	 * @return the ipf configuration
 	 */
-	IpfConfiguration enableIpfFragments(boolean enable);
+	IpfConfiguration enableFragments(boolean enable);
 
 	/**
 	 * Sets the ipf pass incomplete.
@@ -133,7 +133,7 @@ public interface IpfConfiguration {
 	 * @param enable the passDgramsIncomplete to set
 	 * @return the ipf configuration
 	 */
-	IpfConfiguration enableIpfIncomplete(boolean enable);
+	IpfConfiguration enableSendIncomplete(boolean enable);
 
 	/**
 	 * Enable ipf reassembly.
@@ -141,7 +141,7 @@ public interface IpfConfiguration {
 	 * @param enable the enable
 	 * @return the ipf configuration
 	 */
-	IpfConfiguration enableIpfReassembly(boolean enable);
+	IpfConfiguration enableReassembly(boolean enable);
 
 	/**
 	 * Enable ipf tracking.
@@ -149,42 +149,42 @@ public interface IpfConfiguration {
 	 * @param enable the enable
 	 * @return the ipf configuration
 	 */
-	IpfConfiguration enableIpfTracking(boolean enable);
+	IpfConfiguration enableTracking(boolean enable);
 
 	/**
 	 * Gets the buffer size.
 	 *
 	 * @return the bufferSize
 	 */
-	int getIpfBufferSize();
+	int getBufferSize();
 
 	/**
 	 * Gets the ip max dgram bytes.
 	 *
 	 * @return the ipMaxDgramBytes
 	 */
-	int getIpfMaxDgramBytes();
+	int getMaxDgramBytes();
 
 	/**
 	 * Gets the ipf max frag track count.
 	 *
 	 * @return the ipfMaxFragTrackCount
 	 */
-	int getIpfMaxFragmentCount();
+	int getMaxFragmentCount();
 
 	/**
 	 * Gets the table size.
 	 *
 	 * @return the tableSize
 	 */
-	int getIpfTableSize();
+	int getTableSize();
 
 	/**
 	 * Gets the timeout millis.
 	 *
 	 * @return the timeoutMillis
 	 */
-	long getIpfTimeoutMilli();
+	long getTimeoutMilli();
 
 	/**
 	 * Gets the timeout queue size.
@@ -205,70 +205,70 @@ public interface IpfConfiguration {
 	 *
 	 * @return the ipfAttachComplete
 	 */
-	boolean isIpfAttachComplete();
+	boolean isAttachComplete();
 
 	/**
 	 * Checks if is ipf attach incomplete.
 	 *
 	 * @return the ipfAttachIncomplete
 	 */
-	boolean isIpfAttachIncomplete();
+	boolean isAttachIncomplete();
 
 	/**
 	 * Checks if is enable ipf.
 	 *
 	 * @return the enableIpf
 	 */
-	boolean isIpfEnabled();
+	boolean isEnabled();
 
 	/**
 	 * Checks if is ipf incomplete on last.
 	 *
 	 * @return true, if is ipf incomplete on last
 	 */
-	boolean isIpfTimeoutOnLast();
+	boolean isTimeoutOnLast();
 
 	/**
 	 * Checks if is ipf passthrough.
 	 *
 	 * @return true, if is ipf passthrough
 	 */
-	boolean isIpfPassthrough();
+	boolean isPassthrough();
 
 	/**
 	 * Checks if is pass dgrams complete.
 	 *
 	 * @return the passDgramsComplete
 	 */
-	boolean isIpfSendComplete();
+	boolean isSendComplete();
 
 	/**
 	 * Checks if is pass fragments.
 	 *
 	 * @return the passFragments
 	 */
-	boolean isIpfPassFragments();
+	boolean isPassFragments();
 
 	/**
 	 * Checks if is pass dgrams incomplete.
 	 *
 	 * @return the passDgramsIncomplete
 	 */
-	boolean isIpfSendIncomplete();
+	boolean isSendIncomplete();
 
 	/**
 	 * Checks if is enable ipf reassembly.
 	 *
 	 * @return the enableIpfReassembly
 	 */
-	boolean isIpfReassemblyEnabled();
+	boolean isReassemblyEnabled();
 
 	/**
 	 * Checks if is enable ipf tracking.
 	 *
 	 * @return the enableIpfTracking
 	 */
-	boolean isIpfTrackingEnabled();
+	boolean isTrackingEnabled();
 
 	/**
 	 * Sets the ipf buffer size.
@@ -277,7 +277,7 @@ public interface IpfConfiguration {
 	 * @param unit the unit
 	 * @return the ipf configuration
 	 */
-	IpfConfiguration setIpfBufferSize(long size, MemoryUnit unit);
+	IpfConfiguration setBufferSize(long size, MemoryUnit unit);
 
 	/**
 	 * Sets the ip max dgram size.
@@ -286,7 +286,7 @@ public interface IpfConfiguration {
 	 * @param unit the unit
 	 * @return the ipf configuration
 	 */
-	IpfConfiguration setIpfMaxDgramSize(long size, MemoryUnit unit);
+	IpfConfiguration setMaxDgramSize(long size, MemoryUnit unit);
 
 	/**
 	 * Sets the ipf max frag track count.
@@ -295,7 +295,7 @@ public interface IpfConfiguration {
 	 * @param unit                 the unit
 	 * @return the ipf configuration
 	 */
-	IpfConfiguration setIpfMaxFragmentCount(int ipfMaxFragTrackCount, CountUnit unit);
+	IpfConfiguration setMaxFragmentCount(int ipfMaxFragTrackCount, CountUnit unit);
 
 	/**
 	 * Sets the ipf table size.
@@ -304,7 +304,7 @@ public interface IpfConfiguration {
 	 * @param unit the unit
 	 * @return the ipf configuration
 	 */
-	IpfConfiguration setIpfTableSize(long size, CountUnit unit);
+	IpfConfiguration setTableSize(long size, CountUnit unit);
 
 	/**
 	 * Sets the ipf timeout.
@@ -313,7 +313,7 @@ public interface IpfConfiguration {
 	 * @param unit    the unit
 	 * @return the ipf configuration
 	 */
-	IpfConfiguration setIpfTimeout(long timeout, TimeUnit unit);
+	IpfConfiguration setTimeout(long timeout, TimeUnit unit);
 
 	/**
 	 * Sets the ipf incomplete on last.
@@ -321,7 +321,7 @@ public interface IpfConfiguration {
 	 * @param lastOrTimeout the last or timeout
 	 * @return the ipf configuration
 	 */
-	IpfConfiguration setIpfTimeoutOnLast(boolean lastOrTimeout);
+	IpfConfiguration setTimeoutOnLast(boolean lastOrTimeout);
 
 	/**
 	 * Sets the timeout queue size.
@@ -336,13 +336,13 @@ public interface IpfConfiguration {
 	 *
 	 * @return the ipf configuration
 	 */
-	IpfConfiguration useIpfPacketTimesource();
+	IpfConfiguration usePacketTimesource();
 
 	/**
 	 * Use ipf system timesource.
 	 *
 	 * @return the ipf configuration
 	 */
-	IpfConfiguration useIpfSystemTimesource();
+	IpfConfiguration useSystemTimesource();
 
 }

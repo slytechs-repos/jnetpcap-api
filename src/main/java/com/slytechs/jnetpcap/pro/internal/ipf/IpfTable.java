@@ -19,8 +19,8 @@ package com.slytechs.jnetpcap.pro.internal.ipf;
 
 import java.nio.ByteBuffer;
 
-import com.slytechs.jnetpcap.pro.IpfConfiguration;
-import com.slytechs.jnetpcap.pro.internal.ipf.IpfPostProcessorJava.DatagramQueue;
+import com.slytechs.jnetpcap.pro.IpfReassembler;
+import com.slytechs.jnetpcap.pro.internal.ipf.JavaIpfDispatcher.DatagramQueue;
 import com.slytechs.protocol.descriptor.IpfFragment;
 import com.slytechs.protocol.runtime.hash.CuckooHashTable;
 import com.slytechs.protocol.runtime.hash.HashTable;
@@ -62,7 +62,7 @@ public class IpfTable {
 	private final int bufferSize;
 
 	/** The config. */
-	private final IpfConfiguration config;
+	private final IpfReassembler config;
 
 	/** The table size. */
 	private final int tableSize;
@@ -75,8 +75,8 @@ public class IpfTable {
 	 *
 	 * @param config the config
 	 */
-	public IpfTable(IpfConfiguration config, DatagramQueue datagramQueue) {
-		this(config, ByteBuffer.allocateDirect(config.getIpfBufferSize()), datagramQueue);
+	public IpfTable(IpfReassembler config, DatagramQueue datagramQueue) {
+		this(config, ByteBuffer.allocateDirect(config.getBufferSize()), datagramQueue);
 	}
 
 	/**
@@ -85,14 +85,14 @@ public class IpfTable {
 	 * @param config the config
 	 * @param buffer the buffer
 	 */
-	public IpfTable(IpfConfiguration config, ByteBuffer buffer, DatagramQueue datagramQueue) {
+	public IpfTable(IpfReassembler config, ByteBuffer buffer, DatagramQueue datagramQueue) {
 		this.config = config;
 		this.datagramQueue = datagramQueue;
-		this.bufferSize = config.getIpfBufferSize();
+		this.bufferSize = config.getBufferSize();
 		this.buffer = buffer;
-		this.tableSize = config.getIpfTableSize();
+		this.tableSize = config.getTableSize();
 
-		this.table = new CuckooHashTable<IpfDgramReassembler>(config.getIpfTableSize())
+		this.table = new CuckooHashTable<IpfDgramReassembler>(config.getTableSize())
 				.enableStickyData(true);
 
 		this.table.fill(this::allocateIpfBufferSlice);

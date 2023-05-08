@@ -15,40 +15,34 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.slytechs.jnetpcap.pro.internal.ipf;
+package com.slytechs.jnetpcap.pro.internal;
 
-import com.slytechs.jnetpcap.pro.internal.PacketDispatcher;
+import org.jnetpcap.internal.PcapDispatcher;
 
 /**
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
- * @author Mark Bednarczyk
  *
  */
-public interface IpfPostProcessor extends PacketDispatcher {
+public class ProxyPreProcessor extends AbstractPcapDispatcher {
 
-	static IpfPostProcessor ipfPostProcessor(
-			IpfConfig config) {
+	private PcapDispatcher dispatcher;
 
-		if (isNativeIpfDispatcherSupported())
-			return nativeIpfDispatcher(config);
-		else
-			return javaIpfDispatcher(config);
+	/**
+	 * 
+	 */
+	public ProxyPreProcessor() {
 	}
 
-	static IpfPostProcessor javaIpfDispatcher(
-			IpfConfig config) {
-		return new IpfPostProcessorJava(config);
+	/**
+	 * @see com.slytechs.jnetpcap.pro.internal.AbstractPcapDispatcher#getPcapDispatcher()
+	 */
+	@Override
+	protected PcapDispatcher getPcapDispatcher() {
+		return dispatcher;
 	}
 
-	static boolean isNativeIpfDispatcherSupported() {
-		return IpfPostProcessorNative.isNativeSupported();
+	public void setDispatcher(PcapDispatcher dispatcher) {
+		this.dispatcher = dispatcher;
 	}
-
-	static IpfPostProcessor nativeIpfDispatcher(
-			IpfConfig config) {
-
-		return new IpfPostProcessorNative(config);
-	}
-
 }

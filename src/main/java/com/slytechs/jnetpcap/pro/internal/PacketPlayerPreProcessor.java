@@ -31,7 +31,7 @@ import com.slytechs.protocol.runtime.time.TimestampUnit;
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  */
-public class PacketPlayerPreProcessor extends AbstractPreProcessor implements PcapDispatcher {
+public class PacketPlayerPreProcessor extends AbstractPcapDispatcher implements PcapDispatcher {
 
 	private final PacketPlayer config;
 
@@ -66,7 +66,7 @@ public class PacketPlayerPreProcessor extends AbstractPreProcessor implements Pc
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.internal.AbstractPreProcessor#dispatchNative(int,
+	 * @see com.slytechs.jnetpcap.pro.internal.AbstractPcapDispatcher#dispatchNative(int,
 	 *      org.jnetpcap.PcapHandler.NativeCallback,
 	 *      java.lang.foreign.MemoryAddress)
 	 */

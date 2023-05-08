@@ -19,7 +19,7 @@ package com.slytechs.jnetpcap.pro;
 
 import java.util.concurrent.TimeUnit;
 
-import com.slytechs.jnetpcap.pro.PacketProcessor.PreProcessor;
+import com.slytechs.jnetpcap.pro.PcapConfigurator.PreProcessor;
 import com.slytechs.jnetpcap.pro.internal.PacketDelayPreProcessor;
 import com.slytechs.protocol.runtime.util.SystemProperties;
 
@@ -28,7 +28,7 @@ import com.slytechs.protocol.runtime.util.SystemProperties;
  * @author repos@slytechs.com
  *
  */
-public final class PacketDelay extends PacketProcessor<PacketDelay> implements PreProcessor {
+public final class PacketDelay extends PcapConfigurator<PacketDelay> implements PreProcessor {
 
 	private static final String PREFIX = "packet.delay";
 	public static final String PROPERTY_PACKET_REPEATER_ENABLE = PREFIX + ".enable";
@@ -36,8 +36,8 @@ public final class PacketDelay extends PacketProcessor<PacketDelay> implements P
 
 	private long delayNano = SystemProperties.longValue(PROPERTY_PACKET_REPEATER_DELAY_NANO, 1);
 
-	public PacketDelay(PreInstaller installer) {
-		super(PREFIX, PacketDelayPreProcessor::new, installer);
+	public PacketDelay() {
+		super(PREFIX, PacketDelayPreProcessor::new);
 	}
 
 	public PacketDelay setDelay(long duration, TimeUnit unit) {

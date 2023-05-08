@@ -17,15 +17,16 @@
  */
 package com.slytechs.jnetpcap.pro.internal;
 
-import org.jnetpcap.internal.PcapHeaderABI;
+import java.lang.foreign.MemoryAddress;
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.MemorySession;
+import java.nio.ByteBuffer;
 
 import com.slytechs.jnetpcap.pro.PacketStatistics;
 import com.slytechs.jnetpcap.pro.PcapProHandler;
-import com.slytechs.protocol.Frame.FrameNumber;
+import com.slytechs.protocol.Packet;
 import com.slytechs.protocol.descriptor.PacketDissector;
-import com.slytechs.protocol.meta.PacketFormat;
 import com.slytechs.protocol.pack.core.constants.PacketDescriptorType;
-import com.slytechs.protocol.runtime.time.TimestampUnit;
 
 /**
  * Packet dispatcher with protocol level support.
@@ -34,18 +35,6 @@ import com.slytechs.protocol.runtime.time.TimestampUnit;
  * @author repos@slytechs.com
  */
 public interface PacketDispatcher {
-
-	public class PacketDispatcherConfig {
-
-		public int portNo;
-		public FrameNumber frameNo = FrameNumber.of();
-		public TimestampUnit timestampUnit = TimestampUnit.PCAP_MICRO;
-		public PacketFormat formatter;
-		public PacketDissector dissector;
-		public PacketDescriptorType descriptorType;
-		public PcapHeaderABI abi;
-
-	}
 
 	/**
 	 * Checks if is native packet dispatcher supported.
@@ -67,7 +56,7 @@ public interface PacketDispatcher {
 	static PacketDispatcher javaPacketDispatcher(
 			PacketDispatcherConfig config) {
 
-		return new PacketDispatcherJava(config);
+		return new MainPacketDispatcher(config);
 	}
 
 	/**
@@ -137,4 +126,18 @@ public interface PacketDispatcher {
 	<U> int loopPacket(int count, PcapProHandler.OfPacket<U> sink, U user);
 
 	PacketStatistics getPacketStatistics();
+
+	<U> Packet processPacket(
+			MemoryAddress pcapHdr,
+			MemoryAddress pktData,
+			MemorySession session);
+
+	<U> Packet processPacket(
+			ByteBuffer buffer,
+			MemorySegment mpacket,
+			int caplen,
+			int wirelen,
+			long timestamp);
+
+	void onNativeCallbackException(Throwable e, int caplen, int wirelen);
 }

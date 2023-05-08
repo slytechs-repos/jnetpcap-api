@@ -27,7 +27,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import com.slytechs.jnetpcap.pro.IpfConfiguration;
-import com.slytechs.jnetpcap.pro.internal.ipf.IpfPostProcessorJava.DatagramQueue;
+import com.slytechs.jnetpcap.pro.IpfReassembler;
+import com.slytechs.jnetpcap.pro.internal.ipf.JavaIpfDispatcher.DatagramQueue;
 import com.slytechs.jnetpcap.pro.internal.ipf.TimeoutQueue.Expirable;
 import com.slytechs.protocol.Registration;
 import com.slytechs.protocol.descriptor.IpfFragment;
@@ -117,7 +118,7 @@ public class IpfDgramReassembler implements Expirable {
 	 */
 	private final TimestampSource timeSource;
 	private final HashEntry<IpfDgramReassembler> tableEntry;
-	private final IpfConfiguration config;
+	private final IpfReassembler config;
 	private long expiration;
 
 	private long startTimeMilli = 0;
@@ -149,7 +150,7 @@ public class IpfDgramReassembler implements Expirable {
 	public IpfDgramReassembler(
 			ByteBuffer buffer,
 			HashEntry<IpfDgramReassembler> tableEntry,
-			IpfConfiguration config) {
+			IpfReassembler config) {
 
 		this.buffer = buffer;
 		this.mseg = MemorySegment.ofBuffer(buffer);
@@ -159,13 +160,13 @@ public class IpfDgramReassembler implements Expirable {
 		this.tableEntry = tableEntry;
 		this.timeSource = config.getTimeSource();
 		this.config = config;
-		this.segments = new IpfSegment[config.getIpfMaxFragmentCount()];
+		this.segments = new IpfSegment[config.getMaxFragmentCount()];
 
-		this.isReassemblyEnabled = config.isIpfReassemblyEnabled();
-		this.isTimeoutOnLast = config.isIpfTimeoutOnLast();
+		this.isReassemblyEnabled = config.isReassemblyEnabled();
+		this.isTimeoutOnLast = config.isTimeoutOnLast();
 
 		IntStream
-				.range(0, config.getIpfMaxFragmentCount())
+				.range(0, config.getMaxFragmentCount())
 				.forEach(i -> segments[i] = new IpfSegment());
 	}
 
@@ -289,7 +290,7 @@ public class IpfDgramReassembler implements Expirable {
 		if (session != null)
 			throw new IllegalStateException("can not reset, still active");
 
-		this.expiration = timeSource.timestamp() + config.getIpfTimeoutMilli();
+		this.expiration = timeSource.timestamp() + config.getTimeoutMilli();
 		this.tableEntry.setKey(key);
 		this.session = MemorySession.openShared();
 
@@ -356,7 +357,7 @@ public class IpfDgramReassembler implements Expirable {
 
 		if (startTimeMilli == 0) {
 			startTimeMilli = timeSource.timestamp();
-			expiration = startTimeMilli + config.getIpfTimeoutMilli();
+			expiration = startTimeMilli + config.getTimeoutMilli();
 		}
 
 		this.isIp4 = desc.isIp4();

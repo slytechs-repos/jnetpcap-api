@@ -29,7 +29,7 @@ import com.slytechs.jnetpcap.pro.PacketRepeater;
  * @author repos@slytechs.com
  *
  */
-public class PacketRepeaterPreProcessor extends AbstractPreProcessor implements PcapDispatcher {
+public class PacketRepeaterPreProcessor extends AbstractPcapDispatcher implements PcapDispatcher {
 
 	private final PacketRepeater config;
 
@@ -43,7 +43,7 @@ public class PacketRepeaterPreProcessor extends AbstractPreProcessor implements 
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.internal.AbstractPreProcessor#dispatchNative(int,
+	 * @see com.slytechs.jnetpcap.pro.internal.AbstractPcapDispatcher#dispatchNative(int,
 	 *      org.jnetpcap.PcapHandler.NativeCallback,
 	 *      java.lang.foreign.MemoryAddress)
 	 */
@@ -76,7 +76,7 @@ public class PacketRepeaterPreProcessor extends AbstractPreProcessor implements 
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.internal.AbstractPreProcessor#loopNative(int,
+	 * @see com.slytechs.jnetpcap.pro.internal.AbstractPcapDispatcher#loopNative(int,
 	 *      org.jnetpcap.PcapHandler.NativeCallback,
 	 *      java.lang.foreign.MemoryAddress)
 	 */

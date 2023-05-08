@@ -28,7 +28,7 @@ import com.slytechs.jnetpcap.pro.PacketDelay;
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  */
-public class PacketDelayPreProcessor extends AbstractPreProcessor implements PcapDispatcher {
+public class PacketDelayPreProcessor extends AbstractPcapDispatcher implements PcapDispatcher {
 
 	private final PacketDelay config;
 
@@ -42,7 +42,7 @@ public class PacketDelayPreProcessor extends AbstractPreProcessor implements Pca
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.internal.AbstractPreProcessor#dispatchNative(int,
+	 * @see com.slytechs.jnetpcap.pro.internal.AbstractPcapDispatcher#dispatchNative(int,
 	 *      org.jnetpcap.PcapHandler.NativeCallback,
 	 *      java.lang.foreign.MemoryAddress)
 	 */
@@ -72,7 +72,7 @@ public class PacketDelayPreProcessor extends AbstractPreProcessor implements Pca
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.internal.AbstractPreProcessor#loopNative(int,
+	 * @see com.slytechs.jnetpcap.pro.internal.AbstractPcapDispatcher#loopNative(int,
 	 *      org.jnetpcap.PcapHandler.NativeCallback,
 	 *      java.lang.foreign.MemoryAddress)
 	 */

@@ -40,7 +40,7 @@ import com.slytechs.protocol.pack.core.constants.PacketDescriptorType;
  * @author Mark Bednarczyk
  *
  */
-public class PacketDispatcherJava
+public class MainPacketDispatcher
 		implements PacketDispatcher {
 
 	/** The Constant DESC_BUFFER_SIZE. */
@@ -68,7 +68,7 @@ public class PacketDispatcherJava
 	 * @param breakDispatch  the break dispatch
 	 * @param descriptorType the descriptor type
 	 */
-	public PacketDispatcherJava(
+	public MainPacketDispatcher(
 			PacketDispatcherConfig config) {
 
 		this.config = config;
@@ -169,7 +169,8 @@ public class PacketDispatcherJava
 		}, MemoryAddress.NULL); // We don't pass user object to native dispatcher
 	}
 
-	protected <U> Packet processPacket(
+	@Override
+	public <U> Packet processPacket(
 			MemoryAddress pcapHdr,
 			MemoryAddress pktData,
 			MemorySession session) {
@@ -180,6 +181,7 @@ public class PacketDispatcherJava
 		 */
 		int caplen = 0, wirelen = 0;
 		try {
+			
 			/* Pcap header fields */
 			caplen = config.abi.captureLength(pcapHdr);
 			wirelen = config.abi.wireLength(pcapHdr);
@@ -203,7 +205,8 @@ public class PacketDispatcherJava
 		}
 	}
 
-	protected <U> Packet processPacket(
+	@Override
+	public <U> Packet processPacket(
 			ByteBuffer buffer,
 			MemorySegment mpacket,
 			int caplen,
@@ -288,7 +291,8 @@ public class PacketDispatcherJava
 		}, MemoryAddress.NULL);
 	}
 
-	protected void onNativeCallbackException(Throwable e, int caplen, int wirelen) {
+	@Override
+	public void onNativeCallbackException(Throwable e, int caplen, int wirelen) {
 		if (e instanceof RuntimeException runtime)
 			onNativeCallbackException(runtime, caplen, wirelen);
 		else

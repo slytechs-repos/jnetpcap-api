@@ -19,7 +19,7 @@ package com.slytechs.jnetpcap.pro;
 
 import java.util.concurrent.TimeUnit;
 
-import com.slytechs.jnetpcap.pro.PacketProcessor.PreProcessor;
+import com.slytechs.jnetpcap.pro.PcapConfigurator.PreProcessor;
 import com.slytechs.jnetpcap.pro.internal.PacketRepeaterPreProcessor;
 import com.slytechs.protocol.runtime.util.SystemProperties;
 
@@ -28,7 +28,7 @@ import com.slytechs.protocol.runtime.util.SystemProperties;
  * @author repos@slytechs.com
  *
  */
-public final class PacketRepeater extends PacketProcessor<PacketRepeater> implements PreProcessor {
+public final class PacketRepeater extends PcapConfigurator<PacketRepeater> implements PreProcessor {
 
 	private static final String PREFIX = "packet.repeater";
 	public static final String PROPERTY_PACKET_REPEATER_ENABLE = PREFIX + ".enable";
@@ -38,8 +38,8 @@ public final class PacketRepeater extends PacketProcessor<PacketRepeater> implem
 	private int repeatCount = SystemProperties.intValue(PROPERTY_PACKET_REPEATER_REPEAT_COUNT, 1);
 	private long delayNano = SystemProperties.longValue(PROPERTY_PACKET_REPEATER_DELAY_NANO, 1);
 
-	public PacketRepeater(PreInstaller installer) {
-		super(PREFIX, PacketRepeaterPreProcessor::new, installer);
+	public PacketRepeater() {
+		super(PREFIX, PacketRepeaterPreProcessor::new);
 	}
 
 	public PacketRepeater setRepeatCount(int count) {

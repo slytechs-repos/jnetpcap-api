@@ -30,9 +30,11 @@ import org.jnetpcap.Pcap0_6;
 import org.jnetpcap.Pcap1_0;
 import org.jnetpcap.Pcap1_5;
 import org.jnetpcap.Pcap1_9;
+import org.jnetpcap.PcapActivatedException;
 import org.jnetpcap.PcapDumper;
 import org.jnetpcap.PcapException;
 import org.jnetpcap.PcapIf;
+import org.jnetpcap.constant.PcapCode;
 import org.jnetpcap.constant.PcapDlt;
 import org.jnetpcap.constant.PcapTStampPrecision;
 import org.jnetpcap.internal.NonSealedPcap;
@@ -40,24 +42,20 @@ import org.jnetpcap.internal.PcapDispatcher;
 import org.jnetpcap.internal.PcapHeaderABI;
 import org.jnetpcap.internal.StandardPcapDispatcher;
 
-import com.slytechs.jnetpcap.pro.PacketProcessor.PostProcessor;
-import com.slytechs.jnetpcap.pro.PacketProcessor.PostProcessor.PostFactory;
-import com.slytechs.jnetpcap.pro.PacketProcessor.PreProcessor;
-import com.slytechs.jnetpcap.pro.PacketProcessor.PreProcessor.PreFactory;
+import com.slytechs.jnetpcap.pro.PcapConfigurator.PostFactory;
+import com.slytechs.jnetpcap.pro.PcapConfigurator.PostProcessor;
+import com.slytechs.jnetpcap.pro.PcapConfigurator.PreFactory;
+import com.slytechs.jnetpcap.pro.PcapConfigurator.PreProcessor;
 import com.slytechs.jnetpcap.pro.PcapProHandler.OfPacketConsumer;
-import com.slytechs.jnetpcap.pro.internal.PacketDispatcherJava;
+import com.slytechs.jnetpcap.pro.internal.MainPacketDispatcher;
+import com.slytechs.jnetpcap.pro.internal.PacketDispatcher;
+import com.slytechs.jnetpcap.pro.internal.PacketDispatcherConfig;
 import com.slytechs.jnetpcap.pro.internal.PacketStatisticsImpl;
-import com.slytechs.jnetpcap.pro.internal.ipf.IpfConfig;
-import com.slytechs.jnetpcap.pro.internal.ipf.IpfPostProcessor;
-import com.slytechs.jnetpcap.pro.internal.ipf.IpfPostProcessorJava;
 import com.slytechs.protocol.Frame.FrameNumber;
 import com.slytechs.protocol.descriptor.PacketDissector;
 import com.slytechs.protocol.meta.PacketFormat;
 import com.slytechs.protocol.pack.core.constants.PacketDescriptorType;
-import com.slytechs.protocol.runtime.time.TimestampSource;
 import com.slytechs.protocol.runtime.time.TimestampUnit;
-import com.slytechs.protocol.runtime.util.CountUnit;
-import com.slytechs.protocol.runtime.util.MemoryUnit;
 
 /**
  * Pcap packet capture with high level packet and protocol support.
@@ -67,29 +65,29 @@ import com.slytechs.protocol.runtime.util.MemoryUnit;
  * fully reassembled IP datagrams instead of individual fragments along with any
  * other type of packets selected by the packet filter applied.
  * <p>
- * To enable IPF mode, use the fluent method {@link #enableIpf(boolean)} before
- * the pcap handle is activated. Once enabled, numerous defaults are used and
- * can be changed by the use of the pcap handle. By default, IPF tracking and
+ * To enable IPF mode, use the fluent method {@link #enable(boolean)} before the
+ * pcap handle is activated. Once enabled, numerous defaults are used and can be
+ * changed by the use of the pcap handle. By default, IPF tracking and
  * reassembly are both enabled. Of course these settings can be changed by use
- * of {@link #enableIpfTracking(boolean)} and
- * {@link #enableIpfReassembly(boolean)} respectively. Further more, IPF
- * reassembly can be configured to attach IPF reassembled buffer to the last IP
- * fragment and/or inserted as a new IP data-gram into the dispatcher's packet
- * stream. This way the user packet handler will receive fully reassembled IP
- * datagrams as packets. The default is to not forward individual IP fragments,
- * but deliver the fully reassembled IP data-gram as a new packet, containing
- * all of the IP fragment data combined.
+ * of {@link #enableTracking(boolean)} and {@link #enableReassembly(boolean)}
+ * respectively. Further more, IPF reassembly can be configured to attach IPF
+ * reassembled buffer to the last IP fragment and/or inserted as a new IP
+ * data-gram into the dispatcher's packet stream. This way the user packet
+ * handler will receive fully reassembled IP datagrams as packets. The default
+ * is to not forward individual IP fragments, but deliver the fully reassembled
+ * IP data-gram as a new packet, containing all of the IP fragment data
+ * combined.
  * </p>
  * <p>
  * If you would like to receive all of the IP fragments used in the reassembly
- * as well, use the method {@link #enableIpfPassthrough(boolean)} which will
- * cause all of the IP fragments to be passed through in their original form.
+ * as well, use the method {@link #enablePassthrough(boolean)} which will cause
+ * all of the IP fragments to be passed through in their original form.
  * </p>
  * 
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  */
-public final class PcapPro extends NonSealedPcap implements IpfConfiguration, PacketStatistics {
+public final class PcapPro extends NonSealedPcap implements PacketStatistics {
 
 	/**
 	 * Create a live capture handle.
@@ -304,44 +302,18 @@ public final class PcapPro extends NonSealedPcap implements IpfConfiguration, Pa
 	}
 
 	/** The ipf config. */
-	private final IpfConfig ipfConfig = new IpfConfig();
+	private final PacketDispatcherConfig config = new PacketDispatcherConfig();
 	private PacketStatistics stats = new PacketStatisticsImpl();
 
 	/** The packet dispatcher. */
-	private PacketDispatcherJava postProcessorCommon;
+	private final MainPacketDispatcher postProcessorRoot;
+	private PacketDispatcher postProcessor;
 
 	private final PcapDispatcher preProcessorRoot;
 	private PcapDispatcher preProcessor;
 
-	private final Stack<PacketProcessor<?>> preProcessors = new Stack<>();
-	private final Stack<PacketProcessor<?>> postProcessors = new Stack<>();
-
-	public <T extends PostProcessor> T install(PostFactory<T> factory) {
-		return null;
-	}
-
-	public <T extends PreProcessor> T install(PreFactory<T> factory) {
-
-		T preProcessor = factory.newInstance(this::installPreProcessor);
-
-		return preProcessor;
-	}
-
-	private void installPreProcessor(PreProcessor preProcessor) {
-		if (!(preProcessor instanceof PacketProcessor<?> processor))
-			throw new IllegalArgumentException("invalid pre-processor [%s]"
-					.formatted(preProcessor.getClass()));
-
-		preProcessors.push(processor);
-
-		this.preProcessor = processor.newInstance(this.preProcessor);
-	}
-
-	public <T extends PacketProcessor<T> & PostProcessor> T postInstall(T postProcessor) {
-		postProcessors.push(postProcessor);
-
-		return postProcessor;
-	}
+	private final Stack<PcapConfigurator<?>> preProcessors = new Stack<>();
+	private final Stack<PcapConfigurator<?>> postProcessors = new Stack<>();
 
 	/**
 	 * Instantiates a new pcap pro.
@@ -352,68 +324,36 @@ public final class PcapPro extends NonSealedPcap implements IpfConfiguration, Pa
 	 */
 	PcapPro(MemoryAddress pcapHandle, String name, PcapHeaderABI abi) {
 		super(pcapHandle, name, abi);
-		ipfConfig.abi = abi;
+		config.abi = abi;
 
-		this.preProcessorRoot = new StandardPcapDispatcher(pcapHandle, this::breakloop);
+		this.preProcessorRoot = new StandardPcapDispatcher(pcapHandle, abi, this::breakloop);
 		this.preProcessor = this.preProcessorRoot;
+		this.postProcessorRoot = new MainPacketDispatcher(config);
+		this.postProcessor = postProcessorRoot;
+
+		postProcessorRoot.setPcapDispatcher(preProcessor);
 
 		setDescriptorType(PacketDescriptorType.TYPE2);
-
-		enableIpf(isIpfEnabled());
 	}
+
+	private boolean isActive;
 
 	@Override
 	public void activate() throws PcapException {
-		super.activate();
+		if (isActive)
+			throw new PcapActivatedException(PcapCode.PCAP_ERROR_ACTIVATED, "pcap-pro handle already active");
 
-		activateIpfIfNeeded();
-	}
+		try {
+			super.activate();
+		} catch (PcapActivatedException e) {} // Offline/dead handles are active already
 
-	public PcapPro activateIpf() {
-		checkIpfIsNotActive();
-
-		activateIpfIfNeeded();
-
-		return this;
-	}
-
-	private PcapPro activateIpfIfNeeded() {
-
-		if (ipfConfig.isIpfEnabled() && !(postProcessorCommon instanceof IpfPostProcessor)) {
-			var ipf = new IpfPostProcessorJava(
-					ipfConfig);
-			ipf.setPcapDispatcher(preProcessor);
-
-			this.postProcessorCommon = ipf;
+		try {
+			installAllPreProcessors();
+			installMainPacketProcessor();
+			installAllPostProcessors();
+		} finally {
+			this.isActive = true;
 		}
-
-		this.stats = postProcessorCommon.getPacketStatistics();
-
-		return this;
-	}
-
-	private void checkIpfIsNotActive() throws IllegalStateException {
-		if (ipfConfig.isIpfEnabled() && postProcessorCommon instanceof IpfPostProcessor)
-			throw new IllegalStateException("IPF already active");
-	}
-
-	/**
-	 * Disable native IP fragment tracking and reassembly. By default, the native
-	 * IPF tracking and reassembly is used, if native library is available. This
-	 * option, disables the use of native IPF, even if available.
-	 * 
-	 * <p>
-	 * This option has no effect if native library is not available (ie. found on
-	 * java.library.path).
-	 * </p>
-	 *
-	 * @param enable if true, native IPF will be disabled even if available (native
-	 *               library found), otherwise if false, native implementation will
-	 *               be preferred, if native library is available.
-	 * @return this handle
-	 */
-	public PcapPro disableNativeIpf(boolean enable) {
-		throw new UnsupportedOperationException("Not implemented yet. ");
 	}
 
 	/**
@@ -494,7 +434,19 @@ public final class PcapPro extends NonSealedPcap implements IpfConfiguration, Pa
 	 * @since libpcap 0.4
 	 */
 	public <U> int dispatch(int count, PcapProHandler.OfPacket<U> handler, U user) {
-		return postProcessorCommon.dispatchPacket(count, handler, user);
+		checkIfActive();
+
+		return postProcessor.dispatchPacket(count, handler, user);
+	}
+
+	private void checkIfActive() throws IllegalStateException {
+		if (!isActive)
+			throw new IllegalStateException("inactive - must use Pcap.activate()");
+	}
+
+	private void checkIfInactive() throws IllegalStateException {
+		if (isActive)
+			throw new IllegalStateException("handle already active");
 	}
 
 	/**
@@ -508,138 +460,6 @@ public final class PcapPro extends NonSealedPcap implements IpfConfiguration, Pa
 	 */
 	public int dispatch(OfPacketConsumer packetConsumer) {
 		return dispatch(0, (u, p) -> packetConsumer.accept(p), 0);
-	}
-
-	/**
-	 * Drop reassembled ip fragments. IP fragments are dropped before being
-	 * dispatched to the dispatcher. If IPF reassembly is enabled, that fragments
-	 * are used to reasseble IP datagrams and dropped after wards. If IP
-	 * fragmentation is disabled and fragments to be dropped, a specialized capture
-	 * will be set to drop fragments at the capture interface level.
-	 *
-	 * @param enable true enables IP fragment to be dropped
-	 * @return this handle
-	 */
-	public PcapPro dropReassembledIpFragments(boolean enable) {
-		throw new UnsupportedOperationException("Not implemented yet. ");
-	}
-
-	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enableIpf(boolean)
-	 */
-	@Override
-	public PcapPro enableIpf(boolean enable) {
-		checkIpfIsNotActive();
-
-		ipfConfig.enableIpf(enable);
-
-		return this;
-	}
-
-	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enableIpfAttachComplete(boolean)
-	 */
-	@Override
-	public PcapPro enableIpfAttachComplete(boolean ipfAttachComplete) {
-		checkIpfIsNotActive();
-
-		ipfConfig.enableIpfAttachComplete(ipfAttachComplete);
-
-		return this;
-	}
-
-	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enableIpfAttachIncomplete(boolean)
-	 */
-	@Override
-	public PcapPro enableIpfAttachIncomplete(boolean ipfAttachIncomplete) {
-		checkIpfIsNotActive();
-
-		ipfConfig.enableIpfAttachIncomplete(ipfAttachIncomplete);
-
-		return this;
-	}
-
-	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enableIpfFragments(boolean)
-	 */
-	@Override
-	public PcapPro enableIpfFragments(boolean passFragments) {
-		checkIpfIsNotActive();
-
-		ipfConfig.enableIpfFragments(passFragments);
-
-		return this;
-	}
-
-	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enableIpfIncomplete(boolean)
-	 */
-	@Override
-	public PcapPro enableIpfIncomplete(boolean passDgramsIncomplete) {
-		checkIpfIsNotActive();
-
-		ipfConfig.enableIpfIncomplete(passDgramsIncomplete);
-
-		return this;
-	}
-
-	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enableIpfPassComplete(boolean)
-	 */
-	@Override
-	public PcapPro enableIpfPassComplete(boolean passDgramsComplete) {
-		checkIpfIsNotActive();
-
-		ipfConfig.enableIpfPassComplete(passDgramsComplete);
-
-		return this;
-	}
-
-	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enableIpfPassthrough(boolean)
-	 */
-	@Override
-	public PcapPro enableIpfPassthrough(boolean enable) {
-		checkIpfIsNotActive();
-
-		ipfConfig.enableIpfPassthrough(enable);
-
-		return this;
-	}
-
-	/**
-	 * Enable IP datagram reassembly using IP fragments. IP fragments are tracked
-	 * and reassembled into new data buffers and dispatched as new packets to use
-	 * handler.
-	 *
-	 * @param enable if true, enable IP datagram reassembly.
-	 * @return this handle
-	 */
-	@Override
-	public PcapPro enableIpfReassembly(boolean enable) {
-		checkIpfIsNotActive();
-
-		ipfConfig.enableIpfReassembly(enable);
-
-		return this;
-	}
-
-	/**
-	 * Enable IP fragment tracking. When IP fragment tracking is enabled, IP
-	 * fragments are tracked in IPF Table and dispatched with a specialized IPF
-	 * descriptor with tracking information.
-	 *
-	 * @param enable if true, enable IP fragment tracking
-	 * @return this handle
-	 */
-	@Override
-	public PcapPro enableIpfTracking(boolean enable) {
-		checkIpfIsNotActive();
-
-		ipfConfig.enableIpfTracking(enable);
-
-		return this;
 	}
 
 	/**
@@ -671,51 +491,6 @@ public final class PcapPro extends NonSealedPcap implements IpfConfiguration, Pa
 
 	/**
 	 * @return
-	 * @see com.slytechs.jnetpcap.pro.internal.ipf.IpfConfig#getIpfBufferSize()
-	 */
-	@Override
-	public int getIpfBufferSize() {
-		return ipfConfig.getIpfBufferSize();
-	}
-
-	/**
-	 * @return
-	 * @see com.slytechs.jnetpcap.pro.internal.ipf.IpfConfig#getIpfMaxDgramBytes()
-	 */
-	@Override
-	public int getIpfMaxDgramBytes() {
-		return ipfConfig.getIpfMaxDgramBytes();
-	}
-
-	/**
-	 * @return
-	 * @see com.slytechs.jnetpcap.pro.internal.ipf.IpfConfig#getIpfMaxFragmentCount()
-	 */
-	@Override
-	public int getIpfMaxFragmentCount() {
-		return ipfConfig.getIpfMaxFragmentCount();
-	}
-
-	/**
-	 * @return
-	 * @see com.slytechs.jnetpcap.pro.internal.ipf.IpfConfig#getIpfTableSize()
-	 */
-	@Override
-	public int getIpfTableSize() {
-		return ipfConfig.getIpfTableSize();
-	}
-
-	/**
-	 * @return
-	 * @see com.slytechs.jnetpcap.pro.internal.ipf.IpfConfig#getTimeoutMilli()
-	 */
-	@Override
-	public long getIpfTimeoutMilli() {
-		return ipfConfig.getIpfTimeoutMilli();
-	}
-
-	/**
-	 * @return
 	 * @see com.slytechs.jnetpcap.pro.PacketStatistics#getReceivedCaplenCount()
 	 */
 	@Override
@@ -742,23 +517,6 @@ public final class PcapPro extends NonSealedPcap implements IpfConfiguration, Pa
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#getTimeoutQueueSize()
-	 */
-	@Override
-	public int getTimeoutQueueSize() {
-		return ipfConfig.getTimeoutQueueSize();
-	}
-
-	/**
-	 * @return
-	 * @see com.slytechs.jnetpcap.pro.internal.ipf.IpfConfig#getTimeSource()
-	 */
-	@Override
-	public TimestampSource getTimeSource() {
-		return ipfConfig.getTimeSource();
-	}
-
-	/**
 	 * Gets any uncaught exceptions.
 	 *
 	 * @return the uncaught exception
@@ -767,92 +525,68 @@ public final class PcapPro extends NonSealedPcap implements IpfConfiguration, Pa
 		return Optional.ofNullable(preProcessor.getUncaughtException());
 	}
 
-	/**
-	 * @return
-	 * @see com.slytechs.jnetpcap.pro.internal.ipf.IpfConfig#isIpfAttachComplete()
-	 */
-	@Override
-	public boolean isIpfAttachComplete() {
-		return ipfConfig.isIpfAttachComplete();
+	public <T extends PostProcessor> T install(PostFactory<T> postProcessorSupplier) {
+		checkIfInactive();
+
+		return install(postProcessorSupplier.newInstance());
 	}
 
-	/**
-	 * @return
-	 * @see com.slytechs.jnetpcap.pro.internal.ipf.IpfConfig#isIpfAttachIncomplete()
-	 */
-	@Override
-	public boolean isIpfAttachIncomplete() {
-		return ipfConfig.isIpfAttachIncomplete();
+	public <T extends PreProcessor> T install(PreFactory<T> preProcessorSupplier) {
+		checkIfInactive();
+
+		return install(preProcessorSupplier.newInstance());
 	}
 
-	/**
-	 * @return
-	 * @see com.slytechs.jnetpcap.pro.internal.ipf.IpfConfig#isIpfEnabled()
-	 */
-	@Override
-	public boolean isIpfEnabled() {
-		return ipfConfig.isIpfEnabled();
+	public <T extends PostProcessor> T install(T postProcessor) {
+		checkIfInactive();
+
+		if (!(postProcessor instanceof PcapConfigurator<?> processor))
+			throw new IllegalArgumentException("invalid post-processor [%s]"
+					.formatted(postProcessor.getClass()));
+
+		postProcessors.push(processor);
+
+		return postProcessor;
 	}
 
-	/**
-	 * @return
-	 * @see com.slytechs.jnetpcap.pro.internal.ipf.IpfConfig#isIpfPassFragments()
-	 */
-	@Override
-	public boolean isIpfPassFragments() {
-		return ipfConfig.isIpfPassFragments();
+	public <T extends PreProcessor> T install(T preProcessor) {
+		checkIfInactive();
+
+		if (!(preProcessor instanceof PcapConfigurator<?> processor))
+			throw new IllegalArgumentException("invalid pre-processor [%s]"
+					.formatted(preProcessor.getClass()));
+
+		preProcessors.push(processor);
+
+		return preProcessor;
 	}
 
-	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#isIpfPassthrough()
-	 */
-	@Override
-	public boolean isIpfPassthrough() {
-		return ipfConfig.isIpfPassthrough();
+	private void installMainPacketProcessor() {
+		/*
+		 * Main processor already created, we just need to connect it up the pcap
+		 * dispatchers (ie. PreProcessors) that are already installed and configured.
+		 */
+		postProcessorRoot.setPcapDispatcher(preProcessor);
 	}
 
-	/**
-	 * @return
-	 * @see com.slytechs.jnetpcap.pro.internal.ipf.IpfConfig#isIpfReassemblyEnabled()
-	 */
-	@Override
-	public boolean isIpfReassemblyEnabled() {
-		return ipfConfig.isIpfReassemblyEnabled();
+	private void installAllPreProcessors() {
+		preProcessors.stream()
+				.filter(c -> c.isEnabled())
+				.forEach(this::installPreProcessor);
 	}
 
-	/**
-	 * @return
-	 * @see com.slytechs.jnetpcap.pro.internal.ipf.IpfConfig#isIpfSendComplete()
-	 */
-	@Override
-	public boolean isIpfSendComplete() {
-		return ipfConfig.isIpfSendComplete();
+	private void installAllPostProcessors() {
+		postProcessors.stream()
+				.filter(c -> c.isEnabled())
+				.forEach(this::installPostProcessor);
 	}
 
-	/**
-	 * @return
-	 * @see com.slytechs.jnetpcap.pro.internal.ipf.IpfConfig#isIpfSendIncomplete()
-	 */
-	@Override
-	public boolean isIpfSendIncomplete() {
-		return ipfConfig.isIpfSendIncomplete();
+	private void installPostProcessor(PcapConfigurator<?> processor) {
+		this.postProcessor = processor.newDispatcherInstance(preProcessor, postProcessor);
 	}
 
-	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#isIpfTimeoutOnLast()
-	 */
-	@Override
-	public boolean isIpfTimeoutOnLast() {
-		return ipfConfig.isIpfTimeoutOnLast();
-	}
-
-	/**
-	 * @return
-	 * @see com.slytechs.jnetpcap.pro.internal.ipf.IpfConfig#isIpfTrackingEnabled()
-	 */
-	@Override
-	public boolean isIpfTrackingEnabled() {
-		return ipfConfig.isIpfTrackingEnabled();
+	private void installPreProcessor(PcapConfigurator<?> processor) {
+		this.preProcessor = processor.newDispatcherInstance(this.preProcessor);
 	}
 
 	/**
@@ -868,6 +602,8 @@ public final class PcapPro extends NonSealedPcap implements IpfConfiguration, Pa
 	 *         pcap_breakloop() before any packets were processed
 	 */
 	public int loop(int count, OfPacketConsumer packetConsumer) {
+		checkIfActive();
+
 		return loop(count, (u, p) -> packetConsumer.accept(p), 0);
 	}
 
@@ -933,7 +669,7 @@ public final class PcapPro extends NonSealedPcap implements IpfConfiguration, Pa
 	 * @since libpcap 0.4
 	 */
 	public <U> int loop(int count, PcapProHandler.OfPacket<U> handler, U user) {
-		return postProcessorCommon.loopPacket(count, handler, user);
+		return postProcessor.loopPacket(count, handler, user);
 	}
 
 	/**
@@ -943,17 +679,10 @@ public final class PcapPro extends NonSealedPcap implements IpfConfiguration, Pa
 	 * @return the pcap pro
 	 */
 	public PcapPro setDescriptorType(PacketDescriptorType type) {
-		checkIpfIsNotActive();
+		config.descriptorType = type;
+		config.dissector = PacketDissector.dissector(type);
 
-		ipfConfig.descriptorType = type;
-		ipfConfig.dissector = PacketDissector.dissector(type);
-
-		var disp = new PacketDispatcherJava(
-				ipfConfig);
-		disp.setPcapDispatcher(preProcessor);
-
-		this.postProcessorCommon = disp;
-		this.stats = postProcessorCommon.getPacketStatistics();
+		this.stats = postProcessorRoot.getPacketStatistics();
 
 		return this;
 	}
@@ -965,9 +694,7 @@ public final class PcapPro extends NonSealedPcap implements IpfConfiguration, Pa
 	 * @return the pcap pro
 	 */
 	public PcapPro setFrameNumber(FrameNumber frameNumberAssigner) {
-		checkIpfIsNotActive();
-
-		ipfConfig.frameNo = frameNumberAssigner;
+		config.frameNo = frameNumberAssigner;
 
 		return this;
 	}
@@ -979,125 +706,7 @@ public final class PcapPro extends NonSealedPcap implements IpfConfiguration, Pa
 	 * @return the pcap pro
 	 */
 	public PcapPro setFrameStartingNumber(long startingNo) {
-		checkIpfIsNotActive();
-
 		return setFrameNumber(FrameNumber.starting(startingNo));
-	}
-
-	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#setIpfBufferSize(long,
-	 *      com.slytechs.protocol.runtime.util.MemoryUnit)
-	 */
-	@Override
-	public PcapPro setIpfBufferSize(long size, MemoryUnit unit) {
-		checkIpfIsNotActive();
-
-		ipfConfig.setIpfBufferSize(size, unit);
-
-		return this;
-	}
-
-	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#setIpfMaxDgramSize(long,
-	 *      com.slytechs.protocol.runtime.util.MemoryUnit)
-	 */
-	@Override
-	public PcapPro setIpfMaxDgramSize(long size, MemoryUnit unit) {
-		checkIpfIsNotActive();
-
-		ipfConfig.setIpfMaxDgramSize(size, unit);
-
-		return this;
-	}
-
-	/**
-	 * Sets the ipf max frag track count.
-	 *
-	 * @param ipfMaxFragTrackCount the ipf max frag track count
-	 * @return the pcap pro
-	 */
-	public PcapPro setIpfMaxFragmentCount(int ipfMaxFragTrackCount) {
-		return setIpfMaxFragmentCount(ipfMaxFragTrackCount, CountUnit.COUNT);
-	}
-
-	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#setIpfMaxFragmentCount(int,
-	 *      com.slytechs.protocol.runtime.util.CountUnit)
-	 */
-	@Override
-	public PcapPro setIpfMaxFragmentCount(int ipfMaxFragTrackCount, CountUnit unit) {
-		checkIpfIsNotActive();
-
-		ipfConfig.setIpfMaxFragmentCount(ipfMaxFragTrackCount, unit);
-
-		return this;
-	}
-
-	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#setIpfTableSize(long,
-	 *      com.slytechs.protocol.runtime.util.CountUnit)
-	 */
-	@Override
-	public PcapPro setIpfTableSize(long size, CountUnit unit) {
-		checkIpfIsNotActive();
-
-		ipfConfig.setIpfTableSize(size, unit);
-
-		return this;
-	}
-
-	/**
-	 * Sets per entry timeout parameters. Entries can timeout when the last fragment
-	 * is seen but not all fragments have arrived or timeout duration has elapsed.
-	 * If timeout on last frag is not enabled, then entries are kept alive until
-	 * timeout occurs or all fragments arrive, which ever condition occurs first.
-	 *
-	 * @param timeoutOnLastFrag the timeout on last frag
-	 * @param duration          the duration
-	 * @param unit              the unit
-	 * @return the pcap pro
-	 */
-	public PcapPro setIpfTimeout(boolean timeoutOnLastFrag, long duration, TimeUnit unit) {
-		checkIpfIsNotActive();
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#setIpfTimeout(long,
-	 *      java.util.concurrent.TimeUnit)
-	 */
-	@Override
-	public PcapPro setIpfTimeout(long timeout, TimeUnit unit) {
-		checkIpfIsNotActive();
-
-		ipfConfig.setIpfTimeout(timeout, unit);
-
-		return this;
-	}
-
-	/**
-	 * Sets the ipf timeout milli.
-	 *
-	 * @param timeoutMilli the timeout milli
-	 * @return the pcap pro
-	 */
-	public PcapPro setIpfTimeoutMilli(long timeoutMilli) {
-		checkIpfIsNotActive();
-
-		return setIpfTimeout(timeoutMilli, TimeUnit.MILLISECONDS);
-	}
-
-	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#setIpfTimeoutOnLast(boolean)
-	 */
-	@Override
-	public PcapPro setIpfTimeoutOnLast(boolean lastOrTimeout) {
-		checkIpfIsNotActive();
-
-		ipfConfig.setIpfTimeoutOnLast(lastOrTimeout);
-
-		return this;
 	}
 
 	/**
@@ -1107,7 +716,7 @@ public final class PcapPro extends NonSealedPcap implements IpfConfiguration, Pa
 	 * @return the pcap pro
 	 */
 	public PcapPro setPacketFormatter(PacketFormat formatter) {
-		ipfConfig.formatter = formatter;
+		config.formatter = formatter;
 
 		return this;
 	}
@@ -1119,21 +728,7 @@ public final class PcapPro extends NonSealedPcap implements IpfConfiguration, Pa
 	 * @return the pcap pro
 	 */
 	public PcapPro setPortNumber(int portNo) {
-		checkIpfIsNotActive();
-
-		ipfConfig.portNo = portNo;
-
-		return this;
-	}
-
-	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#setTimeoutQueueSize(int)
-	 */
-	@Override
-	public PcapPro setTimeoutQueueSize(int size) {
-		checkIpfIsNotActive();
-
-		ipfConfig.setTimeoutQueueSize(size);
+		config.portNo = portNo;
 
 		return this;
 	}
@@ -1146,9 +741,7 @@ public final class PcapPro extends NonSealedPcap implements IpfConfiguration, Pa
 	 * @return this pcap
 	 */
 	public PcapPro setTimestampUnit(TimestampUnit unit) {
-		checkIpfIsNotActive();
-
-		ipfConfig.timestampUnit = unit;
+		config.timestampUnit = unit;
 
 		return this;
 	}
@@ -1161,8 +754,6 @@ public final class PcapPro extends NonSealedPcap implements IpfConfiguration, Pa
 	 */
 	@Override
 	public final PcapPro setUncaughtExceptionHandler(Consumer<? super Throwable> exceptionHandler) {
-		checkIpfIsNotActive();
-
 		return setUncaughtExceptionHandler((t, e) -> exceptionHandler.accept(e));
 	}
 
@@ -1175,33 +766,7 @@ public final class PcapPro extends NonSealedPcap implements IpfConfiguration, Pa
 	 */
 	@Override
 	public final PcapPro setUncaughtExceptionHandler(UncaughtExceptionHandler exceptionHandler) {
-		checkIpfIsNotActive();
-
 		super.setUncaughtExceptionHandler(exceptionHandler);
-
-		return this;
-	}
-
-	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#useIpfPacketTimesource()
-	 */
-	@Override
-	public PcapPro useIpfPacketTimesource() {
-		checkIpfIsNotActive();
-
-		ipfConfig.useIpfPacketTimesource();
-
-		return this;
-	}
-
-	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#useIpfSystemTimesource()
-	 */
-	@Override
-	public PcapPro useIpfSystemTimesource() {
-		checkIpfIsNotActive();
-
-		ipfConfig.useIpfSystemTimesource();
 
 		return this;
 	}

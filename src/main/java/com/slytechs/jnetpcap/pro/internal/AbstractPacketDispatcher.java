@@ -17,12 +17,18 @@
  */
 package com.slytechs.jnetpcap.pro.internal;
 
+import java.lang.foreign.MemoryAddress;
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.MemorySession;
+import java.nio.ByteBuffer;
 import java.util.Objects;
 
 import org.jnetpcap.internal.PcapDispatcher;
 
+import com.slytechs.jnetpcap.pro.PcapConfigurator;
 import com.slytechs.jnetpcap.pro.PacketStatistics;
 import com.slytechs.jnetpcap.pro.PcapProHandler.OfPacket;
+import com.slytechs.protocol.Packet;
 import com.slytechs.protocol.descriptor.PacketDissector;
 import com.slytechs.protocol.pack.core.constants.PacketDescriptorType;
 
@@ -31,12 +37,20 @@ import com.slytechs.protocol.pack.core.constants.PacketDescriptorType;
  * @author repos@slytechs.com
  *
  */
-public class AbstractPostProcessor extends AbstractPreProcessor implements PacketDispatcher {
+public class AbstractPacketDispatcher extends AbstractPcapDispatcher implements PacketDispatcher {
+
+	public interface PacketDispatcherFactory<T extends PcapConfigurator<T>> {
+		PacketDispatcher newInstance(
+				PcapDispatcher source,
+				PacketDispatcher packet,
+				T context);
+	}
 
 	private final PacketDispatcher packetDispatcher;
 
-	public AbstractPostProcessor(PacketDispatcher packetDispatcher, PcapDispatcher pcapDispatcher) {
+	public AbstractPacketDispatcher(PacketDispatcher packetDispatcher, PcapDispatcher pcapDispatcher) {
 		super(pcapDispatcher);
+		
 		this.packetDispatcher = Objects.requireNonNull(packetDispatcher, "packetDispatcher");
 	}
 
@@ -93,6 +107,21 @@ public class AbstractPostProcessor extends AbstractPreProcessor implements Packe
 	@Override
 	public PacketStatistics getPacketStatistics() {
 		return packetDispatcher.getPacketStatistics();
+	}
+
+	@Override
+	public <U> Packet processPacket(MemoryAddress pcapHdr, MemoryAddress pktData, MemorySession session) {
+		return packetDispatcher.processPacket(pcapHdr, pktData, session);
+	}
+
+	@Override
+	public <U> Packet processPacket(ByteBuffer buffer, MemorySegment mpacket, int caplen, int wirelen, long timestamp) {
+		return packetDispatcher.processPacket(buffer, mpacket, caplen, wirelen, timestamp);
+	}
+
+	@Override
+	public void onNativeCallbackException(Throwable e, int caplen, int wirelen) {
+		packetDispatcher.onNativeCallbackException(e, caplen, wirelen);
 	}
 
 }

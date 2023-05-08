@@ -24,9 +24,15 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
+import org.jnetpcap.internal.PcapDispatcher;
+import org.jnetpcap.internal.PcapHeaderABI;
+
+import com.slytechs.jnetpcap.pro.IpfReassembler;
 import com.slytechs.jnetpcap.pro.IpfStatistics;
 import com.slytechs.jnetpcap.pro.PcapProHandler.OfPacket;
-import com.slytechs.jnetpcap.pro.internal.PacketDispatcherJava;
+import com.slytechs.jnetpcap.pro.internal.AbstractPacketDispatcher;
+import com.slytechs.jnetpcap.pro.internal.PacketDispatcher;
+import com.slytechs.jnetpcap.pro.internal.PacketStatisticsImpl;
 import com.slytechs.protocol.Packet;
 import com.slytechs.protocol.descriptor.IpfFragDissector;
 import com.slytechs.protocol.descriptor.IpfFragment;
@@ -41,7 +47,7 @@ import com.slytechs.protocol.runtime.hash.Checksums;
  * @author repos@slytechs.com
  * @author Mark Bednarczyk
  */
-public final class IpfPostProcessorJava extends PacketDispatcherJava implements IpfPostProcessor {
+public final class JavaIpfDispatcher extends AbstractPacketDispatcher implements IpfDispatcher {
 
 	public interface DatagramQueue {
 		void addDatagram(MemorySegment mseg, int caplen, int wirelen, long expiration, IpfDgramReassembler reassembler);
@@ -82,12 +88,16 @@ public final class IpfPostProcessorJava extends PacketDispatcherJava implements 
 	private final IpfTable ipfTable;
 
 	/** The ipf config. */
-	private final IpfConfig.EffectiveConfig ipfConfig;
+	private final IpfReassembler.EffectiveConfig ipfConfig;
 
 	/** The insert queue. */
 	private final BlockingQueue<ReassembledDatagram> dgramQueue;
 
-	private final IpfStatistics stats = new IpfStatistics();
+	private final IpfStatistics ipfStats = new IpfStatistics();
+
+	private final PcapHeaderABI abi;
+
+	private final PacketStatisticsImpl packetStats;
 
 	/**
 	 * Instantiates a new java ipf dispatcher.
@@ -96,16 +106,20 @@ public final class IpfPostProcessorJava extends PacketDispatcherJava implements 
 	 * @param breakDispatch the break dispatch
 	 * @param config        the config
 	 */
-	public IpfPostProcessorJava(
-			IpfConfig config) {
-		super(config);
+	public JavaIpfDispatcher(
+			PcapDispatcher pcap,
+			PacketDispatcher packet,
+			IpfReassembler config) {
+		super(packet, pcap);
 
-		if (config.isIpfEnabled() == false)
+		if (config.isEnabled() == false)
 			throw new IllegalStateException("IPF is disabled");
 
 		this.ipfConfig = config.computeEffectiveConfig();
 		this.ipfTable = new IpfTable(config, this::sendMemorySegment);
 		this.dgramQueue = new ArrayBlockingQueue<>(config.getTimeoutQueueSize());
+		this.abi = pcap.abi();
+		this.packetStats = (PacketStatisticsImpl) getPacketStatistics();
 	}
 
 	/**
@@ -118,7 +132,7 @@ public final class IpfPostProcessorJava extends PacketDispatcherJava implements 
 	 * @return the int
 	 */
 	protected <U> int dispatchIpf(int count, OfPacket<U> sink, U user) {
-		return pcapDispatcher.dispatchNative(count, (ignore, pcapHdr, pktData) -> {
+		return super.dispatchNative(count, (ignore, pcapHdr, pktData) -> {
 
 			try (var session = MemorySession.openShared()) {
 
@@ -140,7 +154,7 @@ public final class IpfPostProcessorJava extends PacketDispatcherJava implements 
 	 * @param sink  the sink
 	 * @param user  the user
 	 * @return the int
-	 * @see com.slytechs.jnetpcap.pro.internal.PacketDispatcherJava#dispatchPacket(int,
+	 * @see com.slytechs.jnetpcap.pro.internal.MainPacketDispatcher#dispatchPacket(int,
 	 *      com.slytechs.jnetpcap.pro.PcapProHandler.OfPacket, java.lang.Object)
 	 */
 	@Override
@@ -158,7 +172,7 @@ public final class IpfPostProcessorJava extends PacketDispatcherJava implements 
 	 * @return the int
 	 */
 	protected <U> int loopIpf(int count, OfPacket<U> sink, U user) {
-		return pcapDispatcher.loopNative(count, (ignore, pcapHdr, pktData) -> {
+		return super.loopNative(count, (ignore, pcapHdr, pktData) -> {
 			try (var session = MemorySession.openShared()) {
 
 				if (!sinkIpfNative0(pcapHdr, pktData, sink, user, session)) {
@@ -179,7 +193,7 @@ public final class IpfPostProcessorJava extends PacketDispatcherJava implements 
 	 * @param sink  the sink
 	 * @param user  the user
 	 * @return the int
-	 * @see com.slytechs.jnetpcap.pro.internal.PacketDispatcherJava#loopPacket(int,
+	 * @see com.slytechs.jnetpcap.pro.internal.MainPacketDispatcher#loopPacket(int,
 	 *      com.slytechs.jnetpcap.pro.PcapProHandler.OfPacket, java.lang.Object)
 	 */
 	@Override
@@ -200,12 +214,12 @@ public final class IpfPostProcessorJava extends PacketDispatcherJava implements 
 		int caplen = 0, wirelen = 0;
 		try {
 			/* Pcap header fields */
-			caplen = config.abi.captureLength(pcapHdr);
-			wirelen = config.abi.wireLength(pcapHdr);
-			long tvSec = config.abi.tvSec(pcapHdr);
-			long tvUsec = config.abi.tvUsec(pcapHdr);
+			caplen = abi.captureLength(pcapHdr);
+			wirelen = abi.wireLength(pcapHdr);
+			long tvSec = abi.tvSec(pcapHdr);
+			long tvUsec = abi.tvUsec(pcapHdr);
 
-			long timestamp = config.timestampUnit.ofSecond(tvSec, tvUsec);
+			long timestamp = ipfConfig.getTimestampUnit().ofSecond(tvSec, tvUsec);
 
 			MemorySegment mpkt = MemorySegment.ofAddress(pktData, caplen, session);
 			ByteBuffer buf = mpkt.asByteBuffer();
@@ -214,7 +228,7 @@ public final class IpfPostProcessorJava extends PacketDispatcherJava implements 
 			return isSuccess;
 
 		} catch (Throwable e) {
-			incPacketDropped(caplen, wirelen);
+			packetStats.incDropped(caplen, wirelen, 1);
 			onNativeCallbackException(e, caplen, wirelen);
 			return false;
 		}
@@ -279,14 +293,14 @@ public final class IpfPostProcessorJava extends PacketDispatcherJava implements 
 		/* Find existing or create a new IPF table entry (in hash table) */
 		var reassembler = ipfTable.lookup(fragDesc, ipfHashcode);
 		if (reassembler == null) {
-			stats.incTableInsertionFailure(1);
+			ipfStats.incTableInsertionFailure(1);
 
 			return null;
 		}
 
 		/* Do actual reassembly */
 		if (!reassembler.processFragment(frameNo, packetBuf, fragDesc)) {
-			stats.incIpfProcessingFailure(1);
+			ipfStats.incIpfProcessingFailure(1);
 
 			reassembler.close();
 
@@ -420,7 +434,7 @@ public final class IpfPostProcessorJava extends PacketDispatcherJava implements 
 				return true;
 			} catch (IpfReassemblyException e) {
 				e.printStackTrace();
-				pcapDispatcher.onNativeCallbackException(new RuntimeException(e));
+				super.onNativeCallbackException(new RuntimeException(e));
 
 				sink.handlePacket(user, packet);
 
