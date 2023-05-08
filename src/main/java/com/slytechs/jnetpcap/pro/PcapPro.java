@@ -47,10 +47,10 @@ import com.slytechs.jnetpcap.pro.PcapConfigurator.PostProcessor;
 import com.slytechs.jnetpcap.pro.PcapConfigurator.PreFactory;
 import com.slytechs.jnetpcap.pro.PcapConfigurator.PreProcessor;
 import com.slytechs.jnetpcap.pro.PcapProHandler.OfPacketConsumer;
+import com.slytechs.jnetpcap.pro.internal.CaptureStatisticsImpl;
 import com.slytechs.jnetpcap.pro.internal.MainPacketDispatcher;
 import com.slytechs.jnetpcap.pro.internal.PacketDispatcher;
 import com.slytechs.jnetpcap.pro.internal.PacketDispatcherConfig;
-import com.slytechs.jnetpcap.pro.internal.PacketStatisticsImpl;
 import com.slytechs.protocol.Frame.FrameNumber;
 import com.slytechs.protocol.descriptor.PacketDissector;
 import com.slytechs.protocol.meta.PacketFormat;
@@ -87,7 +87,7 @@ import com.slytechs.protocol.runtime.time.TimestampUnit;
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  */
-public final class PcapPro extends NonSealedPcap implements PacketStatistics {
+public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 
 	/**
 	 * Create a live capture handle.
@@ -303,7 +303,7 @@ public final class PcapPro extends NonSealedPcap implements PacketStatistics {
 
 	/** The ipf config. */
 	private final PacketDispatcherConfig config = new PacketDispatcherConfig();
-	private PacketStatistics stats = new PacketStatisticsImpl();
+	private CaptureStatistics stats = new CaptureStatisticsImpl();
 
 	/** The packet dispatcher. */
 	private final MainPacketDispatcher postProcessorRoot;
@@ -464,7 +464,7 @@ public final class PcapPro extends NonSealedPcap implements PacketStatistics {
 
 	/**
 	 * @return
-	 * @see com.slytechs.jnetpcap.pro.PacketStatistics#getDroppedCaplenCount()
+	 * @see com.slytechs.jnetpcap.pro.CaptureStatistics#getDroppedCaplenCount()
 	 */
 	@Override
 	public long getDroppedCaplenCount() {
@@ -473,7 +473,7 @@ public final class PcapPro extends NonSealedPcap implements PacketStatistics {
 
 	/**
 	 * @return
-	 * @see com.slytechs.jnetpcap.pro.PacketStatistics#getDroppedPacketCount()
+	 * @see com.slytechs.jnetpcap.pro.CaptureStatistics#getDroppedPacketCount()
 	 */
 	@Override
 	public long getDroppedPacketCount() {
@@ -482,7 +482,7 @@ public final class PcapPro extends NonSealedPcap implements PacketStatistics {
 
 	/**
 	 * @return
-	 * @see com.slytechs.jnetpcap.pro.PacketStatistics#getDroppedWirelenCount()
+	 * @see com.slytechs.jnetpcap.pro.CaptureStatistics#getDroppedWirelenCount()
 	 */
 	@Override
 	public long getDroppedWirelenCount() {
@@ -491,7 +491,7 @@ public final class PcapPro extends NonSealedPcap implements PacketStatistics {
 
 	/**
 	 * @return
-	 * @see com.slytechs.jnetpcap.pro.PacketStatistics#getReceivedCaplenCount()
+	 * @see com.slytechs.jnetpcap.pro.CaptureStatistics#getReceivedCaplenCount()
 	 */
 	@Override
 	public long getReceivedCaplenCount() {
@@ -500,7 +500,7 @@ public final class PcapPro extends NonSealedPcap implements PacketStatistics {
 
 	/**
 	 * @return
-	 * @see com.slytechs.jnetpcap.pro.PacketStatistics#getReceivedPacketCount()
+	 * @see com.slytechs.jnetpcap.pro.CaptureStatistics#getReceivedPacketCount()
 	 */
 	@Override
 	public long getReceivedPacketCount() {
@@ -509,7 +509,7 @@ public final class PcapPro extends NonSealedPcap implements PacketStatistics {
 
 	/**
 	 * @return
-	 * @see com.slytechs.jnetpcap.pro.PacketStatistics#getReceivedWirelenCount()
+	 * @see com.slytechs.jnetpcap.pro.CaptureStatistics#getReceivedWirelenCount()
 	 */
 	@Override
 	public long getReceivedWirelenCount() {

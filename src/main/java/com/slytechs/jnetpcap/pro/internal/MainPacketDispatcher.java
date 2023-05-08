@@ -25,7 +25,7 @@ import java.nio.ByteOrder;
 
 import org.jnetpcap.internal.PcapDispatcher;
 
-import com.slytechs.jnetpcap.pro.PacketStatistics;
+import com.slytechs.jnetpcap.pro.CaptureStatistics;
 import com.slytechs.jnetpcap.pro.PcapProHandler;
 import com.slytechs.protocol.Packet;
 import com.slytechs.protocol.descriptor.PacketDescriptor;
@@ -57,7 +57,7 @@ public class MainPacketDispatcher
 
 	protected final PacketDispatcherConfig config;
 
-	protected final PacketStatisticsImpl stats = (PacketStatisticsImpl) PacketStatistics.newInstance();
+	protected final CaptureStatisticsImpl stats = (CaptureStatisticsImpl) CaptureStatistics.newInstance();
 
 	protected PcapDispatcher pcapDispatcher;
 
@@ -307,7 +307,7 @@ public class MainPacketDispatcher
 
 	/**
 	 * @return
-	 * @see com.slytechs.jnetpcap.pro.PacketStatistics#getDroppedCaplenCount()
+	 * @see com.slytechs.jnetpcap.pro.CaptureStatistics#getDroppedCaplenCount()
 	 */
 	public long getDroppedCaplenCount() {
 		return stats.getDroppedCaplenCount();
@@ -315,7 +315,7 @@ public class MainPacketDispatcher
 
 	/**
 	 * @return
-	 * @see com.slytechs.jnetpcap.pro.PacketStatistics#getDroppedPacketCount()
+	 * @see com.slytechs.jnetpcap.pro.CaptureStatistics#getDroppedPacketCount()
 	 */
 	public long getDroppedPacketCount() {
 		return stats.getDroppedPacketCount();
@@ -323,7 +323,7 @@ public class MainPacketDispatcher
 
 	/**
 	 * @return
-	 * @see com.slytechs.jnetpcap.pro.PacketStatistics#getDroppedWirelenCount()
+	 * @see com.slytechs.jnetpcap.pro.CaptureStatistics#getDroppedWirelenCount()
 	 */
 	public long getDroppedWirelenCount() {
 		return stats.getDroppedWirelenCount();
@@ -331,7 +331,7 @@ public class MainPacketDispatcher
 
 	/**
 	 * @return
-	 * @see com.slytechs.jnetpcap.pro.PacketStatistics#getReceivedCaplenCount()
+	 * @see com.slytechs.jnetpcap.pro.CaptureStatistics#getReceivedCaplenCount()
 	 */
 	public long getReceivedCaplenCount() {
 		return stats.getReceivedCaplenCount();
@@ -339,7 +339,7 @@ public class MainPacketDispatcher
 
 	/**
 	 * @return
-	 * @see com.slytechs.jnetpcap.pro.PacketStatistics#getReceivedPacketCount()
+	 * @see com.slytechs.jnetpcap.pro.CaptureStatistics#getReceivedPacketCount()
 	 */
 	public long getReceivedPacketCount() {
 		return stats.getReceivedPacketCount();
@@ -347,7 +347,7 @@ public class MainPacketDispatcher
 
 	/**
 	 * @return
-	 * @see com.slytechs.jnetpcap.pro.PacketStatistics#getReceivedWirelenCount()
+	 * @see com.slytechs.jnetpcap.pro.CaptureStatistics#getReceivedWirelenCount()
 	 */
 	public long getReceivedWirelenCount() {
 		return stats.getReceivedWirelenCount();
@@ -357,7 +357,7 @@ public class MainPacketDispatcher
 	 * @see com.slytechs.jnetpcap.pro.PacketDispatcher#getPacketStatistics()
 	 */
 	@Override
-	public PacketStatistics getPacketStatistics() {
+	public CaptureStatistics getPacketStatistics() {
 		return stats;
 	}
 

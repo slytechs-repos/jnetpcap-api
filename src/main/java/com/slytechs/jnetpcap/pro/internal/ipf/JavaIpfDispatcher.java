@@ -32,7 +32,7 @@ import com.slytechs.jnetpcap.pro.IpfStatistics;
 import com.slytechs.jnetpcap.pro.PcapProHandler.OfPacket;
 import com.slytechs.jnetpcap.pro.internal.AbstractPacketDispatcher;
 import com.slytechs.jnetpcap.pro.internal.PacketDispatcher;
-import com.slytechs.jnetpcap.pro.internal.PacketStatisticsImpl;
+import com.slytechs.jnetpcap.pro.internal.CaptureStatisticsImpl;
 import com.slytechs.protocol.Packet;
 import com.slytechs.protocol.descriptor.IpfFragDissector;
 import com.slytechs.protocol.descriptor.IpfFragment;
@@ -97,7 +97,7 @@ public final class JavaIpfDispatcher extends AbstractPacketDispatcher implements
 
 	private final PcapHeaderABI abi;
 
-	private final PacketStatisticsImpl packetStats;
+	private final CaptureStatisticsImpl packetStats;
 
 	/**
 	 * Instantiates a new java ipf dispatcher.
@@ -119,7 +119,7 @@ public final class JavaIpfDispatcher extends AbstractPacketDispatcher implements
 		this.ipfTable = new IpfTable(config, this::sendMemorySegment);
 		this.dgramQueue = new ArrayBlockingQueue<>(config.getTimeoutQueueSize());
 		this.abi = pcap.abi();
-		this.packetStats = (PacketStatisticsImpl) getPacketStatistics();
+		this.packetStats = (CaptureStatisticsImpl) getPacketStatistics();
 	}
 
 	/**

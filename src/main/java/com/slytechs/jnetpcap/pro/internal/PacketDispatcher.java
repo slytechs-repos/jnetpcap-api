@@ -22,7 +22,7 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.MemorySession;
 import java.nio.ByteBuffer;
 
-import com.slytechs.jnetpcap.pro.PacketStatistics;
+import com.slytechs.jnetpcap.pro.CaptureStatistics;
 import com.slytechs.jnetpcap.pro.PcapProHandler;
 import com.slytechs.protocol.Packet;
 import com.slytechs.protocol.descriptor.PacketDissector;
@@ -125,7 +125,7 @@ public interface PacketDispatcher {
 	 */
 	<U> int loopPacket(int count, PcapProHandler.OfPacket<U> sink, U user);
 
-	PacketStatistics getPacketStatistics();
+	CaptureStatistics getPacketStatistics();
 
 	<U> Packet processPacket(
 			MemoryAddress pcapHdr,

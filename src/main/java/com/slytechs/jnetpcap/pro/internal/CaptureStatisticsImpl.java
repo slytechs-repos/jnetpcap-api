@@ -17,14 +17,14 @@
  */
 package com.slytechs.jnetpcap.pro.internal;
 
-import com.slytechs.jnetpcap.pro.PacketStatistics;
+import com.slytechs.jnetpcap.pro.CaptureStatistics;
 
 /**
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  *
  */
-public class PacketStatisticsImpl implements PacketStatistics {
+public class CaptureStatisticsImpl implements CaptureStatistics {
 
 	long droppedCaplenCount;
 	long droppedPacketCount;
@@ -36,11 +36,11 @@ public class PacketStatisticsImpl implements PacketStatistics {
 	/**
 	 * 
 	 */
-	public PacketStatisticsImpl() {
+	public CaptureStatisticsImpl() {
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.PacketStatistics#getDroppedCaplenCount()
+	 * @see com.slytechs.jnetpcap.pro.CaptureStatistics#getDroppedCaplenCount()
 	 */
 	@Override
 	public long getDroppedCaplenCount() {
@@ -48,7 +48,7 @@ public class PacketStatisticsImpl implements PacketStatistics {
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.PacketStatistics#getDroppedPacketCount()
+	 * @see com.slytechs.jnetpcap.pro.CaptureStatistics#getDroppedPacketCount()
 	 */
 	@Override
 	public long getDroppedPacketCount() {
@@ -56,7 +56,7 @@ public class PacketStatisticsImpl implements PacketStatistics {
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.PacketStatistics#getDroppedWirelenCount()
+	 * @see com.slytechs.jnetpcap.pro.CaptureStatistics#getDroppedWirelenCount()
 	 */
 	@Override
 	public long getDroppedWirelenCount() {
@@ -64,7 +64,7 @@ public class PacketStatisticsImpl implements PacketStatistics {
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.PacketStatistics#getReceivedCaplenCount()
+	 * @see com.slytechs.jnetpcap.pro.CaptureStatistics#getReceivedCaplenCount()
 	 */
 	@Override
 	public long getReceivedCaplenCount() {
@@ -72,7 +72,7 @@ public class PacketStatisticsImpl implements PacketStatistics {
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.PacketStatistics#getReceivedPacketCount()
+	 * @see com.slytechs.jnetpcap.pro.CaptureStatistics#getReceivedPacketCount()
 	 */
 	@Override
 	public long getReceivedPacketCount() {
@@ -80,7 +80,7 @@ public class PacketStatisticsImpl implements PacketStatistics {
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.PacketStatistics#getReceivedWirelenCount()
+	 * @see com.slytechs.jnetpcap.pro.CaptureStatistics#getReceivedWirelenCount()
 	 */
 	@Override
 	public long getReceivedWirelenCount() {

@@ -26,7 +26,7 @@ import java.util.Objects;
 import org.jnetpcap.internal.PcapDispatcher;
 
 import com.slytechs.jnetpcap.pro.PcapConfigurator;
-import com.slytechs.jnetpcap.pro.PacketStatistics;
+import com.slytechs.jnetpcap.pro.CaptureStatistics;
 import com.slytechs.jnetpcap.pro.PcapProHandler.OfPacket;
 import com.slytechs.protocol.Packet;
 import com.slytechs.protocol.descriptor.PacketDissector;
@@ -105,7 +105,7 @@ public class AbstractPacketDispatcher extends AbstractPcapDispatcher implements 
 	 * @see com.slytechs.jnetpcap.pro.internal.PacketDispatcher#getPacketStatistics()
 	 */
 	@Override
-	public PacketStatistics getPacketStatistics() {
+	public CaptureStatistics getPacketStatistics() {
 		return packetDispatcher.getPacketStatistics();
 	}
 
