@@ -31,8 +31,8 @@ import com.slytechs.jnetpcap.pro.IpfReassembler;
 import com.slytechs.jnetpcap.pro.IpfStatistics;
 import com.slytechs.jnetpcap.pro.PcapProHandler.OfPacket;
 import com.slytechs.jnetpcap.pro.internal.AbstractPacketDispatcher;
-import com.slytechs.jnetpcap.pro.internal.PacketDispatcher;
 import com.slytechs.jnetpcap.pro.internal.CaptureStatisticsImpl;
+import com.slytechs.jnetpcap.pro.internal.PacketDispatcher;
 import com.slytechs.protocol.Packet;
 import com.slytechs.protocol.descriptor.IpfFragDissector;
 import com.slytechs.protocol.descriptor.IpfFragment;
@@ -82,6 +82,7 @@ public final class JavaIpfDispatcher extends AbstractPacketDispatcher implements
 
 	/** The ipf desc. */
 	private final IpfFragment fragDesc = new IpfFragment(fragDescBuffer);
+	private IpfFragment fragDescIfPresent = null;
 	private final IpfReassembly reassemblyDesc = new IpfReassembly(reassemblyDescBuffer);
 
 	/** The ipf table. */
@@ -118,7 +119,7 @@ public final class JavaIpfDispatcher extends AbstractPacketDispatcher implements
 		this.ipfConfig = config.computeEffectiveConfig();
 		this.ipfTable = new IpfTable(config, this::sendMemorySegment);
 		this.dgramQueue = new ArrayBlockingQueue<>(config.getTimeoutQueueSize());
-		this.abi = pcap.abi();
+		this.abi = pcap.pcapHeaderABI();
 		this.packetStats = (CaptureStatisticsImpl) getCaptureStatistics();
 	}
 
@@ -270,6 +271,7 @@ public final class JavaIpfDispatcher extends AbstractPacketDispatcher implements
 		 */
 
 		ipfDissector.reset();
+		fragDescIfPresent = null;
 
 		/*
 		 * Create an IPF descriptor with specific IPF fragment information, this may be
@@ -280,18 +282,20 @@ public final class JavaIpfDispatcher extends AbstractPacketDispatcher implements
 		if (ipfDissector.dissectPacket(packetBuf, ts, caplen, wirelen) == 0)
 			return null; // Not an IPF packet
 
+		fragDescIfPresent = fragDesc;
+
 		/* Do the Java descriptor bindings so we have a java descriptor */
 
 		ipfDissector.writeDescriptor(fragDescBuffer.clear());
 		fragDescBuffer.flip();
-		fragDesc.bind(fragDescBuffer);
+		fragDescIfPresent.bind(fragDescBuffer);
 
 		/* Calculate a hashcode on key TUPLE values */
-		ByteBuffer key = fragDesc.keyBuffer();
+		ByteBuffer key = fragDescIfPresent.keyBuffer();
 		long ipfHashcode = Checksums.crc32(key);
 
 		/* Find existing or create a new IPF table entry (in hash table) */
-		var reassembler = ipfTable.lookup(fragDesc, ipfHashcode);
+		var reassembler = ipfTable.lookup(fragDescIfPresent, ipfHashcode);
 		if (reassembler == null) {
 			ipfStats.incTableInsertionFailure(1);
 
@@ -299,7 +303,7 @@ public final class JavaIpfDispatcher extends AbstractPacketDispatcher implements
 		}
 
 		/* Do actual reassembly */
-		if (!reassembler.processFragment(frameNo, packetBuf, fragDesc)) {
+		if (!reassembler.processFragment(frameNo, packetBuf, fragDescIfPresent)) {
 			ipfStats.incIpfProcessingFailure(1);
 
 			reassembler.close();
@@ -355,7 +359,7 @@ public final class JavaIpfDispatcher extends AbstractPacketDispatcher implements
 			reassemblyDescBuffer.flip();
 			reassemblyDesc.bind(reassemblyDescBuffer);
 
-			fragDesc.addDescriptor(reassemblyDesc);
+			fragDescIfPresent.addDescriptor(reassemblyDesc);
 
 		} else if (ipfConfig.passIncomplete) {
 
@@ -363,7 +367,7 @@ public final class JavaIpfDispatcher extends AbstractPacketDispatcher implements
 			reassemblyDescBuffer.flip();
 			reassemblyDesc.bind(reassemblyDescBuffer);
 
-			fragDesc.addDescriptor(reassemblyDesc);
+			fragDescIfPresent.addDescriptor(reassemblyDesc);
 		}
 
 		/*
@@ -393,6 +397,7 @@ public final class JavaIpfDispatcher extends AbstractPacketDispatcher implements
 		packet.descriptor().addDescriptor(reassemblyDesc);
 
 		sink.handlePacket(user, packet);
+		packet.unbind();
 
 		/* Close and reset the reassembler for the next IPF data-gram reassembly */
 		reassembler.close();
@@ -416,13 +421,14 @@ public final class JavaIpfDispatcher extends AbstractPacketDispatcher implements
 			try {
 				IpfDgramReassembler toClose = processIpfPacket(packet);
 
-				packet.descriptor().addDescriptor(fragDesc);
+				packet.descriptor().addDescriptor(fragDescIfPresent);
 
 				/*
 				 * OK, we have an IPF fragment so sink as IPF frag (ie. attache IPF tracking or
 				 * reassembly).
 				 */
 				sinkIpfPacket0(packet, sink, user);
+				packet.unbind();
 
 				/*
 				 * If null, means there is an inserted packet on the packet queue which will
@@ -437,6 +443,8 @@ public final class JavaIpfDispatcher extends AbstractPacketDispatcher implements
 				super.onNativeCallbackException(new RuntimeException(e));
 
 				sink.handlePacket(user, packet);
+
+				packet.unbind();
 
 				return true;
 			}
@@ -456,6 +464,7 @@ public final class JavaIpfDispatcher extends AbstractPacketDispatcher implements
 		 */
 
 		sink.handlePacket(user, packet);
+		packet.unbind();
 
 		/*
 		 * We check the IP data-gram queue, if any. These data-gram get turned into
