@@ -528,13 +528,13 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 		return Optional.ofNullable(preProcessor.getUncaughtException());
 	}
 
-	public <T extends PostProcessor> T install(PostFactory<T> postProcessorSupplier) {
+	public <T extends PostProcessor> T installFactory(PostFactory<T> postProcessorSupplier) {
 		checkIfInactive();
 
 		return install(postProcessorSupplier.newInstance());
 	}
 
-	public <T extends PreProcessor> T install(PreFactory<T> preProcessorSupplier) {
+	public <T extends PreProcessor> T installFactory(PreFactory<T> preProcessorSupplier) {
 		checkIfInactive();
 
 		return install(preProcessorSupplier.newInstance());
@@ -918,6 +918,14 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 		checkIfInactive();
 
 		return uninstall(true, true);
+	}
+
+	public boolean isOfflineCapture() {
+		return libVersion() != null;
+	}
+
+	public boolean isLiveCapture() {
+		return !isOfflineCapture();
 	}
 
 }
