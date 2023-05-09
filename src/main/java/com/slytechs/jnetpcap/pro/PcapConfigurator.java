@@ -18,6 +18,7 @@
 package com.slytechs.jnetpcap.pro;
 
 import java.util.Objects;
+import java.util.function.BooleanSupplier;
 
 import org.jnetpcap.internal.PcapDispatcher;
 
@@ -89,6 +90,10 @@ public class PcapConfigurator<T extends PcapConfigurator<T>> {
 		onEnableChange(oldValue, enable);
 
 		return us();
+	}
+
+	public final T enableIf(BooleanSupplier predicate) {
+		return enable(predicate.getAsBoolean());
 	}
 
 	public final boolean isEnabled() {
