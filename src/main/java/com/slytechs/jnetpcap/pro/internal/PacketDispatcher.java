@@ -37,7 +37,7 @@ import com.slytechs.protocol.pack.core.constants.PacketDescriptorType;
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  */
-public interface PacketDispatcher {
+public interface PacketDispatcher extends AutoCloseable {
 
 	/**
 	 * Checks if is native packet dispatcher supported.
@@ -147,4 +147,7 @@ public interface PacketDispatcher {
 	Packet nextExPacket() throws PcapException, TimeoutException;
 
 	Packet nextPacket() throws PcapException;
+
+	@Override
+	void close();
 }

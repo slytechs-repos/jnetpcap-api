@@ -18,13 +18,15 @@
 package com.slytechs.jnetpcap.pro.internal;
 
 import java.lang.foreign.MemoryAddress;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import org.jnetpcap.internal.PcapDispatcher;
 import org.jnetpcap.internal.PcapHeaderABI;
 
 import com.slytechs.jnetpcap.pro.PacketPlayer;
-import com.slytechs.protocol.runtime.time.Timestamp;
+import com.slytechs.jnetpcap.pro.PcapPro.PcapProContext;
+import com.slytechs.protocol.runtime.time.TimeSource;
 import com.slytechs.protocol.runtime.time.TimestampUnit;
 
 /**
@@ -33,6 +35,7 @@ import com.slytechs.protocol.runtime.time.TimestampUnit;
  */
 public class PacketPlayerPreProcessor extends AbstractPcapDispatcher implements PcapDispatcher {
 
+	private final PcapProContext context;
 	private final PacketPlayer config;
 
 	private boolean initialized;
@@ -42,17 +45,24 @@ public class PacketPlayerPreProcessor extends AbstractPcapDispatcher implements 
 	private TimestampUnit timestampUnit;
 
 	private PcapHeaderABI abi;
+	private final TimeSource.Updatable timeSource;
 
-	public PacketPlayerPreProcessor(PcapDispatcher pcapDispatcher, Object config) {
+	public PacketPlayerPreProcessor(PcapDispatcher pcapDispatcher, Object config, PcapProContext context) {
 		super(pcapDispatcher);
 
 		if (!(config instanceof PacketPlayer cfg))
 			throw new IllegalStateException("Not a PacketPlayer processor");
 
 		this.config = cfg;
+		this.context = context;
+		this.timeSource = Objects.requireNonNull(context.getTimeSource(), "PcapProContext.timeSource")
+				.asUpdatable()
+				.orElseThrow(() -> new IllegalStateException(
+						"invalid time source for Player type processor [%s]"
+								.formatted(context.getTimeSource().getClass())));
 	}
 
-	public PacketPlayerPreProcessor syncOnFirst() {
+	public PacketPlayerPreProcessor preserveIfg() {
 		return this;
 	}
 
@@ -88,9 +98,9 @@ public class PacketPlayerPreProcessor extends AbstractPcapDispatcher implements 
 
 			handler.nativeCallback(u, header, packet);
 
-			System.out.printf("ref=%d, tsNano=%d, delay=%dns, %s%n",
-					referenceTimeNano, tsNano, delayNano,
-					new Timestamp(tsNano, TimestampUnit.EPOCH_NANO));
+//			System.out.printf("ref=%d, tsNano=%d, delay=%dns, %s%n",
+//					referenceTimeNano, tsNano, delayNano,
+//					new Timestamp(tsNano, TimestampUnit.EPOCH_NANO));
 
 		}, user);
 	}

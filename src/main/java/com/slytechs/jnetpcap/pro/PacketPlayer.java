@@ -43,6 +43,8 @@ public class PacketPlayer extends PcapConfigurator<PacketPlayer> implements PreP
 	private long referenceTimeNano;
 	private TimestampUnit timestampUnit = TimestampUnit.PCAP_MICRO;
 	private PcapHeaderABI abi = PcapHeaderABI.selectOfflineAbi(false);
+	private long minIfgNano = 0;
+	private long maxIfgNano = Long.MAX_VALUE;
 
 	/**
 	 * 
@@ -79,13 +81,30 @@ public class PacketPlayer extends PcapConfigurator<PacketPlayer> implements PreP
 		return referenceTimeNano;
 	}
 
-	public PacketPlayer syncOnFirst(boolean sync) {
+	public PacketPlayer syncTimestamp(boolean sync) {
 		this.sync = sync;
 
 		return this;
 	}
 
-	public PacketPlayer setSpeed(double speed) {
+	public PacketPlayer preserveIfg(boolean sync) {
+		this.sync = sync;
+
+		return this;
+	}
+
+	public PacketPlayer setMinIfg(long duration, TimeUnit unit) {
+		this.minIfgNano = unit.toNanos(duration);
+		return this;
+	}
+
+	public PacketPlayer setMaxIfg(long duration, TimeUnit unit) {
+		this.maxIfgNano = unit.toNanos(duration);
+
+		return this;
+	}
+
+	public PacketPlayer play(double speed) {
 		if (speed < 0) // Playing backwards not supported
 			throw new IllegalArgumentException("negative speed not allowed, playback backwards not supported");
 
@@ -114,12 +133,4 @@ public class PacketPlayer extends PcapConfigurator<PacketPlayer> implements PreP
 		return abi;
 	}
 
-	/**
-	 * @param abi the abi to set
-	 */
-	public PacketPlayer setAbi(PcapHeaderABI abi) {
-		this.abi = abi;
-
-		return this;
-	}
 }

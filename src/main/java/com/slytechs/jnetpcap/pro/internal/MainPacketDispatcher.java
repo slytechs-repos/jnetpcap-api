@@ -437,4 +437,11 @@ public class MainPacketDispatcher
 		return packet;
 	}
 
+	/**
+	 * @see com.slytechs.jnetpcap.pro.internal.PacketDispatcher#close()
+	 */
+	@Override
+	public void close() {
+	}
+
 }

@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import org.jnetpcap.internal.PcapDispatcher;
 
 import com.slytechs.jnetpcap.pro.PacketDelay;
+import com.slytechs.jnetpcap.pro.PcapPro.PcapProContext;
 
 /**
  * @author Sly Technologies Inc
@@ -31,9 +32,11 @@ import com.slytechs.jnetpcap.pro.PacketDelay;
 public class PacketDelayPreProcessor extends AbstractPcapDispatcher implements PcapDispatcher {
 
 	private final PacketDelay config;
+	private final PcapProContext context;
 
-	public PacketDelayPreProcessor(PcapDispatcher pcapDispatcher, Object config) {
+	public PacketDelayPreProcessor(PcapDispatcher pcapDispatcher, Object config, PcapProContext context) {
 		super(pcapDispatcher);
+		this.context = context;
 
 		if (!(config instanceof PacketDelay cfg))
 			throw new IllegalStateException("Not a PacketPlayer processor");

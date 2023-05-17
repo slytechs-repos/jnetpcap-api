@@ -27,6 +27,8 @@ import org.jnetpcap.internal.PcapDispatcher;
 import org.jnetpcap.internal.PcapHeaderABI;
 import org.jnetpcap.util.PcapPacketRef;
 
+import com.slytechs.jnetpcap.pro.PcapPro.PcapProContext;
+
 /**
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
@@ -35,7 +37,7 @@ import org.jnetpcap.util.PcapPacketRef;
 public class AbstractPcapDispatcher implements PcapDispatcher {
 
 	public interface PcapDispatcherFactory {
-		PcapDispatcher newInstance(PcapDispatcher source, Object context);
+		PcapDispatcher newInstance(PcapDispatcher source, Object config, PcapProContext context);
 	}
 
 	private final PcapDispatcher pcapDispatcher;
@@ -49,8 +51,8 @@ public class AbstractPcapDispatcher implements PcapDispatcher {
 	}
 
 	@Override
-	public PcapHeaderABI abi() {
-		return getPcapDispatcher().abi();
+	public PcapHeaderABI pcapHeaderABI() {
+		return getPcapDispatcher().pcapHeaderABI();
 	}
 
 	/**

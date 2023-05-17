@@ -29,6 +29,7 @@ import org.jnetpcap.internal.PcapHeaderABI;
 
 import com.slytechs.jnetpcap.pro.IpfReassembler;
 import com.slytechs.jnetpcap.pro.IpfStatistics;
+import com.slytechs.jnetpcap.pro.PcapPro.PcapProContext;
 import com.slytechs.jnetpcap.pro.PcapProHandler.OfPacket;
 import com.slytechs.jnetpcap.pro.internal.AbstractPacketDispatcher;
 import com.slytechs.jnetpcap.pro.internal.CaptureStatisticsImpl;
@@ -110,7 +111,8 @@ public final class JavaIpfDispatcher extends AbstractPacketDispatcher implements
 	public JavaIpfDispatcher(
 			PcapDispatcher pcap,
 			PacketDispatcher packet,
-			IpfReassembler config) {
+			IpfReassembler config,
+			PcapProContext context) {
 		super(packet, pcap);
 
 		if (config.isEnabled() == false)

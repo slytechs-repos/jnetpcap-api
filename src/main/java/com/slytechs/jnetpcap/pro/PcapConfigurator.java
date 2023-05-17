@@ -22,6 +22,7 @@ import java.util.function.BooleanSupplier;
 
 import org.jnetpcap.internal.PcapDispatcher;
 
+import com.slytechs.jnetpcap.pro.PcapPro.PcapProContext;
 import com.slytechs.jnetpcap.pro.internal.AbstractPacketDispatcher.PacketDispatcherFactory;
 import com.slytechs.jnetpcap.pro.internal.AbstractPcapDispatcher.PcapDispatcherFactory;
 import com.slytechs.jnetpcap.pro.internal.PacketDispatcher;
@@ -68,6 +69,7 @@ public class PcapConfigurator<T extends PcapConfigurator<T>> {
 	private boolean enable;
 	private final PcapDispatcherFactory pcapBasedFactory;
 	private final PacketDispatcherFactory<T> packetBasedFactory;
+	private PcapProContext context;
 
 	protected PcapConfigurator(String properyPrefix, PcapDispatcherFactory factory) {
 		this.pcapBasedFactory = Objects.requireNonNull(factory, "factory");
@@ -78,7 +80,7 @@ public class PcapConfigurator<T extends PcapConfigurator<T>> {
 
 	protected PcapConfigurator(String properyPrefix, PacketDispatcherFactory<T> factory) {
 		this.pcapBasedFactory = null;
-		this.packetBasedFactory = Objects.requireNonNull(factory, "factory");;
+		this.packetBasedFactory = Objects.requireNonNull(factory, "factory");
 
 		this.enable = SystemProperties.boolValue(properyPrefix + ".enable", true);
 	}
@@ -100,16 +102,21 @@ public class PcapConfigurator<T extends PcapConfigurator<T>> {
 		return enable;
 	}
 
-	final PcapDispatcher newDispatcherInstance(PcapDispatcher pcapDispatcher) {
-		return pcapBasedFactory.newInstance(pcapDispatcher, this);
+	final PcapDispatcher newDispatcherInstance(PcapDispatcher pcapDispatcher, PcapProContext context) {
+		return pcapBasedFactory.newInstance(pcapDispatcher, us(), context);
 	}
 
-	final PacketDispatcher newDispatcherInstance(PcapDispatcher pcapDispatcher, PacketDispatcher packetDispatcher) {
-		return packetBasedFactory.newInstance(pcapDispatcher, packetDispatcher, us());
+	final PacketDispatcher newDispatcherInstance(PcapDispatcher pcapDispatcher, PacketDispatcher packetDispatcher,
+			PcapProContext context) {
+		return packetBasedFactory.newInstance(pcapDispatcher, packetDispatcher, us(), context);
 	}
 
 	protected void onEnableChange(boolean oldValue, boolean newValue) {
 
+	}
+
+	public final PcapProContext getPcapContext() {
+		return this.context;
 	}
 
 	@SuppressWarnings("unchecked")

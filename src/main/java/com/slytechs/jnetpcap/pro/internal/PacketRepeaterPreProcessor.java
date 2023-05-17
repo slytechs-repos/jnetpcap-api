@@ -24,6 +24,8 @@ import org.jnetpcap.internal.PcapDispatcher;
 import org.jnetpcap.internal.PcapHeaderABI;
 
 import com.slytechs.jnetpcap.pro.PacketRepeater;
+import com.slytechs.jnetpcap.pro.PcapPro.PcapProContext;
+import com.slytechs.protocol.runtime.time.TimestampUnit;
 
 /**
  * @author Sly Technologies Inc
@@ -33,43 +35,22 @@ import com.slytechs.jnetpcap.pro.PacketRepeater;
 public class PacketRepeaterPreProcessor extends AbstractPcapDispatcher implements PcapDispatcher {
 
 	private final PacketRepeater config;
+	private final PcapProContext context;
 	private final PcapHeaderABI abi;
+	private final TimestampUnit tsUnit;
+	private final TimeUnit timeUnit;
 
-	public PacketRepeaterPreProcessor(PcapDispatcher pcapDispatcher, Object config) {
+	public PacketRepeaterPreProcessor(PcapDispatcher pcapDispatcher, Object config, PcapProContext context) {
 		super(pcapDispatcher);
+		this.context = context;
 
 		if (!(config instanceof PacketRepeater cfg))
 			throw new IllegalStateException("Not a PacketPlayer processor");
 
 		this.config = cfg;
-		this.abi = super.abi();
-	}
-
-	/**
-	 * @see com.slytechs.jnetpcap.pro.internal.AbstractPcapDispatcher#dispatchNative(int,
-	 *      org.jnetpcap.PcapHandler.NativeCallback,
-	 *      java.lang.foreign.MemoryAddress)
-	 */
-	@Override
-	public int dispatchNative(int count, NativeCallback handler, MemoryAddress user) {
-		long repeatCount = config.getRepeatCount() + 1;
-		long delayNano = config.getDelay(TimeUnit.NANOSECONDS);
-		boolean rewriteTs = config.isRewriteTimestamp();
-
-		return super.dispatchNative(count, (MemoryAddress u, MemoryAddress header, MemoryAddress packet) -> {
-
-			for (long i = 0; i < repeatCount; i++) {
-
-				if (repeatCount > 1 && rewriteTs && i > 0)
-					rewriteTimestamp(header, delayNano * i);
-
-				handler.nativeCallback(u, header, packet);
-
-				if (repeatCount > 1 && delayNano > 0 && delay(delayNano))
-					return; // Interrupted
-			}
-
-		}, user);
+		this.abi = super.pcapHeaderABI();
+		this.tsUnit = cfg.getTimestampUnit();
+		this.timeUnit = tsUnit.precisionTimeUnit();
 	}
 
 	private boolean delay(long delayNano) {
@@ -83,24 +64,40 @@ public class PacketRepeaterPreProcessor extends AbstractPcapDispatcher implement
 		return false;
 	}
 
-	private void rewriteTimestamp(MemoryAddress header, long incDeltaNano) {
+	/**
+	 * @see com.slytechs.jnetpcap.pro.internal.AbstractPcapDispatcher#dispatchNative(int,
+	 *      org.jnetpcap.PcapHandler.NativeCallback,
+	 *      java.lang.foreign.MemoryAddress)
+	 */
+	@Override
+	public int dispatchNative(int count, NativeCallback handler, MemoryAddress user) {
+		long repeatCount = config.getRepeatCount() + 1;
+		long delayNano = config.getIfgForRepeated(TimeUnit.NANOSECONDS);
+		boolean rewriteTs = config.isRewriteTimestamp();
 
-		long tvSec = abi.tvSec(header);
-		long tvUsec = abi.tvUsec(header);
+		return super.dispatchNative(count, (MemoryAddress u, MemoryAddress header, MemoryAddress packet) -> {
 
-		tvUsec += (incDeltaNano / 1000);
+			for (long i = 0; i < repeatCount; i++) {
 
-		if (tvUsec > 1000000) {
-			tvSec++;
-			tvUsec -= 1000000;
-		}
+				if ((repeatCount > 1) && rewriteTs && (i > 0))
+					rewriteTimestamp(header, delayNano * i);
 
-		rewriteTimestamp(header, tvSec, tvUsec);
+				handler.nativeCallback(u, header, packet);
+
+				if ((repeatCount > 1) && delayNano > 0 && delay(delayNano))
+					return; // Interrupted
+			}
+
+		}, user);
 	}
 
-	private void rewriteTimestamp(MemoryAddress header, long tvSec, long tvUsec) {
-		abi.tvSec(header, tvSec);
-		abi.tvUsec(header, tvUsec);
+	private long getTimestampNano(MemoryAddress pcapHeader) {
+		long tvSec = abi.tvSec(pcapHeader);
+		long tvUsec = abi.tvUsec(pcapHeader);
+
+		long epochTime = tsUnit.ofSecond(tvSec, tvUsec);
+
+		return TimestampUnit.EPOCH_NANO.convert(epochTime, tsUnit);
 	}
 
 	/**
@@ -111,23 +108,40 @@ public class PacketRepeaterPreProcessor extends AbstractPcapDispatcher implement
 	@Override
 	public int loopNative(int count, NativeCallback handler, MemoryAddress user) {
 		long repeatCount = config.getRepeatCount() + 1;
-		long delayNano = config.getDelay(TimeUnit.NANOSECONDS);
+		long delayNano = config.getIfgForRepeated(TimeUnit.NANOSECONDS);
 		boolean rewriteTs = config.isRewriteTimestamp();
 
 		return super.loopNative(count, (MemoryAddress u, MemoryAddress header, MemoryAddress packet) -> {
 
 			for (int i = 0; i < repeatCount; i++) {
 
-				if (repeatCount > 1 && rewriteTs && i > 0)
+				if ((repeatCount > 1) && rewriteTs && (i > 0))
 					rewriteTimestamp(header, delayNano * i);
 
 				handler.nativeCallback(u, header, packet);
 
-				if (repeatCount > 1 && delayNano > 0 && delay(delayNano))
+				if ((repeatCount > 1) && (delayNano > 0) && delay(delayNano))
 					return; // Interrupted
 			}
 
 		}, user);
+	}
+
+	private void rewriteTimestamp(MemoryAddress header, long incDeltaNano) {
+		long epochNano = getTimestampNano(header);
+
+		epochNano += incDeltaNano;
+
+		setTimestampNano(header, epochNano);
+	}
+
+	private void setTimestampNano(MemoryAddress pcapHeader, long epochNano) {
+		long ts = tsUnit.convert(epochNano, TimestampUnit.EPOCH_NANO);
+		long tvSec = tsUnit.toEpochSecond(ts);
+		long tvUsec = tsUnit.toEpochSecondFraction(ts);
+
+		abi.tvSec(pcapHeader, tvSec);
+		abi.tvUsec(pcapHeader, tvUsec);
 	}
 
 }

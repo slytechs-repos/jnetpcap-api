@@ -20,6 +20,7 @@ package com.slytechs.jnetpcap.pro.internal.ipf;
 import org.jnetpcap.internal.PcapDispatcher;
 
 import com.slytechs.jnetpcap.pro.IpfReassembler;
+import com.slytechs.jnetpcap.pro.PcapPro.PcapProContext;
 import com.slytechs.jnetpcap.pro.internal.PacketDispatcher;
 
 /**
@@ -31,19 +32,21 @@ public interface IpfDispatcher extends PacketDispatcher {
 	static IpfDispatcher newInstance(
 			PcapDispatcher pcap,
 			PacketDispatcher packet,
-			IpfReassembler config) {
+			IpfReassembler config,
+			PcapProContext context) {
 
 		if (isNativeSupported())
-			return newNativeInstance(pcap, packet, config);
+			return newNativeInstance(pcap, packet, config, context);
 		else
-			return newJavaInstance(pcap, packet, config);
+			return newJavaInstance(pcap, packet, config, context);
 	}
 
 	static IpfDispatcher newJavaInstance(
 			PcapDispatcher pcap,
 			PacketDispatcher packet,
-			IpfReassembler config) {
-		return new JavaIpfDispatcher(pcap, packet, config);
+			IpfReassembler config,
+			PcapProContext context) {
+		return new JavaIpfDispatcher(pcap, packet, config, context);
 	}
 
 	static boolean isNativeSupported() {
@@ -53,9 +56,10 @@ public interface IpfDispatcher extends PacketDispatcher {
 	static IpfDispatcher newNativeInstance(
 			PcapDispatcher pcap,
 			PacketDispatcher packet,
-			IpfReassembler config) {
+			IpfReassembler config,
+			PcapProContext context) {
 
-		return new IpfDispatcherNative(pcap, packet, config);
+		return new IpfDispatcherNative(pcap, packet, config, context);
 	}
 
 }

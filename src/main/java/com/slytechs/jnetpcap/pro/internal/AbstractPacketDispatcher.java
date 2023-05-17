@@ -29,6 +29,7 @@ import org.jnetpcap.internal.PcapDispatcher;
 
 import com.slytechs.jnetpcap.pro.CaptureStatistics;
 import com.slytechs.jnetpcap.pro.PcapConfigurator;
+import com.slytechs.jnetpcap.pro.PcapPro.PcapProContext;
 import com.slytechs.jnetpcap.pro.PcapProHandler.OfPacket;
 import com.slytechs.protocol.Packet;
 import com.slytechs.protocol.descriptor.PacketDissector;
@@ -45,7 +46,8 @@ public class AbstractPacketDispatcher extends AbstractPcapDispatcher implements 
 		PacketDispatcher newInstance(
 				PcapDispatcher source,
 				PacketDispatcher packet,
-				T context);
+				T config,
+				PcapProContext context);
 	}
 
 	private final PacketDispatcher packetDispatcher;

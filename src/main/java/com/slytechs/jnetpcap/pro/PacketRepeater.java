@@ -17,6 +17,7 @@
  */
 package com.slytechs.jnetpcap.pro;
 
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntSupplier;
@@ -24,6 +25,7 @@ import java.util.function.LongSupplier;
 
 import com.slytechs.jnetpcap.pro.PcapConfigurator.PreProcessor;
 import com.slytechs.jnetpcap.pro.internal.PacketRepeaterPreProcessor;
+import com.slytechs.protocol.runtime.time.TimestampUnit;
 import com.slytechs.protocol.runtime.util.SystemProperties;
 
 /**
@@ -58,10 +60,14 @@ public final class PacketRepeater extends PcapConfigurator<PacketRepeater> imple
 	private long repeatCount = SystemProperties.longValue(PROPERTY_PACKET_REPEATER_REPEAT_COUNT, 1);
 
 	/** The delay nano. */
-	private long delayNano = SystemProperties.longValue(PROPERTY_PACKET_REPEATER_DELAY_NANO, 1000);
+	private long ifgForRepeatedNano = SystemProperties.longValue(PROPERTY_PACKET_REPEATER_DELAY_NANO, 1000);
 
 	/** The rewrite timestamp. */
 	private boolean rewriteTimestamp;
+
+	private long minIfgNano;
+
+	private TimestampUnit timestampUnit = TimestampUnit.PCAP_MICRO;
 
 	/**
 	 * Instantiates a new packet repeater.
@@ -109,13 +115,13 @@ public final class PacketRepeater extends PcapConfigurator<PacketRepeater> imple
 	}
 
 	/**
-	 * Gets the current repeated packet delay or inter-frame-gap if any.
+	 * Gets the current repeated packet delay or inter-frame-gap (IFG) if any.
 	 *
 	 * @param unit the time unit requested
 	 * @return the delay
 	 */
-	public long getDelay(TimeUnit unit) {
-		return unit.convert(delayNano, TimeUnit.NANOSECONDS);
+	public long getIfgForRepeated(TimeUnit unit) {
+		return unit.convert(ifgForRepeatedNano, TimeUnit.NANOSECONDS);
 	}
 
 	/**
@@ -124,8 +130,8 @@ public final class PacketRepeater extends PcapConfigurator<PacketRepeater> imple
 	 *
 	 * @return the delay nano
 	 */
-	public long getDelayNano() {
-		return delayNano;
+	public long getIfgForRepeatedNano() {
+		return ifgForRepeatedNano;
 	}
 
 	/**
@@ -173,8 +179,8 @@ public final class PacketRepeater extends PcapConfigurator<PacketRepeater> imple
 	 * @param unit     the time unit for the delay
 	 * @return this packet repeater
 	 */
-	public PacketRepeater setDelay(long duration, TimeUnit unit) {
-		this.delayNano = unit.toNanos(duration);
+	public PacketRepeater setIfgForRepeated(long duration, TimeUnit unit) {
+		this.ifgForRepeatedNano = unit.toNanos(duration);
 
 		return this;
 	}
@@ -218,6 +224,18 @@ public final class PacketRepeater extends PcapConfigurator<PacketRepeater> imple
 		return this;
 	}
 
+	public PacketRepeater setMinimumIfg(long ifg, TimeUnit unit) {
+		this.minIfgNano = Objects.requireNonNull(unit, "unit").toNanos(ifg);
+
+		return this;
+	}
+
+	public PacketRepeater setTimestampUnit(TimestampUnit unit) {
+		this.timestampUnit = Objects.requireNonNull(unit, "unit");
+
+		return this;
+	}
+
 	/**
 	 * Sets the repeat count using a supplier. Each packet captured by pcap is
 	 * repeated, not duplicated. The exact original packet is repeatedly sent into
@@ -233,5 +251,19 @@ public final class PacketRepeater extends PcapConfigurator<PacketRepeater> imple
 	 */
 	public PacketRepeater setRepeatCount(LongSupplier count) {
 		return setRepeatCount(count.getAsLong());
+	}
+
+	/**
+	 * @return the minIfgNano
+	 */
+	public long getMinimumIfgNano() {
+		return minIfgNano;
+	}
+
+	/**
+	 * @return the timestampUnit
+	 */
+	public TimestampUnit getTimestampUnit() {
+		return timestampUnit;
 	}
 }
