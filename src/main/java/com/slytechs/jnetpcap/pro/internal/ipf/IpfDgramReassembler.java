@@ -35,7 +35,6 @@ import com.slytechs.protocol.descriptor.IpfFragment;
 import com.slytechs.protocol.descriptor.IpfReassemblyLayout;
 import com.slytechs.protocol.descriptor.IpfTrackingLayout;
 import com.slytechs.protocol.pack.core.constants.CoreConstants;
-import com.slytechs.protocol.pack.core.constants.Ip4Flag;
 import com.slytechs.protocol.runtime.hash.HashTable.HashEntry;
 import com.slytechs.protocol.runtime.time.TimestampSource;
 import com.slytechs.protocol.runtime.util.Detail;
@@ -432,9 +431,8 @@ public class IpfDgramReassembler implements Expirable {
 	}
 
 	private void clearIp4Flags(int position, IpfFragment desc) {
-		byte b0 = encapsView.get(position + desc.headerOffset() + CoreConstants.IPv4_FIELD_FLAGS);
-		b0 &= ~Ip4Flag.IPv4_FLAG08;
-		encapsView.put(position + desc.headerOffset() + CoreConstants.IPv4_FIELD_FLAGS, b0);
+		/* clear all flags and set fragment offset to 0 */ 
+		encapsView.put(position + desc.headerOffset() + CoreConstants.IPv4_FIELD_FLAGS, (byte) 0);
 	}
 
 	private void clearIp6FragmentHeader(int position, IpfFragment desc) {
