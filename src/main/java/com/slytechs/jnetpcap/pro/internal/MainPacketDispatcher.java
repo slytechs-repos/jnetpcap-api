@@ -55,9 +55,6 @@ public class MainPacketDispatcher
 	/** The singleton packet. */
 	private final Packet singletonPacket;
 
-	/** The port no. */
-	private int portNo;
-
 	protected final PacketDispatcherConfig config;
 
 	protected final CaptureStatisticsImpl stats = (CaptureStatisticsImpl) CaptureStatistics.newInstance();
@@ -108,7 +105,9 @@ public class MainPacketDispatcher
 		packet.bind(bpkt.flip(), mpacket);
 		desc.bind(singletonDescBuffer.flip());
 
-		desc.frameNo(config.frameNo.getUsing(timestamp, portNo));
+		desc.portNo(config.portNo);
+		desc.portName(config.portName);
+		desc.frameNo(config.frameNo.getUsing(timestamp, config.portNo));
 		desc.timestampUnit(config.timestampUnit);
 		packet.setFormatter(config.formatter);
 		desc.timestampUnit(config.timestampUnit);
@@ -140,7 +139,7 @@ public class MainPacketDispatcher
 		packet.bind(bpkt.flip(), mpacket);
 		desc.bind(singletonDescBuffer.flip());
 
-		desc.frameNo(config.frameNo.getUsing(timestamp, portNo));
+		desc.frameNo(config.frameNo.getUsing(timestamp, config.portNo));
 		desc.timestampUnit(config.timestampUnit);
 		packet.setFormatter(config.formatter);
 		desc.timestampUnit(config.timestampUnit);

@@ -105,13 +105,13 @@ public class IpfReassembler extends PcapConfigurator<IpfReassembler> implements 
 	private int     timeoutQueueSize      = intValue (PROPERTY_IPF_TIMEOUT_QUEUE_SIZE,     256, CountUnit.COUNT);
 
 	/* IPF modes */
-	private boolean trackingEnabled       = boolValue(PROPERTY_IPF_ENABLE_TRACKING,        true);
+	private boolean trackingEnabled       = boolValue(PROPERTY_IPF_ENABLE_TRACKING,        false);
 	private boolean reassemblyEnabled     = boolValue(PROPERTY_IPF_ENABLE_REASSEMBLY,      true);
 
 	/* Fragment pass-through and reassembly buffer attachment to fragment properties */
 	private boolean passthrough           = boolValue(PROPERTY_IPF_PASSTHROUGH,             false);
-	private boolean attachIncomplete      = boolValue(PROPERTY_IPF_ATTACH_INCOMPLETE,  true);
-	private boolean attachComplete        = boolValue(PROPERTY_IPF_ATTACH_COMPLETE,    true);
+	private boolean attachIncomplete      = boolValue(PROPERTY_IPF_ATTACH_INCOMPLETE,  false);
+	private boolean attachComplete        = boolValue(PROPERTY_IPF_ATTACH_COMPLETE,    false);
 	
 	/* Datagram dispatcher send properties - dgrams are inserted into dispatcher stream */
 	private boolean send                  = boolValue(PROPERTY_IPF_DGRAMS_SEND,            true);
@@ -177,6 +177,8 @@ public class IpfReassembler extends PcapConfigurator<IpfReassembler> implements 
 	 */
 	public IpfReassembler() {
 		super(PREFIX, IpfDispatcher::newInstance);
+
+		useSystemTimesource();
 	}
 
 	public IpfReassembler enableAttachComplete(boolean attachComplete) {

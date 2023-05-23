@@ -28,6 +28,7 @@ import com.slytechs.protocol.runtime.time.TimestampUnit;
 public class PacketDispatcherConfig {
 
 	public int portNo;
+	public String portName = "";
 	public FrameNumber frameNo = FrameNumber.of();
 	public TimestampUnit timestampUnit = TimestampUnit.PCAP_MICRO;
 	public PacketFormat formatter;

@@ -65,6 +65,7 @@ import com.slytechs.protocol.meta.PacketFormat;
 import com.slytechs.protocol.pack.core.constants.PacketDescriptorType;
 import com.slytechs.protocol.runtime.time.TimeSource;
 import com.slytechs.protocol.runtime.time.TimestampUnit;
+import com.slytechs.protocol.runtime.util.MemoryUnit;
 import com.slytechs.protocol.runtime.util.RuntimeMultipleExceptions;
 
 /**
@@ -445,6 +446,7 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	PcapPro(MemoryAddress pcapHandle, String name, PcapHeaderABI abi, PcapType pcapType) {
 		super(pcapHandle, name, abi);
 		config.abi = Objects.requireNonNull(abi, "abi");
+		config.portName = name;
 
 		this.preProcessorRoot = new StandardPcapDispatcher(pcapHandle, abi, this::breakloop);
 		this.preProcessor = this.preProcessorRoot;
@@ -503,7 +505,8 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 * @throws IllegalStateException thrown if handle is not active
 	 */
 	private void checkIfActiveOrElseThrow() throws IllegalStateException {
-		if (!isActive)
+		if (!isActive
+				&& (!context.postProcessors.isEmpty() || !context.preProcessors.isEmpty()))
 			throw new IllegalStateException("inactive - must use Pcap.activate()");
 	}
 
@@ -1317,5 +1320,26 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 		checkIfInactiveOrElseThrow();
 
 		return uninstAll(true, true);
+	}
+
+	/**
+	 * Sets the buffer size for a not-yet- activated capture handle.
+	 * 
+	 * <p>
+	 * sets the buffer size that will be used on a capture handle when the handle is
+	 * activated to buffer_size, which is in units of bytes
+	 * </p>
+	 *
+	 * @param size the size of the buffer in specified units
+	 * @param unit memory units
+	 * @return this pcap handle
+	 * @throws PcapException the pcap exception
+	 * @since libpcap 1.0
+	 */
+	public PcapPro setBufferSize(long size, MemoryUnit unit) throws PcapException {
+
+		super.setBufferSize(unit.toBytesAsInt(size));
+
+		return this;
 	}
 }
