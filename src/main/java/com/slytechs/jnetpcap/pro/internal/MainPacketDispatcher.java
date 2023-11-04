@@ -17,9 +17,8 @@
  */
 package com.slytechs.jnetpcap.pro.internal;
 
-import java.lang.foreign.MemoryAddress;
+import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
-import java.lang.foreign.MemorySession;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.concurrent.TimeoutException;
@@ -160,7 +159,7 @@ public class MainPacketDispatcher
 	public <U> int dispatchPacket(int count, PcapProHandler.OfPacket<U> sink, U user) {
 		return pcapDispatcher.dispatchNative(count, (ignore, pcapHdr, pktData) -> {
 
-			try (var session = MemorySession.openShared()) {
+			try (var session = Arena.ofShared()) {
 
 				Packet packet = processPacket(pcapHdr, pktData, session);
 				if (packet != null)
@@ -168,14 +167,14 @@ public class MainPacketDispatcher
 
 			}
 
-		}, MemoryAddress.NULL); // We don't pass user object to native dispatcher
+		}, MemorySegment.NULL); // We don't pass user object to native dispatcher
 	}
 
 	@Override
 	public <U> Packet processPacket(
-			MemoryAddress pcapHdr,
-			MemoryAddress pktData,
-			MemorySession session) {
+			MemorySegment pcapHdr,
+			MemorySegment pktData,
+			Arena arena) {
 
 		/*
 		 * Initialize outside the try-catch to attempt to read caplen for any exceptions
@@ -192,7 +191,7 @@ public class MainPacketDispatcher
 
 			long timestamp = config.timestampUnit.ofSecond(tvSec, tvUsec);
 
-			MemorySegment mpkt = MemorySegment.ofAddress(pktData, caplen, session);
+			MemorySegment mpkt = pktData.reinterpret(caplen, arena, __ -> {});
 
 			Packet packet = createSingletonPacket(mpkt, caplen, wirelen, timestamp);
 
@@ -269,7 +268,7 @@ public class MainPacketDispatcher
 			 */
 			int caplen = 0, wirelen = 0;
 
-			try (var session = MemorySession.openShared()) {
+			try (var arena = Arena.ofShared()) {
 
 				/* Pcap header fields */
 				caplen = config.abi.captureLength(pcapHdr);
@@ -279,7 +278,7 @@ public class MainPacketDispatcher
 
 				long timestamp = config.timestampUnit.ofSecond(tvSec, tvUsec);
 
-				MemorySegment mpkt = MemorySegment.ofAddress(pktData, caplen, session);
+				MemorySegment mpkt = pktData.reinterpret(caplen, arena, __ -> {});
 
 				Packet packet = createSingletonPacket(mpkt, caplen, wirelen, timestamp);
 
@@ -290,7 +289,7 @@ public class MainPacketDispatcher
 				onNativeCallbackException(e, caplen, wirelen);
 			}
 
-		}, MemoryAddress.NULL);
+		}, MemorySegment.NULL);
 	}
 
 	@Override
@@ -363,7 +362,7 @@ public class MainPacketDispatcher
 		return stats;
 	}
 
-	private MemorySession oneTimeSession;
+	private Arena oneTimeSession;
 
 	/**
 	 * @see com.slytechs.jnetpcap.pro.internal.PacketDispatcher#nextExPacket()
@@ -372,8 +371,8 @@ public class MainPacketDispatcher
 	public Packet nextExPacket() throws PcapException, TimeoutException {
 		PcapPacketRef packetRef = pcapDispatcher.nextEx();
 
-		MemoryAddress pcapHdr = packetRef.header().address();
-		MemoryAddress pktData = packetRef.data().address();
+		MemorySegment pcapHdr = packetRef.header();
+		MemorySegment pktData = packetRef.data();
 
 		int caplen = 0, wirelen = 0;
 
@@ -385,7 +384,7 @@ public class MainPacketDispatcher
 
 		long timestamp = config.timestampUnit.ofSecond(tvSec, tvUsec);
 
-		MemorySegment mpkt = MemorySegment.ofAddress(pktData, caplen, getOnetimeMemorySession());
+		MemorySegment mpkt = pktData.reinterpret(caplen, getOnetimeSegmentScope(), __ -> {});
 
 		Packet packet = createSingletonPacket(mpkt, caplen, wirelen, timestamp);
 
@@ -400,11 +399,11 @@ public class MainPacketDispatcher
 	 *
 	 * @return the onetime memory session
 	 */
-	private MemorySession getOnetimeMemorySession() {
+	private Arena getOnetimeSegmentScope() {
 		if (oneTimeSession != null)
 			oneTimeSession.close();
 
-		return oneTimeSession = MemorySession.openShared();
+		return oneTimeSession = Arena.ofShared();
 	}
 
 	/**
@@ -414,8 +413,8 @@ public class MainPacketDispatcher
 	public Packet nextPacket() throws PcapException {
 		PcapPacketRef packetRef = pcapDispatcher.next();
 
-		MemoryAddress pcapHdr = packetRef.header().address();
-		MemoryAddress pktData = packetRef.data().address();
+		MemorySegment pcapHdr = packetRef.header();
+		MemorySegment pktData = packetRef.data();
 
 		int caplen = 0, wirelen = 0;
 
@@ -427,7 +426,7 @@ public class MainPacketDispatcher
 
 		long timestamp = config.timestampUnit.ofSecond(tvSec, tvUsec);
 
-		MemorySegment mpkt = MemorySegment.ofAddress(pktData, caplen, getOnetimeMemorySession());
+		MemorySegment mpkt = pktData.reinterpret(caplen, getOnetimeSegmentScope(), __ -> {});
 
 		Packet packet = createSingletonPacket(mpkt, caplen, wirelen, timestamp);
 

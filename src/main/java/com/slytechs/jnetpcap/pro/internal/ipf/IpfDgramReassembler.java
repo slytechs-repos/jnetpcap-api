@@ -19,8 +19,8 @@ package com.slytechs.jnetpcap.pro.internal.ipf;
 
 import static com.slytechs.protocol.pack.core.constants.CoreConstants.*;
 
+import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
-import java.lang.foreign.MemorySession;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.stream.Collectors;
@@ -101,7 +101,7 @@ public class IpfDgramReassembler implements Expirable {
 	/** The entire storage ecaps + frag data */
 	private final ByteBuffer buffer;
 	private final MemorySegment mseg;
-	private MemorySession session;
+	private Arena session;
 
 	/** The frag data only view of the main storage */
 	private final ByteBuffer ipPayloadView;
@@ -184,7 +184,7 @@ public class IpfDgramReassembler implements Expirable {
 		 * when this hash table entry comes up again.
 		 */
 		MemorySegment mseg = MemorySegment.ofBuffer(buffer);
-		mseg = MemorySegment.ofAddress(mseg.address(), caplen, session);
+		mseg = mseg.reinterpret(caplen, session, __ ->{});
 
 		queue.addDatagram(mseg, caplen, caplen, timestamp, this);
 
@@ -293,7 +293,7 @@ public class IpfDgramReassembler implements Expirable {
 
 		this.expiration = timeSource.timestamp() + config.getTimeoutMilli();
 		this.tableEntry.setKey(key);
-		this.session = MemorySession.openShared();
+		this.session = Arena.ofAuto();
 
 		this.buffer.clear();
 		this.observedSize = 0;

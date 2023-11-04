@@ -19,7 +19,7 @@ package com.slytechs.jnetpcap.pro;
 
 import java.io.File;
 import java.lang.Thread.UncaughtExceptionHandler;
-import java.lang.foreign.MemoryAddress;
+import java.lang.foreign.MemorySegment;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -204,7 +204,7 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 * @return the new pcap-pro instance initialized to a new pcap native handle and
 	 *         specific native architecture ABI
 	 */
-	static PcapPro newDeadInstance(MemoryAddress pcapHandle, String name, PcapHeaderABI abi) {
+	static PcapPro newDeadInstance(MemorySegment pcapHandle, String name, PcapHeaderABI abi) {
 		return new PcapPro(pcapHandle, name, abi, PcapType.DEAD_HANDLE);
 	}
 
@@ -219,7 +219,7 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 * @return the new pcap-pro instance initialized to a new pcap native handle and
 	 *         specific native architecture ABI
 	 */
-	static PcapPro newLiveInstance(MemoryAddress pcapHandle, String name, PcapHeaderABI abi) {
+	static PcapPro newLiveInstance(MemorySegment pcapHandle, String name, PcapHeaderABI abi) {
 		return new PcapPro(pcapHandle, name, abi, PcapType.LIVE_CAPTURE);
 	}
 
@@ -234,7 +234,7 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 * @return the new pcap-pro instance initialized to a new pcap native handle and
 	 *         specific native architecture ABI
 	 */
-	static PcapPro newOfflineInstance(MemoryAddress pcapHandle, String name, PcapHeaderABI abi) {
+	static PcapPro newOfflineInstance(MemorySegment pcapHandle, String name, PcapHeaderABI abi) {
 		return new PcapPro(pcapHandle, name, abi, PcapType.OFFLINE_READER);
 	}
 
@@ -279,7 +279,7 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 * used for creating a pcap_t structure to use when calling the other functions
 	 * in libpcap. It is typically used when just using libpcap for compiling BPF
 	 * full; it can also be used if using {@code #dumpOpen(String)},
-	 * {@link PcapDumper#dump(MemoryAddress, MemoryAddress)}, and
+	 * {@link PcapDumper#dump(MemorySegment, MemorySegment)}, and
 	 * {@link PcapDumper#close()} to write a savefile if there is no pcap_t that
 	 * supplies the packets to be written.
 	 * </p>
@@ -443,7 +443,7 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 * @param pcapType   the pcap handle type such as LIVE, OFFLINE or DEAD
 	 *                   depending how the pcap-pro handle was opened
 	 */
-	PcapPro(MemoryAddress pcapHandle, String name, PcapHeaderABI abi, PcapType pcapType) {
+	PcapPro(MemorySegment pcapHandle, String name, PcapHeaderABI abi, PcapType pcapType) {
 		super(pcapHandle, name, abi);
 		config.abi = Objects.requireNonNull(abi, "abi");
 		config.portName = name;
@@ -1335,6 +1335,7 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 * @return this pcap handle
 	 * @throws PcapException the pcap exception
 	 * @since libpcap 1.0
+	 * @since jNetPcap Pro 1.0
 	 */
 	public PcapPro setBufferSize(long size, MemoryUnit unit) throws PcapException {
 

@@ -18,7 +18,7 @@
 package com.slytechs.jnetpcap.pro.internal;
 
 import java.lang.Thread.UncaughtExceptionHandler;
-import java.lang.foreign.MemoryAddress;
+import java.lang.foreign.MemorySegment;
 import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 
@@ -58,10 +58,10 @@ public class AbstractPcapDispatcher implements PcapDispatcher {
 	/**
 	 * @param address
 	 * @return
-	 * @see org.jnetpcap.internal.PcapDispatcher#captureLength(java.lang.foreign.MemoryAddress)
+	 * @see org.jnetpcap.internal.PcapDispatcher#captureLength(java.lang.foreign.MemorySegment)
 	 */
 	@Override
-	public int captureLength(MemoryAddress address) {
+	public int captureLength(MemorySegment address) {
 		return getPcapDispatcher().captureLength(address);
 	}
 
@@ -81,10 +81,10 @@ public class AbstractPcapDispatcher implements PcapDispatcher {
 	 * @return
 	 * @see org.jnetpcap.internal.PcapDispatcher#dispatchNative(int,
 	 *      org.jnetpcap.PcapHandler.NativeCallback,
-	 *      java.lang.foreign.MemoryAddress)
+	 *      java.lang.foreign.MemorySegment)
 	 */
 	@Override
-	public int dispatchNative(int count, NativeCallback handler, MemoryAddress user) {
+	public int dispatchNative(int count, NativeCallback handler, MemorySegment user) {
 		return getPcapDispatcher().dispatchNative(count, handler, user);
 	}
 
@@ -94,10 +94,10 @@ public class AbstractPcapDispatcher implements PcapDispatcher {
 	 * @param userData
 	 * @return
 	 * @see org.jnetpcap.internal.PcapDispatcher#dispatchRaw(int,
-	 *      java.lang.foreign.MemoryAddress, java.lang.foreign.MemoryAddress)
+	 *      java.lang.foreign.MemorySegment, java.lang.foreign.MemorySegment)
 	 */
 	@Override
-	public int dispatchRaw(int count, MemoryAddress callbackFunc, MemoryAddress userData) {
+	public int dispatchRaw(int count, MemorySegment callbackFunc, MemorySegment userData) {
 		return getPcapDispatcher().dispatchRaw(count, callbackFunc, userData);
 	}
 
@@ -117,10 +117,10 @@ public class AbstractPcapDispatcher implements PcapDispatcher {
 	/**
 	 * @param address
 	 * @return
-	 * @see org.jnetpcap.internal.PcapDispatcher#headerLength(java.lang.foreign.MemoryAddress)
+	 * @see org.jnetpcap.internal.PcapDispatcher#headerLength(java.lang.foreign.MemorySegment)
 	 */
 	@Override
-	public int headerLength(MemoryAddress address) {
+	public int headerLength(MemorySegment address) {
 		return getPcapDispatcher().headerLength(address);
 	}
 
@@ -140,10 +140,10 @@ public class AbstractPcapDispatcher implements PcapDispatcher {
 	 * @return
 	 * @see org.jnetpcap.internal.PcapDispatcher#loopNative(int,
 	 *      org.jnetpcap.PcapHandler.NativeCallback,
-	 *      java.lang.foreign.MemoryAddress)
+	 *      java.lang.foreign.MemorySegment)
 	 */
 	@Override
-	public int loopNative(int count, NativeCallback handler, MemoryAddress user) {
+	public int loopNative(int count, NativeCallback handler, MemorySegment user) {
 		return getPcapDispatcher().loopNative(count, handler, user);
 	}
 
@@ -153,10 +153,10 @@ public class AbstractPcapDispatcher implements PcapDispatcher {
 	 * @param userData
 	 * @return
 	 * @see org.jnetpcap.internal.PcapDispatcher#loopRaw(int,
-	 *      java.lang.foreign.MemoryAddress, java.lang.foreign.MemoryAddress)
+	 *      java.lang.foreign.MemorySegment, java.lang.foreign.MemorySegment)
 	 */
 	@Override
-	public int loopRaw(int count, MemoryAddress callbackFunc, MemoryAddress userData) {
+	public int loopRaw(int count, MemorySegment callbackFunc, MemorySegment userData) {
 		return getPcapDispatcher().loopRaw(count, callbackFunc, userData);
 	}
 
@@ -164,11 +164,11 @@ public class AbstractPcapDispatcher implements PcapDispatcher {
 	 * @param user
 	 * @param header
 	 * @param packet
-	 * @see org.jnetpcap.PcapHandler.NativeCallback#nativeCallback(java.lang.foreign.MemoryAddress,
-	 *      java.lang.foreign.MemoryAddress, java.lang.foreign.MemoryAddress)
+	 * @see org.jnetpcap.PcapHandler.NativeCallback#nativeCallback(java.lang.foreign.MemorySegment,
+	 *      java.lang.foreign.MemorySegment, java.lang.foreign.MemorySegment)
 	 */
 	@Override
-	public void nativeCallback(MemoryAddress user, MemoryAddress header, MemoryAddress packet) {
+	public void nativeCallback(MemorySegment user, MemorySegment header, MemorySegment packet) {
 		getPcapDispatcher().nativeCallback(user, header, packet);
 	}
 

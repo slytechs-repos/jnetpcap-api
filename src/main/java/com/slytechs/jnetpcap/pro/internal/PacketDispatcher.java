@@ -17,9 +17,8 @@
  */
 package com.slytechs.jnetpcap.pro.internal;
 
-import java.lang.foreign.MemoryAddress;
+import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
-import java.lang.foreign.MemorySession;
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeoutException;
 
@@ -131,9 +130,9 @@ public interface PacketDispatcher extends AutoCloseable {
 	CaptureStatistics getCaptureStatistics();
 
 	<U> Packet processPacket(
-			MemoryAddress pcapHdr,
-			MemoryAddress pktData,
-			MemorySession session);
+			MemorySegment pcapHdr,
+			MemorySegment pktData,
+			Arena session);
 
 	<U> Packet processPacket(
 			ByteBuffer buffer,

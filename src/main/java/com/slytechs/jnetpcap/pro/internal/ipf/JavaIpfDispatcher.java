@@ -17,9 +17,8 @@
  */
 package com.slytechs.jnetpcap.pro.internal.ipf;
 
-import java.lang.foreign.MemoryAddress;
+import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
-import java.lang.foreign.MemorySession;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -137,7 +136,7 @@ public final class JavaIpfDispatcher extends AbstractPacketDispatcher implements
 	protected <U> int dispatchIpf(int count, OfPacket<U> sink, U user) {
 		return super.dispatchNative(count, (ignore, pcapHdr, pktData) -> {
 
-			try (var session = MemorySession.openShared()) {
+			try (var session = Arena.ofShared()) {
 
 				if (!sinkIpfNative0(pcapHdr, pktData, sink, user, session)) {
 					Packet packet = super.processPacket(pcapHdr, pktData, session);
@@ -146,7 +145,7 @@ public final class JavaIpfDispatcher extends AbstractPacketDispatcher implements
 
 			}
 
-		}, MemoryAddress.NULL); // We don't pass user object to native dispatcher
+		}, MemorySegment.NULL); // We don't pass user object to native dispatcher
 	}
 
 	/**
@@ -176,7 +175,7 @@ public final class JavaIpfDispatcher extends AbstractPacketDispatcher implements
 	 */
 	protected <U> int loopIpf(int count, OfPacket<U> sink, U user) {
 		return super.loopNative(count, (ignore, pcapHdr, pktData) -> {
-			try (var session = MemorySession.openShared()) {
+			try (var session = Arena.ofShared()) {
 
 				if (!sinkIpfNative0(pcapHdr, pktData, sink, user, session)) {
 					Packet packet = super.processPacket(pcapHdr, pktData, session);
@@ -185,7 +184,7 @@ public final class JavaIpfDispatcher extends AbstractPacketDispatcher implements
 
 			}
 
-		}, MemoryAddress.NULL); // We don't pass user object to native dispatcher
+		}, MemorySegment.NULL); // We don't pass user object to native dispatcher
 	}
 
 	/**
@@ -212,7 +211,7 @@ public final class JavaIpfDispatcher extends AbstractPacketDispatcher implements
 	 * @param session the session
 	 * @return true, if successful
 	 */
-	protected boolean processIpfNative(MemoryAddress pcapHdr, MemoryAddress pktData, MemorySession session) {
+	protected boolean processIpfNative(MemorySegment pcapHdr, MemorySegment pktData, Arena session) {
 
 		int caplen = 0, wirelen = 0;
 		try {
@@ -224,7 +223,7 @@ public final class JavaIpfDispatcher extends AbstractPacketDispatcher implements
 
 			long timestamp = ipfConfig.getTimestampUnit().ofSecond(tvSec, tvUsec);
 
-			MemorySegment mpkt = MemorySegment.ofAddress(pktData, caplen, session);
+			MemorySegment mpkt = pktData.reinterpret(caplen, session, __ ->{});
 			ByteBuffer buf = mpkt.asByteBuffer();
 
 			boolean isSuccess = (reassembleFromBuffer(-1, buf, caplen, wirelen, timestamp) != null);
@@ -405,8 +404,8 @@ public final class JavaIpfDispatcher extends AbstractPacketDispatcher implements
 		reassembler.close();
 	}
 
-	private <U> boolean sinkIpfNative0(MemoryAddress pcapHdr, MemoryAddress pktData, OfPacket<U> sink, U user,
-			MemorySession session) {
+	private <U> boolean sinkIpfNative0(MemorySegment pcapHdr, MemorySegment pktData, OfPacket<U> sink, U user,
+			Arena session) {
 
 		if (ipfConfig.pass) {
 			/*

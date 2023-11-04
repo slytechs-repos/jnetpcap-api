@@ -17,7 +17,7 @@
  */
 package com.slytechs.jnetpcap.pro.internal.ipf;
 
-import java.lang.foreign.MemoryAddress;
+import java.lang.foreign.MemorySegment;
 
 import org.jnetpcap.internal.PcapDispatcher;
 import org.jnetpcap.internal.PcapForeignDowncall;
@@ -38,7 +38,7 @@ public class IpfDispatcherNative
 		extends AbstractPacketDispatcher
 		implements IpfDispatcher {
 
-	private MemoryAddress ipfTable;
+	private MemorySegment ipfTable;
 
 	/**
 	 * @param pcapHandle

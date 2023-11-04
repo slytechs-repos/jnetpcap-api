@@ -17,7 +17,7 @@
  */
 package com.slytechs.jnetpcap.pro.internal;
 
-import java.lang.foreign.MemoryAddress;
+import java.lang.foreign.MemorySegment;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
@@ -78,14 +78,14 @@ public class PacketPlayerPreProcessor extends AbstractPcapDispatcher implements 
 	/**
 	 * @see com.slytechs.jnetpcap.pro.internal.AbstractPcapDispatcher#dispatchNative(int,
 	 *      org.jnetpcap.PcapHandler.NativeCallback,
-	 *      java.lang.foreign.MemoryAddress)
+	 *      java.lang.foreign.MemorySegment)
 	 */
 	@Override
-	public int dispatchNative(int count, NativeCallback handler, MemoryAddress user) {
+	public int dispatchNative(int count, NativeCallback handler, MemorySegment user) {
 		if (initialized == false)
 			initialize();
 
-		return super.dispatchNative(count, (MemoryAddress u, MemoryAddress header, MemoryAddress packet) -> {
+		return super.dispatchNative(count, (MemorySegment u, MemorySegment header, MemorySegment packet) -> {
 
 			if (referenceTimeNano == 0)
 				referenceTimeNano = getTimestampNano(header);
@@ -123,7 +123,7 @@ public class PacketPlayerPreProcessor extends AbstractPcapDispatcher implements 
 	 * @param header
 	 * @return
 	 */
-	private long getTimestampNano(MemoryAddress header) {
+	private long getTimestampNano(MemorySegment header) {
 		long tvSec = abi.tvSec(header);
 		long tvUsec = abi.tvUsec(header);
 
