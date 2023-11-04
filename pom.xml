@@ -5,12 +5,12 @@
 	<groupId>com.slytechs.jnet</groupId>
 	<artifactId>jnetpcap-pro</artifactId>
 	<!-- mvn versions:set -DnewVersion=_new_version_ -->
-	<version>0.9</version>
-	<name>jNetPcap</name>
+	<version>1.0.0-SNAPSHOT</version>
+	<name>jNetPcap Pro</name>
 	<description>A protocol enabled jNetPcap with IP Fragment reassembly.</description>
 	<url>https://www.slytechs.com</url>
 	<properties>
-		<jdk.version>19</jdk.version>
+		<jdk.version>21</jdk.version>
 		<project.build.sourceEncoding>${java.encoding}</project.build.sourceEncoding>
 		<maven.compiler.source>${jdk.version}</maven.compiler.source>
 		<maven.compiler.target>${jdk.version}</maven.compiler.target>
@@ -61,12 +61,12 @@
 		<dependency>
 			<groupId>com.slytechs.jnet</groupId>
 			<artifactId>jnetpcap</artifactId>
-			<version>2.0.0-alpha.2</version>
-		</dependency>
+			<version>2.0.0-SNAPSHOT</version>
+		</dependency> 
 		<dependency>
 			<groupId>com.slytechs.jnet</groupId>
 			<artifactId>core-protocols</artifactId>
-			<version>0.9</version>
+			<version>1.0.0-SNAPSHOT</version>
 		</dependency>
 	</dependencies>
 	<build>
