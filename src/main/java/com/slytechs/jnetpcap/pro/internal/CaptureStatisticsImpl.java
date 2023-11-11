@@ -20,26 +20,41 @@ package com.slytechs.jnetpcap.pro.internal;
 import com.slytechs.jnetpcap.pro.CaptureStatistics;
 
 /**
+ * The Class CaptureStatisticsImpl.
+ *
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
- *
  */
 public class CaptureStatisticsImpl implements CaptureStatistics {
 
+	/** The dropped caplen count. */
 	long droppedCaplenCount;
+	
+	/** The dropped packet count. */
 	long droppedPacketCount;
+	
+	/** The dropped wirelen count. */
 	long droppedWirelenCount;
+	
+	/** The received caplen count. */
 	long receivedCaplenCount;
+	
+	/** The received packet count. */
 	long receivedPacketCount;
+	
+	/** The received wirelen count. */
 	long receivedWirelenCount;
 
 	/**
-	 * 
+	 * Instantiates a new capture statistics impl.
 	 */
 	public CaptureStatisticsImpl() {
 	}
 
 	/**
+	 * Gets the dropped caplen count.
+	 *
+	 * @return the dropped caplen count
 	 * @see com.slytechs.jnetpcap.pro.CaptureStatistics#getDroppedCaplenCount()
 	 */
 	@Override
@@ -48,6 +63,9 @@ public class CaptureStatisticsImpl implements CaptureStatistics {
 	}
 
 	/**
+	 * Gets the dropped packet count.
+	 *
+	 * @return the dropped packet count
 	 * @see com.slytechs.jnetpcap.pro.CaptureStatistics#getDroppedPacketCount()
 	 */
 	@Override
@@ -56,6 +74,9 @@ public class CaptureStatisticsImpl implements CaptureStatistics {
 	}
 
 	/**
+	 * Gets the dropped wirelen count.
+	 *
+	 * @return the dropped wirelen count
 	 * @see com.slytechs.jnetpcap.pro.CaptureStatistics#getDroppedWirelenCount()
 	 */
 	@Override
@@ -64,6 +85,9 @@ public class CaptureStatisticsImpl implements CaptureStatistics {
 	}
 
 	/**
+	 * Gets the received caplen count.
+	 *
+	 * @return the received caplen count
 	 * @see com.slytechs.jnetpcap.pro.CaptureStatistics#getReceivedCaplenCount()
 	 */
 	@Override
@@ -72,6 +96,9 @@ public class CaptureStatisticsImpl implements CaptureStatistics {
 	}
 
 	/**
+	 * Gets the received packet count.
+	 *
+	 * @return the received packet count
 	 * @see com.slytechs.jnetpcap.pro.CaptureStatistics#getReceivedPacketCount()
 	 */
 	@Override
@@ -80,6 +107,9 @@ public class CaptureStatisticsImpl implements CaptureStatistics {
 	}
 
 	/**
+	 * Gets the received wirelen count.
+	 *
+	 * @return the received wirelen count
 	 * @see com.slytechs.jnetpcap.pro.CaptureStatistics#getReceivedWirelenCount()
 	 */
 	@Override
@@ -88,6 +118,8 @@ public class CaptureStatisticsImpl implements CaptureStatistics {
 	}
 
 	/**
+	 * Inc dropped caplen count.
+	 *
 	 * @param delta the droppedCaplenCount to inc
 	 */
 	public void incDroppedCaplenCount(long delta) {
@@ -95,6 +127,8 @@ public class CaptureStatisticsImpl implements CaptureStatistics {
 	}
 
 	/**
+	 * Inc dropped packet count.
+	 *
 	 * @param delta the droppedPacketCount to inc
 	 */
 	public void incDroppedPacketCount(long delta) {
@@ -102,6 +136,8 @@ public class CaptureStatisticsImpl implements CaptureStatistics {
 	}
 
 	/**
+	 * Inc dropped wirelen count.
+	 *
 	 * @param delta the droppedWirelenCount to inc
 	 */
 	public void incDroppedWirelenCount(long delta) {
@@ -109,6 +145,8 @@ public class CaptureStatisticsImpl implements CaptureStatistics {
 	}
 
 	/**
+	 * Inc received caplen count.
+	 *
 	 * @param delta the receivedCaplenCount to inc
 	 */
 	public void incReceivedCaplenCount(long delta) {
@@ -116,6 +154,8 @@ public class CaptureStatisticsImpl implements CaptureStatistics {
 	}
 
 	/**
+	 * Inc received packet count.
+	 *
 	 * @param delta the receivedPacketCount to inc
 	 */
 	public void incReceivedPacketCount(long delta) {
@@ -123,18 +163,34 @@ public class CaptureStatisticsImpl implements CaptureStatistics {
 	}
 
 	/**
+	 * Inc received wirelen count.
+	 *
 	 * @param delta the receivedWirelenCount to inc
 	 */
 	public void incReceivedWirelenCount(long delta) {
 		this.receivedWirelenCount += delta;
 	}
 
+	/**
+	 * Inc dropped.
+	 *
+	 * @param caplen  the caplen
+	 * @param wirelen the wirelen
+	 * @param packets the packets
+	 */
 	public void incDropped(int caplen, int wirelen, int packets) {
 		droppedCaplenCount += caplen;
 		droppedWirelenCount += wirelen;
 		droppedPacketCount += packets;
 	}
 
+	/**
+	 * Inc received.
+	 *
+	 * @param caplen  the caplen
+	 * @param wirelen the wirelen
+	 * @param packets the packets
+	 */
 	public void incReceived(int caplen, int wirelen, int packets) {
 		receivedCaplenCount += caplen;
 		receivedWirelenCount += wirelen;

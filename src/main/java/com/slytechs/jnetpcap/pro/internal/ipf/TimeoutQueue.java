@@ -26,31 +26,61 @@ import com.slytechs.protocol.Registration;
 import com.slytechs.protocol.runtime.time.TimestampSource;
 
 /**
+ * The Class TimeoutQueue.
+ *
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
+ * @param <E> the element type
  */
 public class TimeoutQueue<E extends Expirable> {
 
+	/**
+	 * The Interface Expirable.
+	 */
 	public interface Expirable {
+		
+		/**
+		 * Expiration.
+		 *
+		 * @return the long
+		 */
 		long expiration();
 	}
 
+	/**
+	 * The Class Entry.
+	 */
 	private class Entry implements Expirable {
 
+		/** The e. */
 		final E e;
+		
+		/** The action. */
 		final Consumer<E> action;
 
+		/**
+		 * Instantiates a new entry.
+		 *
+		 * @param dst    the dst
+		 * @param action the action
+		 */
 		public Entry(E dst, Consumer<E> action) {
 			this.e = dst;
 			this.action = action;
 
 		}
 
+		/**
+		 * Do action.
+		 */
 		public void doAction() {
 			action.accept(e);
 		}
 
 		/**
+		 * Expiration.
+		 *
+		 * @return the long
 		 * @see com.slytechs.jnetpcap.pro.internal.ipf.TimeoutQueue.Expirable#expiration()
 		 */
 		@Override
@@ -59,14 +89,30 @@ public class TimeoutQueue<E extends Expirable> {
 		}
 	}
 
+	/** The queue. */
 	private final BlockingQueue<Entry> queue;
+	
+	/** The time source. */
 	private final TimestampSource timeSource;
 
+	/**
+	 * Instantiates a new timeout queue.
+	 *
+	 * @param size       the size
+	 * @param timeSource the time source
+	 */
 	public TimeoutQueue(int size, TimestampSource timeSource) {
 		this.timeSource = timeSource;
 		this.queue = new PriorityBlockingQueue<>(size, (o1, o2) -> (int) (o1.expiration() - o2.expiration()));
 	}
 
+	/**
+	 * Adds the.
+	 *
+	 * @param e      the e
+	 * @param action the action
+	 * @return the registration
+	 */
 	public Registration add(E e, Consumer<E> action) {
 
 		queue.offer(new Entry(e, action));
@@ -74,6 +120,11 @@ public class TimeoutQueue<E extends Expirable> {
 		return () -> queue.remove(e);
 	}
 
+	/**
+	 * Checks if is empty.
+	 *
+	 * @return true, if is empty
+	 */
 	public boolean isEmpty() {
 		return queue.isEmpty();
 	}

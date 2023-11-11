@@ -20,20 +20,33 @@ package com.slytechs.jnetpcap.pro.internal;
 import java.lang.foreign.MemorySegment;
 import java.util.concurrent.TimeUnit;
 
+import org.jnetpcap.PcapHandler.NativeCallback;
 import org.jnetpcap.internal.PcapDispatcher;
 
 import com.slytechs.jnetpcap.pro.PacketDelay;
 import com.slytechs.jnetpcap.pro.PcapPro.PcapProContext;
 
 /**
+ * The Class PacketDelayPreProcessor.
+ *
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  */
 public class PacketDelayPreProcessor extends AbstractPcapDispatcher implements PcapDispatcher {
 
+	/** The config. */
 	private final PacketDelay config;
+	
+	/** The context. */
 	private final PcapProContext context;
 
+	/**
+	 * Instantiates a new packet delay pre processor.
+	 *
+	 * @param pcapDispatcher the pcap dispatcher
+	 * @param config         the config
+	 * @param context        the context
+	 */
 	public PacketDelayPreProcessor(PcapDispatcher pcapDispatcher, Object config, PcapProContext context) {
 		super(pcapDispatcher);
 		this.context = context;
@@ -45,6 +58,12 @@ public class PacketDelayPreProcessor extends AbstractPcapDispatcher implements P
 	}
 
 	/**
+	 * Dispatch native.
+	 *
+	 * @param count   the count
+	 * @param handler the handler
+	 * @param user    the user
+	 * @return the int
 	 * @see com.slytechs.jnetpcap.pro.internal.AbstractPcapDispatcher#dispatchNative(int,
 	 *      org.jnetpcap.PcapHandler.NativeCallback,
 	 *      java.lang.foreign.MemorySegment)
@@ -63,6 +82,12 @@ public class PacketDelayPreProcessor extends AbstractPcapDispatcher implements P
 		}, user);
 	}
 
+	/**
+	 * Delay.
+	 *
+	 * @param delayNano the delay nano
+	 * @return true, if successful
+	 */
 	private boolean delay(long delayNano) {
 		try {
 			TimeUnit.NANOSECONDS.sleep(delayNano);
@@ -75,6 +100,12 @@ public class PacketDelayPreProcessor extends AbstractPcapDispatcher implements P
 	}
 
 	/**
+	 * Loop native.
+	 *
+	 * @param count   the count
+	 * @param handler the handler
+	 * @param user    the user
+	 * @return the int
 	 * @see com.slytechs.jnetpcap.pro.internal.AbstractPcapDispatcher#loopNative(int,
 	 *      org.jnetpcap.PcapHandler.NativeCallback,
 	 *      java.lang.foreign.MemorySegment)

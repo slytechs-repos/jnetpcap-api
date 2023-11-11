@@ -17,11 +17,14 @@
  */
 package com.slytechs.jnetpcap.pro.internal.ipf;
 
+import static com.slytechs.protocol.runtime.internal.foreign.ForeignUtils.*;
+
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.function.Supplier;
 
 import org.jnetpcap.internal.PcapDispatcher;
 import org.jnetpcap.internal.PcapHeaderABI;
@@ -30,9 +33,9 @@ import com.slytechs.jnetpcap.pro.IpfReassembler;
 import com.slytechs.jnetpcap.pro.IpfStatistics;
 import com.slytechs.jnetpcap.pro.PcapPro.PcapProContext;
 import com.slytechs.jnetpcap.pro.PcapProHandler.OfPacket;
-import com.slytechs.jnetpcap.pro.internal.AbstractPacketDispatcher;
+import com.slytechs.jnetpcap.pro.internal.AbstractPacketReceiver;
 import com.slytechs.jnetpcap.pro.internal.CaptureStatisticsImpl;
-import com.slytechs.jnetpcap.pro.internal.PacketDispatcher;
+import com.slytechs.jnetpcap.pro.internal.PacketReceiver;
 import com.slytechs.protocol.Packet;
 import com.slytechs.protocol.descriptor.IpfFragDissector;
 import com.slytechs.protocol.descriptor.IpfFragment;
@@ -47,20 +50,54 @@ import com.slytechs.protocol.runtime.hash.Checksums;
  * @author repos@slytechs.com
  * @author Mark Bednarczyk
  */
-public final class JavaIpfDispatcher extends AbstractPacketDispatcher implements IpfDispatcher {
+public final class JavaIpfDispatcher extends AbstractPacketReceiver implements IpfDispatcher {
 
+	/**
+	 * The Interface DatagramQueue.
+	 */
 	public interface DatagramQueue {
+		
+		/**
+		 * Adds the datagram.
+		 *
+		 * @param mseg        the mseg
+		 * @param caplen      the caplen
+		 * @param wirelen     the wirelen
+		 * @param expiration  the expiration
+		 * @param reassembler the reassembler
+		 */
 		void addDatagram(MemorySegment mseg, int caplen, int wirelen, long expiration, IpfDgramReassembler reassembler);
 	}
 
+	/**
+	 * The Class ReassembledDatagram.
+	 */
 	private static class ReassembledDatagram {
 
+		/** The mseg. */
 		private MemorySegment mseg;
+		
+		/** The caplen. */
 		private int caplen;
+		
+		/** The wirelen. */
 		private int wirelen;
+		
+		/** The timestamp. */
 		private long timestamp;
+		
+		/** The reassembler. */
 		private IpfDgramReassembler reassembler;
 
+		/**
+		 * Instantiates a new reassembled datagram.
+		 *
+		 * @param mseg        the mseg
+		 * @param caplen      the caplen
+		 * @param wirelen     the wirelen
+		 * @param timestamp   the timestamp
+		 * @param reassembler the reassembler
+		 */
 		ReassembledDatagram(MemorySegment mseg, int caplen, int wirelen, long timestamp,
 				IpfDgramReassembler reassembler) {
 			this.caplen = caplen;
@@ -77,12 +114,18 @@ public final class JavaIpfDispatcher extends AbstractPacketDispatcher implements
 
 	/** The ipf desc buffer. */
 	private final ByteBuffer fragDescBuffer = ByteBuffer.allocateDirect(CoreConstants.DESC_IPF_FRAG_BYTE_SIZE);
+	
+	/** The reassembly desc buffer. */
 	private final ByteBuffer reassemblyDescBuffer = ByteBuffer.allocateDirect(
 			CoreConstants.DESC_IPF_REASSEMBLY_BYTE_SIZE);
 
 	/** The ipf desc. */
 	private final IpfFragment fragDesc = new IpfFragment(fragDescBuffer);
+	
+	/** The frag desc if present. */
 	private IpfFragment fragDescIfPresent = null;
+	
+	/** The reassembly desc. */
 	private final IpfReassembly reassemblyDesc = new IpfReassembly(reassemblyDescBuffer);
 
 	/** The ipf table. */
@@ -94,22 +137,26 @@ public final class JavaIpfDispatcher extends AbstractPacketDispatcher implements
 	/** The insert queue. */
 	private final BlockingQueue<ReassembledDatagram> dgramQueue;
 
+	/** The ipf stats. */
 	private final IpfStatistics ipfStats = new IpfStatistics();
 
+	/** The abi. */
 	private final PcapHeaderABI abi;
 
+	/** The packet stats. */
 	private final CaptureStatisticsImpl packetStats;
 
 	/**
 	 * Instantiates a new java ipf dispatcher.
 	 *
-	 * @param pcapHandle    the pcap handle
-	 * @param breakDispatch the break dispatch
-	 * @param config        the config
+	 * @param pcap    the pcap
+	 * @param packet  the packet
+	 * @param config  the config
+	 * @param context the context
 	 */
 	public JavaIpfDispatcher(
 			PcapDispatcher pcap,
-			PacketDispatcher packet,
+			PacketReceiver packet,
 			IpfReassembler config,
 			PcapProContext context) {
 		super(packet, pcap);
@@ -125,6 +172,15 @@ public final class JavaIpfDispatcher extends AbstractPacketDispatcher implements
 	}
 
 	/**
+	 * Activate.
+	 *
+	 * @see com.slytechs.jnetpcap.pro.internal.PacketReceiver#activate()
+	 */
+	@Override
+	public void activate() {
+	}
+
+	/**
 	 * Dispatch ipf.
 	 *
 	 * @param <U>   the generic type
@@ -136,32 +192,16 @@ public final class JavaIpfDispatcher extends AbstractPacketDispatcher implements
 	protected <U> int dispatchIpf(int count, OfPacket<U> sink, U user) {
 		return super.dispatchNative(count, (ignore, pcapHdr, pktData) -> {
 
-			try (var session = Arena.ofShared()) {
+			try (var arena = Arena.ofShared()) {
 
-				if (!sinkIpfNative0(pcapHdr, pktData, sink, user, session)) {
-					Packet packet = super.processPacket(pcapHdr, pktData, session);
+				if (!sinkIpfNative0(pcapHdr, pktData, sink, user, arena)) {
+					Packet packet = super.processPacket(pcapHdr, pktData, arena);
 					sink.handlePacket(user, packet);
 				}
 
 			}
 
 		}, MemorySegment.NULL); // We don't pass user object to native dispatcher
-	}
-
-	/**
-	 * Dispatch packet.
-	 *
-	 * @param <U>   the generic type
-	 * @param count the count
-	 * @param sink  the sink
-	 * @param user  the user
-	 * @return the int
-	 * @see com.slytechs.jnetpcap.pro.internal.MainPacketDispatcher#dispatchPacket(int,
-	 *      com.slytechs.jnetpcap.pro.PcapProHandler.OfPacket, java.lang.Object)
-	 */
-	@Override
-	public <U> int dispatchPacket(int count, OfPacket<U> sink, U user) {
-		return this.dispatchIpf(count, sink, user);
 	}
 
 	/**
@@ -175,32 +215,17 @@ public final class JavaIpfDispatcher extends AbstractPacketDispatcher implements
 	 */
 	protected <U> int loopIpf(int count, OfPacket<U> sink, U user) {
 		return super.loopNative(count, (ignore, pcapHdr, pktData) -> {
-			try (var session = Arena.ofShared()) {
 
-				if (!sinkIpfNative0(pcapHdr, pktData, sink, user, session)) {
-					Packet packet = super.processPacket(pcapHdr, pktData, session);
+			try (var arena = Arena.ofShared()) {
+				
+				if (!sinkIpfNative0(pcapHdr, pktData, sink, user, arena)) {
+					Packet packet = super.processPacket(pcapHdr, pktData, arena);
 					sink.handlePacket(user, packet);
 				}
-
+				
 			}
 
 		}, MemorySegment.NULL); // We don't pass user object to native dispatcher
-	}
-
-	/**
-	 * Loop packet.
-	 *
-	 * @param <U>   the generic type
-	 * @param count the count
-	 * @param sink  the sink
-	 * @param user  the user
-	 * @return the int
-	 * @see com.slytechs.jnetpcap.pro.internal.MainPacketDispatcher#loopPacket(int,
-	 *      com.slytechs.jnetpcap.pro.PcapProHandler.OfPacket, java.lang.Object)
-	 */
-	@Override
-	public <U> int loopPacket(int count, OfPacket<U> sink, U user) {
-		return this.loopIpf(count, sink, user);
 	}
 
 	/**
@@ -223,7 +248,7 @@ public final class JavaIpfDispatcher extends AbstractPacketDispatcher implements
 
 			long timestamp = ipfConfig.getTimestampUnit().ofSecond(tvSec, tvUsec);
 
-			MemorySegment mpkt = pktData.reinterpret(caplen, session, __ ->{});
+			MemorySegment mpkt = pktData.reinterpret(caplen, session, EMPTY_CLEANUP);
 			ByteBuffer buf = mpkt.asByteBuffer();
 
 			boolean isSuccess = (reassembleFromBuffer(-1, buf, caplen, wirelen, timestamp) != null);
@@ -241,7 +266,7 @@ public final class JavaIpfDispatcher extends AbstractPacketDispatcher implements
 	 *
 	 * @param packet the packet
 	 * @return true, if successful
-	 * @throws IpfReassemblyException
+	 * @throws IpfReassemblyException the ipf reassembly exception
 	 */
 	protected IpfDgramReassembler processIpfPacket(Packet packet) throws IpfReassemblyException {
 		ByteBuffer buf = packet.buffer();
@@ -262,6 +287,7 @@ public final class JavaIpfDispatcher extends AbstractPacketDispatcher implements
 	 * @param wirelen   the wirelen
 	 * @param ts        the ts
 	 * @return the ipf fragment
+	 * @throws IpfReassemblyException the ipf reassembly exception
 	 */
 	protected IpfDgramReassembler reassembleFromBuffer(long frameNo, ByteBuffer packetBuf, int caplen, int wirelen,
 			long ts) throws IpfReassemblyException {
@@ -379,12 +405,79 @@ public final class JavaIpfDispatcher extends AbstractPacketDispatcher implements
 		return toClose;
 	}
 
+	/**
+	 * Dispatch packet.
+	 *
+	 * @param <U>   the generic type
+	 * @param count the count
+	 * @param sink  the sink
+	 * @param user  the user
+	 * @return the int
+	 * @see com.slytechs.jnetpcap.pro.internal.MainPacketReceiver#dispatchPacket(int,
+	 *      com.slytechs.jnetpcap.pro.PcapProHandler.OfPacket, java.lang.Object)
+	 */
+	@Override
+	public <U> int receivePacketWithDispatch(int count, OfPacket<U> sink, U user) {
+		return this.dispatchIpf(count, sink, user);
+	}
+
+	/**
+	 * Receive packet with dispatch.
+	 *
+	 * @param <U>           the generic type
+	 * @param count         the count
+	 * @param sink          the sink
+	 * @param user          the user
+	 * @param packetFactory the packet factory
+	 * @return the int
+	 * @see com.slytechs.jnetpcap.pro.internal.PacketReceiver#receivePacketWithDispatch(int,
+	 *      com.slytechs.jnetpcap.pro.PcapProHandler.OfPacket, java.lang.Object,
+	 *      java.util.function.Supplier)
+	 */
+	@Override
+	public <U> int receivePacketWithDispatch(int count, OfPacket<U> sink, U user, Supplier<Packet> packetFactory) {
+		return this.dispatchIpf(count, sink, user);
+	}
+
+	/**
+	 * Loop packet.
+	 *
+	 * @param <U>   the generic type
+	 * @param count the count
+	 * @param sink  the sink
+	 * @param user  the user
+	 * @return the int
+	 * @see com.slytechs.jnetpcap.pro.internal.MainPacketReceiver#loopPacket(int,
+	 *      com.slytechs.jnetpcap.pro.PcapProHandler.OfPacket, java.lang.Object)
+	 */
+	@Override
+	public <U> int receivePacketWithLoop(int count, OfPacket<U> sink, U user) {
+		return this.loopIpf(count, sink, user);
+	}
+
+	/**
+	 * Send memory segment.
+	 *
+	 * @param mseg        the mseg
+	 * @param caplen      the caplen
+	 * @param wirelen     the wirelen
+	 * @param expiration  the expiration
+	 * @param reassembler the reassembler
+	 */
 	private void sendMemorySegment(MemorySegment mseg, int caplen, int wirelen, long expiration,
 			IpfDgramReassembler reassembler) {
 		ReassembledDatagram req = new ReassembledDatagram(mseg, caplen, wirelen, expiration, reassembler);
 		dgramQueue.offer(req);
 	}
 
+	/**
+	 * Sink ip datagram.
+	 *
+	 * @param <U>   the generic type
+	 * @param dgram the dgram
+	 * @param sink  the sink
+	 * @param user  the user
+	 */
 	private <U> void sinkIpDatagram(ReassembledDatagram dgram, OfPacket<U> sink, U user) {
 		IpfDgramReassembler reassembler = dgram.reassembler;
 		ByteBuffer buf = dgram.mseg.asByteBuffer();
@@ -404,6 +497,17 @@ public final class JavaIpfDispatcher extends AbstractPacketDispatcher implements
 		reassembler.close();
 	}
 
+	/**
+	 * Sink ipf native 0.
+	 *
+	 * @param <U>     the generic type
+	 * @param pcapHdr the pcap hdr
+	 * @param pktData the pkt data
+	 * @param sink    the sink
+	 * @param user    the user
+	 * @param session the session
+	 * @return true, if successful
+	 */
 	private <U> boolean sinkIpfNative0(MemorySegment pcapHdr, MemorySegment pktData, OfPacket<U> sink, U user,
 			Arena session) {
 
@@ -459,6 +563,14 @@ public final class JavaIpfDispatcher extends AbstractPacketDispatcher implements
 		}
 	}
 
+	/**
+	 * Sink ipf packet 0.
+	 *
+	 * @param <U>    the generic type
+	 * @param packet the packet
+	 * @param sink   the sink
+	 * @param user   the user
+	 */
 	private <U> void sinkIpfPacket0(Packet packet, OfPacket<U> sink, U user) {
 		/*
 		 * OK, we have an IPF fragment so we need to attach

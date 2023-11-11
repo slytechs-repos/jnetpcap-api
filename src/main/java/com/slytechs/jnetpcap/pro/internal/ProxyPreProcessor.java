@@ -20,21 +20,26 @@ package com.slytechs.jnetpcap.pro.internal;
 import org.jnetpcap.internal.PcapDispatcher;
 
 /**
+ * The Class ProxyPreProcessor.
+ *
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
- *
  */
 public class ProxyPreProcessor extends AbstractPcapDispatcher {
 
+	/** The dispatcher. */
 	private PcapDispatcher dispatcher;
 
 	/**
-	 * 
+	 * Instantiates a new proxy pre processor.
 	 */
 	public ProxyPreProcessor() {
 	}
 
 	/**
+	 * Gets the pcap dispatcher.
+	 *
+	 * @return the pcap dispatcher
 	 * @see com.slytechs.jnetpcap.pro.internal.AbstractPcapDispatcher#getPcapDispatcher()
 	 */
 	@Override
@@ -42,6 +47,11 @@ public class ProxyPreProcessor extends AbstractPcapDispatcher {
 		return dispatcher;
 	}
 
+	/**
+	 * Sets the dispatcher.
+	 *
+	 * @param dispatcher the new dispatcher
+	 */
 	public void setDispatcher(PcapDispatcher dispatcher) {
 		this.dispatcher = dispatcher;
 	}

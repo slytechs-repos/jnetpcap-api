@@ -21,6 +21,7 @@ import java.lang.foreign.MemorySegment;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
+import org.jnetpcap.PcapHandler.NativeCallback;
 import org.jnetpcap.internal.PcapDispatcher;
 import org.jnetpcap.internal.PcapHeaderABI;
 
@@ -30,23 +31,44 @@ import com.slytechs.protocol.runtime.time.TimeSource;
 import com.slytechs.protocol.runtime.time.TimestampUnit;
 
 /**
+ * The Class PacketPlayerPreProcessor.
+ *
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  */
 public class PacketPlayerPreProcessor extends AbstractPcapDispatcher implements PcapDispatcher {
 
+	/** The context. */
 	private final PcapProContext context;
+	
+	/** The config. */
 	private final PacketPlayer config;
 
+	/** The initialized. */
 	private boolean initialized;
+	
+	/** The reference time nano. */
 	private long referenceTimeNano;
+	
+	/** The speed. */
 	private double speed;
 
+	/** The timestamp unit. */
 	private TimestampUnit timestampUnit;
 
+	/** The abi. */
 	private PcapHeaderABI abi;
+	
+	/** The time source. */
 	private final TimeSource.Updatable timeSource;
 
+	/**
+	 * Instantiates a new packet player pre processor.
+	 *
+	 * @param pcapDispatcher the pcap dispatcher
+	 * @param config         the config
+	 * @param context        the context
+	 */
 	public PacketPlayerPreProcessor(PcapDispatcher pcapDispatcher, Object config, PcapProContext context) {
 		super(pcapDispatcher);
 
@@ -62,10 +84,18 @@ public class PacketPlayerPreProcessor extends AbstractPcapDispatcher implements 
 								.formatted(context.getTimeSource().getClass())));
 	}
 
+	/**
+	 * Preserve ifg.
+	 *
+	 * @return the packet player pre processor
+	 */
 	public PacketPlayerPreProcessor preserveIfg() {
 		return this;
 	}
 
+	/**
+	 * Initialize.
+	 */
 	private void initialize() {
 		initialized = true;
 
@@ -76,6 +106,12 @@ public class PacketPlayerPreProcessor extends AbstractPcapDispatcher implements 
 	}
 
 	/**
+	 * Dispatch native.
+	 *
+	 * @param count   the count
+	 * @param handler the handler
+	 * @param user    the user
+	 * @return the int
 	 * @see com.slytechs.jnetpcap.pro.internal.AbstractPcapDispatcher#dispatchNative(int,
 	 *      org.jnetpcap.PcapHandler.NativeCallback,
 	 *      java.lang.foreign.MemorySegment)
@@ -105,6 +141,12 @@ public class PacketPlayerPreProcessor extends AbstractPcapDispatcher implements 
 		}, user);
 	}
 
+	/**
+	 * Delay.
+	 *
+	 * @param delayNano the delay nano
+	 * @return true, if successful
+	 */
 	private boolean delay(long delayNano) {
 		if (delayNano <= 0)
 			return false;
@@ -120,8 +162,10 @@ public class PacketPlayerPreProcessor extends AbstractPcapDispatcher implements 
 	}
 
 	/**
-	 * @param header
-	 * @return
+	 * Gets the timestamp nano.
+	 *
+	 * @param header the header
+	 * @return the timestamp nano
 	 */
 	private long getTimestampNano(MemorySegment header) {
 		long tvSec = abi.tvSec(header);

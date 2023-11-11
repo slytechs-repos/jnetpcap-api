@@ -20,6 +20,7 @@ package com.slytechs.jnetpcap.pro.internal;
 import java.lang.foreign.MemorySegment;
 import java.util.concurrent.TimeUnit;
 
+import org.jnetpcap.PcapHandler.NativeCallback;
 import org.jnetpcap.internal.PcapDispatcher;
 import org.jnetpcap.internal.PcapHeaderABI;
 
@@ -28,18 +29,35 @@ import com.slytechs.jnetpcap.pro.PcapPro.PcapProContext;
 import com.slytechs.protocol.runtime.time.TimestampUnit;
 
 /**
+ * The Class PacketRepeaterPreProcessor.
+ *
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
- *
  */
 public class PacketRepeaterPreProcessor extends AbstractPcapDispatcher implements PcapDispatcher {
 
+	/** The config. */
 	private final PacketRepeater config;
+	
+	/** The context. */
 	private final PcapProContext context;
+	
+	/** The abi. */
 	private final PcapHeaderABI abi;
+	
+	/** The ts unit. */
 	private final TimestampUnit tsUnit;
+	
+	/** The time unit. */
 	private final TimeUnit timeUnit;
 
+	/**
+	 * Instantiates a new packet repeater pre processor.
+	 *
+	 * @param pcapDispatcher the pcap dispatcher
+	 * @param config         the config
+	 * @param context        the context
+	 */
 	public PacketRepeaterPreProcessor(PcapDispatcher pcapDispatcher, Object config, PcapProContext context) {
 		super(pcapDispatcher);
 		this.context = context;
@@ -53,6 +71,12 @@ public class PacketRepeaterPreProcessor extends AbstractPcapDispatcher implement
 		this.timeUnit = tsUnit.precisionTimeUnit();
 	}
 
+	/**
+	 * Delay.
+	 *
+	 * @param delayNano the delay nano
+	 * @return true, if successful
+	 */
 	private boolean delay(long delayNano) {
 		try {
 			TimeUnit.NANOSECONDS.sleep(delayNano);
@@ -65,6 +89,12 @@ public class PacketRepeaterPreProcessor extends AbstractPcapDispatcher implement
 	}
 
 	/**
+	 * Dispatch native.
+	 *
+	 * @param count   the count
+	 * @param handler the handler
+	 * @param user    the user
+	 * @return the int
 	 * @see com.slytechs.jnetpcap.pro.internal.AbstractPcapDispatcher#dispatchNative(int,
 	 *      org.jnetpcap.PcapHandler.NativeCallback,
 	 *      java.lang.foreign.MemorySegment)
@@ -91,6 +121,12 @@ public class PacketRepeaterPreProcessor extends AbstractPcapDispatcher implement
 		}, user);
 	}
 
+	/**
+	 * Gets the timestamp nano.
+	 *
+	 * @param pcapHeader the pcap header
+	 * @return the timestamp nano
+	 */
 	private long getTimestampNano(MemorySegment pcapHeader) {
 		long tvSec = abi.tvSec(pcapHeader);
 		long tvUsec = abi.tvUsec(pcapHeader);
@@ -101,6 +137,12 @@ public class PacketRepeaterPreProcessor extends AbstractPcapDispatcher implement
 	}
 
 	/**
+	 * Loop native.
+	 *
+	 * @param count   the count
+	 * @param handler the handler
+	 * @param user    the user
+	 * @return the int
 	 * @see com.slytechs.jnetpcap.pro.internal.AbstractPcapDispatcher#loopNative(int,
 	 *      org.jnetpcap.PcapHandler.NativeCallback,
 	 *      java.lang.foreign.MemorySegment)
@@ -127,6 +169,12 @@ public class PacketRepeaterPreProcessor extends AbstractPcapDispatcher implement
 		}, user);
 	}
 
+	/**
+	 * Rewrite timestamp.
+	 *
+	 * @param header       the header
+	 * @param incDeltaNano the inc delta nano
+	 */
 	private void rewriteTimestamp(MemorySegment header, long incDeltaNano) {
 		long epochNano = getTimestampNano(header);
 
@@ -135,6 +183,12 @@ public class PacketRepeaterPreProcessor extends AbstractPcapDispatcher implement
 		setTimestampNano(header, epochNano);
 	}
 
+	/**
+	 * Sets the timestamp nano.
+	 *
+	 * @param pcapHeader the pcap header
+	 * @param epochNano  the epoch nano
+	 */
 	private void setTimestampNano(MemorySegment pcapHeader, long epochNano) {
 		long ts = tsUnit.convert(epochNano, TimestampUnit.EPOCH_NANO);
 		long tvSec = tsUnit.toEpochSecond(ts);

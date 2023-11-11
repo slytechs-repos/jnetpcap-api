@@ -21,6 +21,7 @@ import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
 
 import org.jnetpcap.PcapException;
 
@@ -36,59 +37,53 @@ import com.slytechs.protocol.pack.core.constants.PacketDescriptorType;
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  */
-public interface PacketDispatcher extends AutoCloseable {
+public interface PacketReceiver extends AutoCloseable {
 
 	/**
 	 * Checks if is native packet dispatcher supported.
 	 *
 	 * @return true, if is native packet dispatcher supported
 	 */
-	static boolean isNativePacketDispatcherSupported() {
+	static boolean isNativePacketReceiverSupported() {
 		return false;
 	}
 
 	/**
 	 * Java packet dispatcher.
 	 *
-	 * @param pcapHandle     the pcap handle
-	 * @param breakDispatch  the break dispatch
-	 * @param descriptorType the descriptor type
+	 * @param config the config
 	 * @return the packet dispatcher
 	 */
-	static PacketDispatcher javaPacketDispatcher(
-			PacketDispatcherConfig config) {
+	static PacketReceiver javaPacketReceiver(
+			PacketReceiverConfig config) {
 
-		return new MainPacketDispatcher(config);
+		return new MainPacketReceiver(config);
 	}
 
 	/**
 	 * Native packet dispatcher.
 	 *
-	 * @param pcapHandle     the pcap handle
-	 * @param breakDispatch  the break dispatch
-	 * @param descriptorType the descriptor type
+	 * @param config the config
 	 * @return the packet dispatcher
 	 */
-	static PacketDispatcher nativePacketDispatcher(
-			PacketDispatcherConfig config) {
+	static PacketReceiver nativePacketReceiver(
+			PacketReceiverConfig config) {
 		throw new UnsupportedOperationException();
 	}
 
 	/**
 	 * Packet dispatcher.
 	 *
-	 * @param pcapHandle     the pcap handle
-	 * @param breakDispatch  the break dispatch
-	 * @param descriptorType the descriptor type
+	 * @param config the config
 	 * @return the packet dispatcher
 	 */
-	static PacketDispatcher packetDispatcher(
-			PacketDispatcherConfig config) {
+	static PacketReceiver packetReceiver(
+			PacketReceiverConfig config) {
 
-		if (isNativePacketDispatcherSupported())
-			return nativePacketDispatcher(config);
+		if (isNativePacketReceiverSupported())
+			return nativePacketReceiver(config);
 		else
-			return javaPacketDispatcher(config);
+			return javaPacketReceiver(config);
 	}
 
 	/**
@@ -100,7 +95,19 @@ public interface PacketDispatcher extends AutoCloseable {
 	 * @param user  the user
 	 * @return the int
 	 */
-	<U> int dispatchPacket(int count, PcapProHandler.OfPacket<U> sink, U user);
+	<U> int receivePacketWithDispatch(int count, PcapProHandler.OfPacket<U> sink, U user);
+
+	/**
+	 * Receive packet with dispatch.
+	 *
+	 * @param <U>           the generic type
+	 * @param count         the count
+	 * @param sink          the sink
+	 * @param user          the user
+	 * @param packetFactory the packet factory
+	 * @return the int
+	 */
+	<U> int receivePacketWithDispatch(int count, PcapProHandler.OfPacket<U> sink, U user, Supplier<Packet> packetFactory);
 
 	/**
 	 * Gets the dissector.
@@ -125,15 +132,40 @@ public interface PacketDispatcher extends AutoCloseable {
 	 * @param user  the user
 	 * @return the int
 	 */
-	<U> int loopPacket(int count, PcapProHandler.OfPacket<U> sink, U user);
+	<U> int receivePacketWithLoop(int count, PcapProHandler.OfPacket<U> sink, U user);
 
+	/**
+	 * Gets the capture statistics.
+	 *
+	 * @return the capture statistics
+	 */
 	CaptureStatistics getCaptureStatistics();
 
+	/**
+	 * Process packet.
+	 *
+	 * @param <U>     the generic type
+	 * @param pcapHdr the pcap hdr
+	 * @param pktData the pkt data
+	 * @param session the session
+	 * @return the packet
+	 */
 	<U> Packet processPacket(
 			MemorySegment pcapHdr,
 			MemorySegment pktData,
 			Arena session);
 
+	/**
+	 * Process packet.
+	 *
+	 * @param <U>       the generic type
+	 * @param buffer    the buffer
+	 * @param mpacket   the mpacket
+	 * @param caplen    the caplen
+	 * @param wirelen   the wirelen
+	 * @param timestamp the timestamp
+	 * @return the packet
+	 */
 	<U> Packet processPacket(
 			ByteBuffer buffer,
 			MemorySegment mpacket,
@@ -141,12 +173,42 @@ public interface PacketDispatcher extends AutoCloseable {
 			int wirelen,
 			long timestamp);
 
+	/**
+	 * On native callback exception.
+	 *
+	 * @param e       the e
+	 * @param caplen  the caplen
+	 * @param wirelen the wirelen
+	 */
 	void onNativeCallbackException(Throwable e, int caplen, int wirelen);
 
-	Packet nextExPacket() throws PcapException, TimeoutException;
+	/**
+	 * Next ex packet.
+	 *
+	 * @return the packet
+	 * @throws PcapException    the pcap exception
+	 * @throws TimeoutException the timeout exception
+	 */
+	Packet getPacketWithNextExtended() throws PcapException, TimeoutException;
 
-	Packet nextPacket() throws PcapException;
+	/**
+	 * Next packet.
+	 *
+	 * @return the packet
+	 * @throws PcapException the pcap exception
+	 */
+	Packet getPacketWithNext() throws PcapException;
 
+	/**
+	 * Close.
+	 *
+	 * @see java.lang.AutoCloseable#close()
+	 */
 	@Override
 	void close();
+
+	/**
+	 * Activate.
+	 */
+	void activate();
 }

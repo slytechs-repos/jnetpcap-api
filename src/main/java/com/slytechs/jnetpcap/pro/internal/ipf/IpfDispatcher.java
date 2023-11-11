@@ -21,17 +21,28 @@ import org.jnetpcap.internal.PcapDispatcher;
 
 import com.slytechs.jnetpcap.pro.IpfReassembler;
 import com.slytechs.jnetpcap.pro.PcapPro.PcapProContext;
-import com.slytechs.jnetpcap.pro.internal.PacketDispatcher;
+import com.slytechs.jnetpcap.pro.internal.PacketReceiver;
 
 /**
+ * The Interface IpfDispatcher.
+ *
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  */
-public interface IpfDispatcher extends PacketDispatcher {
+public interface IpfDispatcher extends PacketReceiver {
 
+	/**
+	 * New instance.
+	 *
+	 * @param pcap    the pcap
+	 * @param packet  the packet
+	 * @param config  the config
+	 * @param context the context
+	 * @return the ipf dispatcher
+	 */
 	static IpfDispatcher newInstance(
 			PcapDispatcher pcap,
-			PacketDispatcher packet,
+			PacketReceiver packet,
 			IpfReassembler config,
 			PcapProContext context) {
 
@@ -41,21 +52,44 @@ public interface IpfDispatcher extends PacketDispatcher {
 			return newJavaInstance(pcap, packet, config, context);
 	}
 
+	/**
+	 * New java instance.
+	 *
+	 * @param pcap    the pcap
+	 * @param packet  the packet
+	 * @param config  the config
+	 * @param context the context
+	 * @return the ipf dispatcher
+	 */
 	static IpfDispatcher newJavaInstance(
 			PcapDispatcher pcap,
-			PacketDispatcher packet,
+			PacketReceiver packet,
 			IpfReassembler config,
 			PcapProContext context) {
 		return new JavaIpfDispatcher(pcap, packet, config, context);
 	}
 
+	/**
+	 * Checks if is native supported.
+	 *
+	 * @return true, if is native supported
+	 */
 	static boolean isNativeSupported() {
 		return IpfDispatcherNative.isNativeSupported();
 	}
 
+	/**
+	 * New native instance.
+	 *
+	 * @param pcap    the pcap
+	 * @param packet  the packet
+	 * @param config  the config
+	 * @param context the context
+	 * @return the ipf dispatcher
+	 */
 	static IpfDispatcher newNativeInstance(
 			PcapDispatcher pcap,
-			PacketDispatcher packet,
+			PacketReceiver packet,
 			IpfReassembler config,
 			PcapProContext context) {
 

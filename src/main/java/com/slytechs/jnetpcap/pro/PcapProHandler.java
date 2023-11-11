@@ -41,6 +41,20 @@ public interface PcapProHandler extends PcapHandler {
 	 */
 	@FunctionalInterface
 	public interface OfPacket<U> extends PcapProHandler {
+		
+		/** Empty/No-op callback handler. */
+		OfPacket<?> EMPTY = (u, p) -> {};
+		
+		/**
+		 * Empty/No-op callback handler.
+		 *
+		 * @param <U> the generic type
+		 * @return the of packet
+		 */
+		@SuppressWarnings("unchecked")
+		static <U> OfPacket<U> empty() {
+			return (OfPacket<U>) EMPTY;
+		}
 
 		/**
 		 * Handle a packet.
@@ -51,8 +65,18 @@ public interface PcapProHandler extends PcapHandler {
 		void handlePacket(U user, Packet packet);
 	}
 	
+	/**
+	 * The Interface IpfHandler.
+	 */
 	public interface IpfHandler {
 		
+		/**
+		 * Handle ipf.
+		 *
+		 * @param frag      the frag
+		 * @param carrier   the carrier
+		 * @param ipPayload the ip payload
+		 */
 		void handleIpf(IpfFragment frag, ByteBuffer carrier, ByteBuffer ipPayload);
 	}
 
@@ -66,7 +90,6 @@ public interface PcapProHandler extends PcapHandler {
 		/**
 		 * Accept a packet.
 		 *
-		 * @param user   user opaque value returned back
 		 * @param packet packet data
 		 */
 		@Override

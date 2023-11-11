@@ -67,13 +67,17 @@ public class IpfTable {
 	/** The table size. */
 	private final int tableSize;
 
+	/** The timeout queue. */
 	private final TimeoutQueue<IpfDgramReassembler> timeoutQueue;
+	
+	/** The datagram queue. */
 	private final DatagramQueue datagramQueue;
 
 	/**
 	 * Instantiates a new ipf table.
 	 *
-	 * @param config the config
+	 * @param config        the config
+	 * @param datagramQueue the datagram queue
 	 */
 	public IpfTable(IpfReassembler config, DatagramQueue datagramQueue) {
 		this(config, ByteBuffer.allocateDirect(config.getBufferSize()), datagramQueue);
@@ -82,8 +86,9 @@ public class IpfTable {
 	/**
 	 * Instantiates a new ipf table.
 	 *
-	 * @param config the config
-	 * @param buffer the buffer
+	 * @param config        the config
+	 * @param buffer        the buffer
+	 * @param datagramQueue the datagram queue
 	 */
 	public IpfTable(IpfReassembler config, ByteBuffer buffer, DatagramQueue datagramQueue) {
 		this.config = config;
@@ -126,6 +131,11 @@ public class IpfTable {
 		return reassembler;
 	}
 
+	/**
+	 * On ipf timeout.
+	 *
+	 * @param timedoutReassembler the timedout reassembler
+	 */
 	private void onIpfTimeout(IpfDgramReassembler timedoutReassembler) {
 		timedoutReassembler.onTimeoutExpired(datagramQueue);
 	}

@@ -18,25 +18,39 @@
 package com.slytechs.jnetpcap.pro;
 
 /**
+ * The Class IpfStatistics.
+ *
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
- *
  */
 public final class IpfStatistics {
 
+	/** The table insertion failure. */
 	private long tableInsertionFailure;
+	
+	/** The ipfprocessing failure. */
 	private long ipfprocessingFailure;
 
 	/**
-	 * 
+	 * Instantiates a new ipf statistics.
 	 */
 	public IpfStatistics() {
 	}
 
+	/**
+	 * Inc table insertion failure.
+	 *
+	 * @param delta the delta
+	 */
 	public void incTableInsertionFailure(int delta) {
 		tableInsertionFailure += delta;
 	}
 
+	/**
+	 * Inc ipf processing failure.
+	 *
+	 * @param delta the delta
+	 */
 	public void incIpfProcessingFailure(int delta) {
 		ipfprocessingFailure += delta;
 	}

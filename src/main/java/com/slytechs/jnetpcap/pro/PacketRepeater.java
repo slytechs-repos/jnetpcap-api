@@ -23,7 +23,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 
-import com.slytechs.jnetpcap.pro.PcapConfigurator.PreProcessor;
+import com.slytechs.jnetpcap.pro.PcapProConfigurator.PreRxProcessor;
 import com.slytechs.jnetpcap.pro.internal.PacketRepeaterPreProcessor;
 import com.slytechs.protocol.runtime.time.TimestampUnit;
 import com.slytechs.protocol.runtime.util.SystemProperties;
@@ -42,7 +42,7 @@ import com.slytechs.protocol.runtime.util.SystemProperties;
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  */
-public final class PacketRepeater extends PcapConfigurator<PacketRepeater> implements PreProcessor {
+public final class PacketRepeater extends PcapProConfigurator<PacketRepeater> implements PreRxProcessor {
 
 	/** The Constant PREFIX. */
 	private static final String PREFIX = "packet.repeater";
@@ -65,8 +65,10 @@ public final class PacketRepeater extends PcapConfigurator<PacketRepeater> imple
 	/** The rewrite timestamp. */
 	private boolean rewriteTimestamp;
 
+	/** The min ifg nano. */
 	private long minIfgNano;
 
+	/** The timestamp unit. */
 	private TimestampUnit timestampUnit = TimestampUnit.PCAP_MICRO;
 
 	/**
@@ -224,12 +226,25 @@ public final class PacketRepeater extends PcapConfigurator<PacketRepeater> imple
 		return this;
 	}
 
+	/**
+	 * Sets the minimum ifg.
+	 *
+	 * @param ifg  the ifg
+	 * @param unit the unit
+	 * @return the packet repeater
+	 */
 	public PacketRepeater setMinimumIfg(long ifg, TimeUnit unit) {
 		this.minIfgNano = Objects.requireNonNull(unit, "unit").toNanos(ifg);
 
 		return this;
 	}
 
+	/**
+	 * Sets the timestamp unit.
+	 *
+	 * @param unit the unit
+	 * @return the packet repeater
+	 */
 	public PacketRepeater setTimestampUnit(TimestampUnit unit) {
 		this.timestampUnit = Objects.requireNonNull(unit, "unit");
 
@@ -254,6 +269,8 @@ public final class PacketRepeater extends PcapConfigurator<PacketRepeater> imple
 	}
 
 	/**
+	 * Gets the minimum ifg nano.
+	 *
 	 * @return the minIfgNano
 	 */
 	public long getMinimumIfgNano() {
@@ -261,6 +278,8 @@ public final class PacketRepeater extends PcapConfigurator<PacketRepeater> imple
 	}
 
 	/**
+	 * Gets the timestamp unit.
+	 *
 	 * @return the timestampUnit
 	 */
 	public TimestampUnit getTimestampUnit() {

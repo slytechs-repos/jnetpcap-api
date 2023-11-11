@@ -18,6 +18,7 @@
 package com.slytechs.jnetpcap.pro.internal.ipf;
 
 import static com.slytechs.protocol.pack.core.constants.CoreConstants.*;
+import static com.slytechs.protocol.runtime.internal.foreign.ForeignUtils.*;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
@@ -93,22 +94,27 @@ import com.slytechs.protocol.runtime.util.Detail;
  */
 public class IpfDgramReassembler implements Expirable {
 
+	/** The Constant ENCAPS_HEADER_MAX_LENGTH. */
 	private static final int ENCAPS_HEADER_MAX_LENGTH = 128;
 
-	/** IPF table entry index */
+	/** IPF table entry index. */
 	private final int index;
 
-	/** The entire storage ecaps + frag data */
+	/** The entire storage ecaps + frag data. */
 	private final ByteBuffer buffer;
+	
+	/** The mseg. */
 	private final MemorySegment mseg;
+	
+	/** The session. */
 	private Arena session;
 
-	/** The frag data only view of the main storage */
+	/** The frag data only view of the main storage. */
 	private final ByteBuffer ipPayloadView;
 
 	/**
 	 * Only the encapsulating header (L2 + L3) view of the main storage, no IP
-	 * payload
+	 * payload.
 	 */
 	private final ByteBuffer encapsView;
 	/**
@@ -118,36 +124,77 @@ public class IpfDgramReassembler implements Expirable {
 	 * accurately.
 	 */
 	private final TimestampSource timeSource;
+	
+	/** The table entry. */
 	private final HashEntry<IpfDgramReassembler> tableEntry;
+	
+	/** The config. */
 	private final IpfReassembler config;
+	
+	/** The expiration. */
 	private long expiration;
 
+	/** The start time milli. */
 	private long startTimeMilli = 0;
+	
+	/** The reassembled milli. */
 	private long reassembledMilli;
 
+	/** The next segment index. */
 	private int nextSegmentIndex = 0;
+	
+	/** The segments. */
 	private final IpfSegment[] segments;
 
+	/** The has first. */
 	private boolean hasFirst;
+	
+	/** The has last. */
 	private boolean hasLast;
+	
+	/** The frame no. */
 	private long frameNo;
 
-	/** Used to cancel entry on the timeout queue */
+	/** Used to cancel entry on the timeout queue. */
 	private Registration timeoutRegistration;
 
+	/** The is ip 4. */
 	private boolean isIp4;
+	
+	/** The is reassembled. */
 	private boolean isReassembled;
+	
+	/** The is complete. */
 	private boolean isComplete;
+	
+	/** The is timeout on last. */
 	private boolean isTimeoutOnLast;
+	
+	/** The observed size. */
 	private int observedSize;
+	
+	/** The reassembled bytes. */
 	private int reassembledBytes = 0;
+	
+	/** The hole bytes. */
 	private int holeBytes = 0;
+	
+	/** The overlap bytes. */
 	private int overlapBytes = 0;
 
+	/** The is reassembly enabled. */
 	private final boolean isReassemblyEnabled;
 
+	/** The is timeout. */
 	private boolean isTimeout;
 
+	/**
+	 * Instantiates a new ipf dgram reassembler.
+	 *
+	 * @param buffer     the entire storage ecaps + frag data
+	 * @param tableEntry the table entry
+	 * @param config     the config
+	 */
 	public IpfDgramReassembler(
 			ByteBuffer buffer,
 			HashEntry<IpfDgramReassembler> tableEntry,
@@ -171,6 +218,11 @@ public class IpfDgramReassembler implements Expirable {
 				.forEach(i -> segments[i] = new IpfSegment());
 	}
 
+	/**
+	 * Adds the datagram to queue.
+	 *
+	 * @param queue the queue
+	 */
 	void addDatagramToQueue(DatagramQueue queue) {
 
 		int caplen = buffer.remaining();
@@ -184,12 +236,15 @@ public class IpfDgramReassembler implements Expirable {
 		 * when this hash table entry comes up again.
 		 */
 		MemorySegment mseg = MemorySegment.ofBuffer(buffer);
-		mseg = mseg.reinterpret(caplen, session, __ ->{});
+		mseg = mseg.reinterpret(caplen, session, EMPTY_CLEANUP);
 
 		queue.addDatagram(mseg, caplen, caplen, timestamp, this);
 
 	}
 
+	/**
+	 * Cancel timeout.
+	 */
 	public void cancelTimeout() {
 		if (timeoutRegistration == null)
 			throw new IllegalStateException("timeout not set [#%d]"
@@ -199,6 +254,9 @@ public class IpfDgramReassembler implements Expirable {
 		timeoutRegistration = null;
 	}
 
+	/**
+	 * Close.
+	 */
 	public void close() {
 
 		this.startTimeMilli = 0;
@@ -227,6 +285,9 @@ public class IpfDgramReassembler implements Expirable {
 	}
 
 	/**
+	 * Expiration.
+	 *
+	 * @return the long
 	 * @see com.slytechs.jnetpcap.pro.internal.ipf.TimeoutQueue.Expirable#expiration()
 	 */
 	@Override
@@ -234,6 +295,9 @@ public class IpfDgramReassembler implements Expirable {
 		return this.expiration;
 	}
 
+	/**
+	 * Finish if complete.
+	 */
 	private void finishIfComplete() {
 		if (!hasLast || holeBytes > 0)
 			return;
@@ -253,6 +317,9 @@ public class IpfDgramReassembler implements Expirable {
 		this.overlapBytes = IpfSegment.recalcOverlaps(segments, nextSegmentIndex);
 	}
 
+	/**
+	 * Finish on timeout.
+	 */
 	private void finishOnTimeout() {
 		this.isReassembled = true;
 		this.isComplete = false;
@@ -264,29 +331,52 @@ public class IpfDgramReassembler implements Expirable {
 		this.overlapBytes = IpfSegment.recalcOverlaps(segments, nextSegmentIndex);
 	}
 
+	/**
+	 * Checks if is complete.
+	 *
+	 * @return true, if is complete
+	 */
 	public boolean isComplete() {
 		return isComplete;
 	}
 
+	/**
+	 * Checks if is expired.
+	 *
+	 * @return true, if is expired
+	 */
 	public boolean isExpired() {
 		return expiration < timeSource.timestamp();
 	}
 
 	/**
+	 * Checks if is reassembled.
+	 *
 	 * @return the isReassembled
 	 */
 	public boolean isReassembled() {
 		return isReassembled;
 	}
 
+	/**
+	 * Mark hashtable entry unavailable.
+	 */
 	private void markHashtableEntryUnavailable() {
 		tableEntry.setEmpty(false);
 	}
 
+	/**
+	 * Mark hashtable entry available.
+	 */
 	private void markHashtableEntryAvailable() {
 		tableEntry.setEmpty(true);
 	}
 
+	/**
+	 * Open.
+	 *
+	 * @param key the key
+	 */
 	public void open(ByteBuffer key) {
 		if (session != null)
 			throw new IllegalStateException("can not reset, still active");
@@ -304,6 +394,12 @@ public class IpfDgramReassembler implements Expirable {
 
 	}
 
+	/**
+	 * Process common.
+	 *
+	 * @param packet the packet
+	 * @param desc   the desc
+	 */
 	private void processCommon(ByteBuffer packet, IpfFragment desc) {
 
 		/*
@@ -329,6 +425,13 @@ public class IpfDgramReassembler implements Expirable {
 			reassembleFragment(ipfSegment, packet, ipfSegment.offset, ipfSegment.length, desc.dataOffset());
 	}
 
+	/**
+	 * Process first.
+	 *
+	 * @param packet the packet
+	 * @param desc   the desc
+	 * @return true, if successful
+	 */
 	private boolean processFirst(ByteBuffer packet, IpfFragment desc) {
 
 		/*
@@ -346,6 +449,14 @@ public class IpfDgramReassembler implements Expirable {
 		return true;
 	}
 
+	/**
+	 * Process fragment.
+	 *
+	 * @param frameNo the frame no
+	 * @param packet  the packet
+	 * @param desc    the desc
+	 * @return true, if successful
+	 */
 	public boolean processFragment(long frameNo, ByteBuffer packet, IpfFragment desc) {
 		this.frameNo = frameNo;
 
@@ -378,6 +489,13 @@ public class IpfDgramReassembler implements Expirable {
 		return ok;
 	}
 
+	/**
+	 * Process last.
+	 *
+	 * @param packet the packet
+	 * @param desc   the desc
+	 * @return true, if successful
+	 */
 	private boolean processLast(ByteBuffer packet, IpfFragment desc) {
 		hasLast = true;
 
@@ -394,6 +512,13 @@ public class IpfDgramReassembler implements Expirable {
 		return true;
 	}
 
+	/**
+	 * Process middle.
+	 *
+	 * @param packet the packet
+	 * @param desc   the desc
+	 * @return true, if successful
+	 */
 	private boolean processMiddle(ByteBuffer packet, IpfFragment desc) {
 
 		processCommon(packet, desc);
@@ -402,6 +527,15 @@ public class IpfDgramReassembler implements Expirable {
 		return true;
 	}
 
+	/**
+	 * Reassemble fragment.
+	 *
+	 * @param ipfSegment the ipf segment
+	 * @param packet     the packet
+	 * @param fragOffset the frag offset
+	 * @param length     the length
+	 * @param dataOffset the data offset
+	 */
 	private void reassembleFragment(IpfSegment ipfSegment, ByteBuffer packet, int fragOffset, int length,
 			int dataOffset) {
 		ipPayloadView.put(fragOffset, packet, dataOffset, length);
@@ -412,6 +546,12 @@ public class IpfDgramReassembler implements Expirable {
 			this.observedSize = fragOffset + length;
 	}
 
+	/**
+	 * Reassemble headers.
+	 *
+	 * @param packet the packet
+	 * @param desc   the desc
+	 */
 	private void reassembleHeaders(ByteBuffer packet, IpfFragment desc) {
 		int ecapsLen = desc.headerAndRequiredOptionsLength() + desc.headerOffset();
 		int position = ENCAPS_HEADER_MAX_LENGTH - ecapsLen;
@@ -430,20 +570,37 @@ public class IpfDgramReassembler implements Expirable {
 		buffer.position(position);
 	}
 
+	/**
+	 * Clear ip 4 flags.
+	 *
+	 * @param position the position
+	 * @param desc     the desc
+	 */
 	private void clearIp4Flags(int position, IpfFragment desc) {
 		/* clear all flags and set fragment offset to 0 */ 
 		encapsView.put(position + desc.headerOffset() + CoreConstants.IPv4_FIELD_FLAGS, (byte) 0);
 	}
 
+	/**
+	 * Clear ip 6 fragment header.
+	 *
+	 * @param position the position
+	 * @param desc     the desc
+	 */
 	private void clearIp6FragmentHeader(int position, IpfFragment desc) {
 	}
 
+	/**
+	 * Reset hashtable key.
+	 */
 	private void resetHashtableKey() {
 		this.tableEntry.clearKey();
 	}
 
 	/**
-	 * @param registration
+	 * Sets the used to cancel entry on the timeout queue.
+	 *
+	 * @param registration the new used to cancel entry on the timeout queue
 	 */
 	public void setTimeoutRegistration(Registration registration) {
 		timeoutRegistration = registration;
@@ -452,6 +609,8 @@ public class IpfDgramReassembler implements Expirable {
 	/**
 	 * Called from the timeout queue in the enclosing hash table. We're on the
 	 * timeout queue thread as well.
+	 *
+	 * @param inserter the inserter
 	 */
 	public void onTimeoutExpired(DatagramQueue inserter) {
 		resetHashtableKey();
@@ -461,11 +620,20 @@ public class IpfDgramReassembler implements Expirable {
 		addDatagramToQueue(inserter);
 	}
 
+	/**
+	 * @see java.lang.Object#toString()
+	 */
 	@Override
 	public String toString() {
 		return toString(Detail.LOW);
 	}
 
+	/**
+	 * To string.
+	 *
+	 * @param detail the detail
+	 * @return the string
+	 */
 	public String toString(Detail detail) {
 		String sep = (detail == Detail.LOW) ? "|" : "%n";
 		String open = hasFirst ? "[" : "(";
@@ -482,7 +650,10 @@ public class IpfDgramReassembler implements Expirable {
 	}
 
 	/**
-	 * @param desc
+	 * Write reassembly descriptor.
+	 *
+	 * @param desc the desc
+	 * @return the int
 	 */
 	public int writeReassemblyDescriptor(ByteBuffer desc) {
 
@@ -516,6 +687,12 @@ public class IpfDgramReassembler implements Expirable {
 		return len;
 	}
 
+	/**
+	 * Write tracking descriptor.
+	 *
+	 * @param desc the desc
+	 * @return the int
+	 */
 	public int writeTrackingDescriptor(ByteBuffer desc) {
 
 		IpfTrackingLayout.IP_IS_REASSEMBLED.setBoolean(true, desc);

@@ -109,6 +109,12 @@ public interface IpfConfiguration {
 	 */
 	IpfConfiguration enableAttachIncomplete(boolean enable);
 
+	/**
+	 * Enable passthrough.
+	 *
+	 * @param enable the enable
+	 * @return the ipf configuration
+	 */
 	IpfConfiguration enablePassthrough(boolean enable);
 
 	/**

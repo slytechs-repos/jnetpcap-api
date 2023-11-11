@@ -25,35 +25,41 @@ import org.jnetpcap.internal.PcapForeignInitializer;
 
 import com.slytechs.jnetpcap.pro.IpfReassembler;
 import com.slytechs.jnetpcap.pro.PcapPro.PcapProContext;
-import com.slytechs.jnetpcap.pro.internal.AbstractPacketDispatcher;
-import com.slytechs.jnetpcap.pro.internal.PacketDispatcher;
+import com.slytechs.jnetpcap.pro.internal.AbstractPacketReceiver;
+import com.slytechs.jnetpcap.pro.internal.PacketReceiver;
 
 /**
+ * The Class IpfDispatcherNative.
+ *
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  * @author Mark Bednarczyk
- *
  */
 public class IpfDispatcherNative
-		extends AbstractPacketDispatcher
+		extends AbstractPacketReceiver
 		implements IpfDispatcher {
 
+	/** The ipf table. */
 	private MemorySegment ipfTable;
 
 	/**
-	 * @param pcapHandle
-	 * @param breakDispatch
-	 * @param descriptorType
+	 * Instantiates a new ipf dispatcher native.
+	 *
+	 * @param pcap    the pcap
+	 * @param packet  the packet
+	 * @param config  the config
+	 * @param context the context
 	 */
 	public IpfDispatcherNative(
 			PcapDispatcher pcap,
-			PacketDispatcher packet,
+			PacketReceiver packet,
 			IpfReassembler config,
 			PcapProContext context) {
 
 		super(packet, pcap);
 	}
 
+	/** The Constant ipf_allocate_table. */
 	private static final PcapForeignDowncall ipf_allocate_table;
 
 	static {
@@ -62,8 +68,22 @@ public class IpfDispatcherNative
 		}
 	}
 
+	/**
+	 * Checks if is native supported.
+	 *
+	 * @return true, if is native supported
+	 */
 	static boolean isNativeSupported() {
 		return ipf_allocate_table.isNativeSymbolResolved();
+	}
+
+	/**
+	 * Activate.
+	 *
+	 * @see com.slytechs.jnetpcap.pro.internal.PacketReceiver#activate()
+	 */
+	@Override
+	public void activate() {
 	}
 
 }

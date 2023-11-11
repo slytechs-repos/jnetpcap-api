@@ -18,16 +18,20 @@
 package com.slytechs.jnetpcap.pro.internal.ipf;
 
 /**
+ * The Class IpfReassemblyException.
+ *
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
- *
  */
 public class IpfReassemblyException extends Exception {
 
+	/** The Constant serialVersionUID. */
 	private static final long serialVersionUID = -4119643911938328725L;
 
 	/**
-	 * @param message
+	 * Instantiates a new ipf reassembly exception.
+	 *
+	 * @param message the message
 	 */
 	public IpfReassemblyException(String message) {
 		super(message);

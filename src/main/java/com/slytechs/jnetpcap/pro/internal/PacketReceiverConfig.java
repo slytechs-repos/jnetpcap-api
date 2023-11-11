@@ -25,15 +25,33 @@ import com.slytechs.protocol.meta.PacketFormat;
 import com.slytechs.protocol.pack.core.constants.PacketDescriptorType;
 import com.slytechs.protocol.runtime.time.TimestampUnit;
 
-public class PacketDispatcherConfig {
+/**
+ * The Class PacketReceiverConfig.
+ */
+public class PacketReceiverConfig {
 
+	/** The port no. */
 	public int portNo;
+	
+	/** The port name. */
 	public String portName = "";
+	
+	/** The frame no. */
 	public FrameNumber frameNo = FrameNumber.of();
+	
+	/** The timestamp unit. */
 	public TimestampUnit timestampUnit = TimestampUnit.PCAP_MICRO;
+	
+	/** The formatter. */
 	public PacketFormat formatter;
+	
+	/** The dissector. */
 	public PacketDissector dissector;
+	
+	/** The descriptor type. */
 	public PacketDescriptorType descriptorType = PacketDescriptorType.TYPE2;
+	
+	/** The abi. */
 	public PcapHeaderABI abi;
 
 }

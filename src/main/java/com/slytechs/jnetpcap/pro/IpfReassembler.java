@@ -21,7 +21,7 @@ import static com.slytechs.protocol.runtime.util.SystemProperties.*;
 
 import java.util.concurrent.TimeUnit;
 
-import com.slytechs.jnetpcap.pro.PcapConfigurator.PostProcessor;
+import com.slytechs.jnetpcap.pro.PcapProConfigurator.PostRxProcessor;
 import com.slytechs.jnetpcap.pro.internal.ipf.IpfDispatcher;
 import com.slytechs.protocol.runtime.time.TimestampSource;
 import com.slytechs.protocol.runtime.time.TimestampSource.AssignableTimestampSource;
@@ -30,11 +30,14 @@ import com.slytechs.protocol.runtime.util.CountUnit;
 import com.slytechs.protocol.runtime.util.MemoryUnit;
 
 /**
+ * The Class IpfReassembler.
+ *
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  */
-public class IpfReassembler extends PcapConfigurator<IpfReassembler> implements PostProcessor {
+public class IpfReassembler extends PcapProConfigurator<IpfReassembler> implements PostRxProcessor {
 
+	/** The Constant PREFIX. */
 	private static final String PREFIX = "ipf";
 
 	// @formatter:off
@@ -93,45 +96,84 @@ public class IpfReassembler extends PcapConfigurator<IpfReassembler> implements 
 
 	// @formatter:off
 	
+	/** The max dgram bytes. */
 	/* Hashtable and IP reassembler properties */
 	private int     maxDgramBytes         = intValue (PROPERTY_IPF_MAX_DGRAM_BYTES,        64,  MemoryUnit.KILOBYTES);
+	
+	/** The buffer size. */
 	private int     bufferSize            = intValue (PROPERTY_IPF_BUFFER_SIZE,            16,  MemoryUnit.MEGABYTES);
+	
+	/** The table size. */
 	private int     tableSize             = intValue (PROPERTY_IPF_TABLE_SIZE,             256, CountUnit.COUNT);
+	
+	/** The max fragment count. */
 	private int     maxFragmentCount      = intValue (PROPERTY_IPF_MAX_FRAGMENT_COUNT,     16,  CountUnit.COUNT);
 
+	/** The timeout milli. */
 	/* Timeout Queue properties */
 	private long    timeoutMilli         = longValue(PROPERTY_IPF_TIMEOUT,                2000);
+	
+	/** The timeout on last. */
 	private boolean timeoutOnLast         = boolValue(PROPERTY_IPF_TIMEOUT_ON_LAST,        false);
+	
+	/** The timeout queue size. */
 	private int     timeoutQueueSize      = intValue (PROPERTY_IPF_TIMEOUT_QUEUE_SIZE,     256, CountUnit.COUNT);
 
+	/** The tracking enabled. */
 	/* IPF modes */
 	private boolean trackingEnabled       = boolValue(PROPERTY_IPF_ENABLE_TRACKING,        false);
+	
+	/** The reassembly enabled. */
 	private boolean reassemblyEnabled     = boolValue(PROPERTY_IPF_ENABLE_REASSEMBLY,      true);
 
+	/** The passthrough. */
 	/* Fragment pass-through and reassembly buffer attachment to fragment properties */
 	private boolean passthrough           = boolValue(PROPERTY_IPF_PASSTHROUGH,             false);
+	
+	/** The attach incomplete. */
 	private boolean attachIncomplete      = boolValue(PROPERTY_IPF_ATTACH_INCOMPLETE,  false);
+	
+	/** The attach complete. */
 	private boolean attachComplete        = boolValue(PROPERTY_IPF_ATTACH_COMPLETE,    false);
 	
+	/** The send. */
 	/* Datagram dispatcher send properties - dgrams are inserted into dispatcher stream */
 	private boolean send                  = boolValue(PROPERTY_IPF_DGRAMS_SEND,            true);
+	
+	/** The send incomplete. */
 	private boolean sendIncomplete        = boolValue(PROPERTY_IPF_DGRAMS_SEND_INCOMPLETE, false);
+	
+	/** The send complete. */
 	private boolean sendComplete          = boolValue(PROPERTY_IPF_DGRAMS_SEND_COMPLETE,   true);
 	// @formatter:on
 
+	/** The time source. */
 	private AssignableTimestampSource timeSource;
 
 	/**
-	 * Effective or the result of combining of all the main properties and modes
+	 * Effective or the result of combining of all the main properties and modes.
 	 */
 	public class EffectiveConfig {
 
+		/** The pass. */
 		public final boolean pass;
+		
+		/** The dgrams complete. */
 		public final boolean dgramsComplete;
+		
+		/** The dgrams incomplete. */
 		public final boolean dgramsIncomplete; // On timeout-duration or timeout-last
+		
+		/** The tracking. */
 		public final boolean tracking;
+		
+		/** The pass complete. */
 		public final boolean passComplete;
+		
+		/** The pass incomplete. */
 		public final boolean passIncomplete; // On timeout-last
+		
+		/** The time source. */
 		public final AssignableTimestampSource timeSource;
 
 		/**
@@ -151,12 +193,19 @@ public class IpfReassembler extends PcapConfigurator<IpfReassembler> implements 
 		}
 
 		/**
-		 * 
+		 * Gets the time source.
+		 *
+		 * @return the time source
 		 */
 		public AssignableTimestampSource getTimeSource() {
 			return timeSource;
 		}
 
+		/**
+		 * Gets the timestamp unit.
+		 *
+		 * @return the timestamp unit
+		 */
 		public TimestampUnit getTimestampUnit() {
 			return TimestampUnit.PCAP_MICRO;
 		}
@@ -172,8 +221,7 @@ public class IpfReassembler extends PcapConfigurator<IpfReassembler> implements 
 	}
 
 	/**
-	 * @param properyPrefix
-	 * @param factory
+	 * Instantiates a new ipf reassembler.
 	 */
 	public IpfReassembler() {
 		super(PREFIX, IpfDispatcher::newInstance);
@@ -181,171 +229,386 @@ public class IpfReassembler extends PcapConfigurator<IpfReassembler> implements 
 		useSystemTimesource();
 	}
 
+	/**
+	 * Enable attach complete.
+	 *
+	 * @param attachComplete the attach complete
+	 * @return the ipf reassembler
+	 */
 	public IpfReassembler enableAttachComplete(boolean attachComplete) {
 		this.attachComplete = attachComplete;
 		return this;
 	}
 
+	/**
+	 * Enable attach incomplete.
+	 *
+	 * @param attachIncomplete the attach incomplete
+	 * @return the ipf reassembler
+	 */
 	public IpfReassembler enableAttachIncomplete(boolean attachIncomplete) {
 		this.attachIncomplete = attachIncomplete;
 		return this;
 	}
 
+	/**
+	 * Enable passthrough.
+	 *
+	 * @param passthrough the passthrough
+	 * @return the ipf reassembler
+	 */
 	public IpfReassembler enablePassthrough(boolean passthrough) {
 		this.passthrough = passthrough;
 		return this;
 	}
 
+	/**
+	 * Enable reassembly.
+	 *
+	 * @param reassemblyEnabled the reassembly enabled
+	 * @return the ipf reassembler
+	 */
 	public IpfReassembler enableReassembly(boolean reassemblyEnabled) {
 		this.reassemblyEnabled = reassemblyEnabled;
 		return this;
 	}
 
+	/**
+	 * Enable send.
+	 *
+	 * @param send the send
+	 * @return the ipf reassembler
+	 */
 	public IpfReassembler enableSend(boolean send) {
 		this.send = send;
 		return this;
 	}
 
+	/**
+	 * Enable send complete.
+	 *
+	 * @param sendComplete the send complete
+	 * @return the ipf reassembler
+	 */
 	public IpfReassembler enableSendComplete(boolean sendComplete) {
 		this.sendComplete = sendComplete;
 		return this;
 	}
 
+	/**
+	 * Enable send incomplete.
+	 *
+	 * @param sendIncomplete the send incomplete
+	 * @return the ipf reassembler
+	 */
 	public IpfReassembler enableSendIncomplete(boolean sendIncomplete) {
 		this.sendIncomplete = sendIncomplete;
 		return this;
 	}
 
+	/**
+	 * Enable tracking.
+	 *
+	 * @param trackingEnabled the tracking enabled
+	 * @return the ipf reassembler
+	 */
 	public IpfReassembler enableTracking(boolean trackingEnabled) {
 		this.trackingEnabled = trackingEnabled;
 		return this;
 	}
 
+	/**
+	 * Gets the buffer size.
+	 *
+	 * @return the buffer size
+	 */
 	public int getBufferSize() {
 		return bufferSize;
 	}
 
+	/**
+	 * Gets the max dgram bytes.
+	 *
+	 * @return the max dgram bytes
+	 */
 	public int getMaxDgramBytes() {
 		return maxDgramBytes;
 	}
 
+	/**
+	 * Gets the max fragment count.
+	 *
+	 * @return the max fragment count
+	 */
 	public int getMaxFragmentCount() {
 		return maxFragmentCount;
 	}
 
+	/**
+	 * Gets the table size.
+	 *
+	 * @return the table size
+	 */
 	public int getTableSize() {
 		return tableSize;
 	}
 
+	/**
+	 * Gets the timeout milli.
+	 *
+	 * @return the timeout milli
+	 */
 	public long getTimeoutMilli() {
 		return timeoutMilli;
 	}
 
+	/**
+	 * Gets the timeout queue size.
+	 *
+	 * @return the timeout queue size
+	 */
 	public int getTimeoutQueueSize() {
 		return timeoutQueueSize;
 	}
 
+	/**
+	 * Gets the time source.
+	 *
+	 * @return the time source
+	 */
 	public TimestampSource getTimeSource() {
 		return timeSource;
 	}
 
+	/**
+	 * Checks if is attach complete.
+	 *
+	 * @return true, if is attach complete
+	 */
 	public boolean isAttachComplete() {
 		return attachComplete;
 	}
 
+	/**
+	 * Checks if is attach incomplete.
+	 *
+	 * @return true, if is attach incomplete
+	 */
 	public boolean isAttachIncomplete() {
 		return attachIncomplete;
 	}
 
+	/**
+	 * Checks if is passthrough.
+	 *
+	 * @return true, if is passthrough
+	 */
 	public boolean isPassthrough() {
 		return passthrough;
 	}
 
+	/**
+	 * Checks if is reassembly enabled.
+	 *
+	 * @return true, if is reassembly enabled
+	 */
 	public boolean isReassemblyEnabled() {
 		return reassemblyEnabled;
 	}
 
+	/**
+	 * Checks if is send.
+	 *
+	 * @return true, if is send
+	 */
 	public boolean isSend() {
 		return send;
 	}
 
+	/**
+	 * Checks if is send complete.
+	 *
+	 * @return true, if is send complete
+	 */
 	public boolean isSendComplete() {
 		return sendComplete;
 	}
 
+	/**
+	 * Checks if is send incomplete.
+	 *
+	 * @return true, if is send incomplete
+	 */
 	public boolean isSendIncomplete() {
 		return sendIncomplete;
 	}
 
+	/**
+	 * Checks if is timeout on last.
+	 *
+	 * @return true, if is timeout on last
+	 */
 	public boolean isTimeoutOnLast() {
 		return timeoutOnLast;
 	}
 
+	/**
+	 * Checks if is tracking enabled.
+	 *
+	 * @return true, if is tracking enabled
+	 */
 	public boolean isTrackingEnabled() {
 		return trackingEnabled;
 	}
 
+	/**
+	 * Sets the buffer size.
+	 *
+	 * @param bufferSize the buffer size
+	 * @return the ipf reassembler
+	 */
 	public IpfReassembler setBufferSize(int bufferSize) {
 		return setBufferSize(bufferSize, MemoryUnit.BYTES);
 	}
 
+	/**
+	 * Sets the buffer size.
+	 *
+	 * @param bufferSize the buffer size
+	 * @param unit       the unit
+	 * @return the ipf reassembler
+	 */
 	public IpfReassembler setBufferSize(int bufferSize, MemoryUnit unit) {
 		this.bufferSize = unit.toBytesAsInt(bufferSize);
 		return this;
 	}
 
+	/**
+	 * Sets the max dgram size.
+	 *
+	 * @param maxDgramBytes the max dgram bytes
+	 * @return the ipf reassembler
+	 */
 	public IpfReassembler setMaxDgramSize(int maxDgramBytes) {
 		return setMaxDgramSize(maxDgramBytes, MemoryUnit.BYTES);
 	}
 
+	/**
+	 * Sets the max dgram size.
+	 *
+	 * @param maxDgramBytes the max dgram bytes
+	 * @param unit          the unit
+	 * @return the ipf reassembler
+	 */
 	public IpfReassembler setMaxDgramSize(int maxDgramBytes, MemoryUnit unit) {
 		this.maxDgramBytes = unit.toBytesAsInt(maxDgramBytes);
 		return this;
 	}
 
+	/**
+	 * Sets the table max fragment count.
+	 *
+	 * @param maxFragmentCount the max fragment count
+	 * @return the ipf reassembler
+	 */
 	public IpfReassembler setTableMaxFragmentCount(int maxFragmentCount) {
 		this.maxFragmentCount = maxFragmentCount;
 		return this;
 	}
 
+	/**
+	 * Sets the table size.
+	 *
+	 * @param tableSize the table size
+	 * @return the ipf reassembler
+	 */
 	public IpfReassembler setTableSize(int tableSize) {
 		return setTableSize(tableSize, CountUnit.COUNT);
 	}
 
+	/**
+	 * Sets the table size.
+	 *
+	 * @param tableSize the table size
+	 * @param unit      the unit
+	 * @return the ipf reassembler
+	 */
 	public IpfReassembler setTableSize(int tableSize, CountUnit unit) {
 		this.tableSize = unit.toCountAsInt(tableSize);
 		return this;
 	}
 
+	/**
+	 * Sets the timeout.
+	 *
+	 * @param duration the duration
+	 * @param unit     the unit
+	 * @return the ipf reassembler
+	 */
 	public IpfReassembler setTimeout(long duration, TimeUnit unit) {
 		return setTimeoutMilli(unit.toMillis(duration));
 	}
 
+	/**
+	 * Sets the timeout milli.
+	 *
+	 * @param timeoutMilli the timeout milli
+	 * @return the ipf reassembler
+	 */
 	public IpfReassembler setTimeoutMilli(long timeoutMilli) {
 		this.timeoutMilli = timeoutMilli;
 		return this;
 	}
 
+	/**
+	 * Sets the timeout on last.
+	 *
+	 * @param timeoutOnLast the timeout on last
+	 * @return the ipf reassembler
+	 */
 	public IpfReassembler setTimeoutOnLast(boolean timeoutOnLast) {
 		this.timeoutOnLast = timeoutOnLast;
 		return this;
 	}
 
+	/**
+	 * Sets the timeout queue size.
+	 *
+	 * @param timeoutQueueSize the timeout queue size
+	 * @return the ipf reassembler
+	 */
 	public IpfReassembler setTimeoutQueueSize(int timeoutQueueSize) {
 		return setTimeoutQueueSize(timeoutQueueSize, CountUnit.COUNT);
 	}
 
+	/**
+	 * Sets the timeout queue size.
+	 *
+	 * @param timeoutQueueSize the timeout queue size
+	 * @param unit             the unit
+	 * @return the ipf reassembler
+	 */
 	public IpfReassembler setTimeoutQueueSize(int timeoutQueueSize, CountUnit unit) {
 		this.timeoutQueueSize = unit.toCountAsInt(timeoutQueueSize);
 		return this;
 	}
 
+	/**
+	 * Use packet timesource.
+	 *
+	 * @return the ipf reassembler
+	 */
 	public IpfReassembler usePacketTimesource() {
 		timeSource = TimestampSource.assignable();
 
 		return this;
 	}
 
+	/**
+	 * Use system timesource.
+	 *
+	 * @return the ipf reassembler
+	 */
 	public IpfReassembler useSystemTimesource() {
 		timeSource = TimestampSource.system();
 

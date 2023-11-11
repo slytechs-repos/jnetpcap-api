@@ -23,6 +23,7 @@ import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 
 import org.jnetpcap.PcapException;
+import org.jnetpcap.PcapHandler.NativeCallback;
 import org.jnetpcap.internal.PcapDispatcher;
 import org.jnetpcap.internal.PcapHeaderABI;
 import org.jnetpcap.util.PcapPacketRef;
@@ -30,34 +31,61 @@ import org.jnetpcap.util.PcapPacketRef;
 import com.slytechs.jnetpcap.pro.PcapPro.PcapProContext;
 
 /**
+ * The Class AbstractPcapDispatcher.
+ *
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
- *
  */
 public class AbstractPcapDispatcher implements PcapDispatcher {
 
+	/**
+	 * A factory for creating PcapDispatcher objects.
+	 */
 	public interface PcapDispatcherFactory {
+		
+		/**
+		 * New instance.
+		 *
+		 * @param source  the source
+		 * @param config  the config
+		 * @param context the context
+		 * @return the pcap dispatcher
+		 */
 		PcapDispatcher newInstance(PcapDispatcher source, Object config, PcapProContext context);
 	}
 
+	/** The pcap dispatcher. */
 	private final PcapDispatcher pcapDispatcher;
 
+	/**
+	 * Instantiates a new abstract pcap dispatcher.
+	 */
 	protected AbstractPcapDispatcher() {
 		this.pcapDispatcher = null;
 	}
 
+	/**
+	 * Instantiates a new abstract pcap dispatcher.
+	 *
+	 * @param pcapDispatcher the pcap dispatcher
+	 */
 	protected AbstractPcapDispatcher(PcapDispatcher pcapDispatcher) {
 		this.pcapDispatcher = Objects.requireNonNull(pcapDispatcher, "pcapDispatcher");
 	}
 
+	/**
+	 * @see org.jnetpcap.internal.PcapDispatcher#pcapHeaderABI()
+	 */
 	@Override
 	public PcapHeaderABI pcapHeaderABI() {
 		return getPcapDispatcher().pcapHeaderABI();
 	}
 
 	/**
-	 * @param address
-	 * @return
+	 * Capture length.
+	 *
+	 * @param address the address
+	 * @return the int
 	 * @see org.jnetpcap.internal.PcapDispatcher#captureLength(java.lang.foreign.MemorySegment)
 	 */
 	@Override
@@ -66,7 +94,8 @@ public class AbstractPcapDispatcher implements PcapDispatcher {
 	}
 
 	/**
-	 * 
+	 * Close.
+	 *
 	 * @see org.jnetpcap.internal.PcapDispatcher#close()
 	 */
 	@Override
@@ -75,10 +104,12 @@ public class AbstractPcapDispatcher implements PcapDispatcher {
 	}
 
 	/**
-	 * @param count
-	 * @param handler
-	 * @param user
-	 * @return
+	 * Dispatch native.
+	 *
+	 * @param count   the count
+	 * @param handler the handler
+	 * @param user    the user
+	 * @return the int
 	 * @see org.jnetpcap.internal.PcapDispatcher#dispatchNative(int,
 	 *      org.jnetpcap.PcapHandler.NativeCallback,
 	 *      java.lang.foreign.MemorySegment)
@@ -89,10 +120,12 @@ public class AbstractPcapDispatcher implements PcapDispatcher {
 	}
 
 	/**
-	 * @param count
-	 * @param callbackFunc
-	 * @param userData
-	 * @return
+	 * Dispatch raw.
+	 *
+	 * @param count        the count
+	 * @param callbackFunc the callback func
+	 * @param userData     the user data
+	 * @return the int
 	 * @see org.jnetpcap.internal.PcapDispatcher#dispatchRaw(int,
 	 *      java.lang.foreign.MemorySegment, java.lang.foreign.MemorySegment)
 	 */
@@ -101,12 +134,19 @@ public class AbstractPcapDispatcher implements PcapDispatcher {
 		return getPcapDispatcher().dispatchRaw(count, callbackFunc, userData);
 	}
 
+	/**
+	 * Gets the pcap dispatcher.
+	 *
+	 * @return the pcap dispatcher
+	 */
 	protected PcapDispatcher getPcapDispatcher() {
 		return pcapDispatcher;
 	}
 
 	/**
-	 * @return
+	 * Gets the uncaught exception.
+	 *
+	 * @return the uncaught exception
 	 * @see org.jnetpcap.internal.PcapDispatcher#getUncaughtException()
 	 */
 	@Override
@@ -115,8 +155,10 @@ public class AbstractPcapDispatcher implements PcapDispatcher {
 	}
 
 	/**
-	 * @param address
-	 * @return
+	 * Header length.
+	 *
+	 * @param address the address
+	 * @return the int
 	 * @see org.jnetpcap.internal.PcapDispatcher#headerLength(java.lang.foreign.MemorySegment)
 	 */
 	@Override
@@ -125,7 +167,8 @@ public class AbstractPcapDispatcher implements PcapDispatcher {
 	}
 
 	/**
-	 * 
+	 * Interrupt.
+	 *
 	 * @see org.jnetpcap.internal.PcapDispatcher#interrupt()
 	 */
 	@Override
@@ -134,10 +177,12 @@ public class AbstractPcapDispatcher implements PcapDispatcher {
 	}
 
 	/**
-	 * @param count
-	 * @param handler
-	 * @param user
-	 * @return
+	 * Loop native.
+	 *
+	 * @param count   the count
+	 * @param handler the handler
+	 * @param user    the user
+	 * @return the int
 	 * @see org.jnetpcap.internal.PcapDispatcher#loopNative(int,
 	 *      org.jnetpcap.PcapHandler.NativeCallback,
 	 *      java.lang.foreign.MemorySegment)
@@ -148,10 +193,12 @@ public class AbstractPcapDispatcher implements PcapDispatcher {
 	}
 
 	/**
-	 * @param count
-	 * @param callbackFunc
-	 * @param userData
-	 * @return
+	 * Loop raw.
+	 *
+	 * @param count        the count
+	 * @param callbackFunc the callback func
+	 * @param userData     the user data
+	 * @return the int
 	 * @see org.jnetpcap.internal.PcapDispatcher#loopRaw(int,
 	 *      java.lang.foreign.MemorySegment, java.lang.foreign.MemorySegment)
 	 */
@@ -161,29 +208,25 @@ public class AbstractPcapDispatcher implements PcapDispatcher {
 	}
 
 	/**
-	 * @param user
-	 * @param header
-	 * @param packet
-	 * @see org.jnetpcap.PcapHandler.NativeCallback#nativeCallback(java.lang.foreign.MemorySegment,
-	 *      java.lang.foreign.MemorySegment, java.lang.foreign.MemorySegment)
+	 * @see org.jnetpcap.internal.PcapDispatcher#next()
 	 */
-	@Override
-	public void nativeCallback(MemorySegment user, MemorySegment header, MemorySegment packet) {
-		getPcapDispatcher().nativeCallback(user, header, packet);
-	}
-
 	@Override
 	public PcapPacketRef next() throws PcapException {
 		return pcapDispatcher.next();
 	}
 
+	/**
+	 * @see org.jnetpcap.internal.PcapDispatcher#nextEx()
+	 */
 	@Override
 	public PcapPacketRef nextEx() throws PcapException, TimeoutException {
 		return pcapDispatcher.nextEx();
 	}
 
 	/**
-	 * @param e
+	 * On native callback exception.
+	 *
+	 * @param e the e
 	 * @see org.jnetpcap.internal.PcapDispatcher#onNativeCallbackException(java.lang.RuntimeException)
 	 */
 	@Override
@@ -192,7 +235,9 @@ public class AbstractPcapDispatcher implements PcapDispatcher {
 	}
 
 	/**
-	 * @param exceptionHandler
+	 * Sets the uncaught exception handler.
+	 *
+	 * @param exceptionHandler the new uncaught exception handler
 	 * @see org.jnetpcap.internal.PcapDispatcher#setUncaughtExceptionHandler(java.lang.Thread.UncaughtExceptionHandler)
 	 */
 	@Override

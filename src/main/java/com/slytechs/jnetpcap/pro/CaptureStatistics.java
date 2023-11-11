@@ -20,12 +20,18 @@ package com.slytechs.jnetpcap.pro;
 import com.slytechs.jnetpcap.pro.internal.CaptureStatisticsImpl;
 
 /**
+ * The Interface CaptureStatistics.
+ *
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
- *
  */
 public interface CaptureStatistics {
 
+	/**
+	 * New instance.
+	 *
+	 * @return the capture statistics
+	 */
 	public static CaptureStatistics newInstance() {
 		return new CaptureStatisticsImpl();
 	}
