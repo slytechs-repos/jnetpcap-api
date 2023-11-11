@@ -57,7 +57,7 @@ public interface PacketReceiver extends AutoCloseable {
 	static PacketReceiver javaPacketReceiver(
 			PacketReceiverConfig config) {
 
-		return new MainPacketReceiver(config);
+		return new PacketDissectorReceiver(config);
 	}
 
 	/**

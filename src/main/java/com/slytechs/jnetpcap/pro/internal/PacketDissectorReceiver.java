@@ -46,7 +46,7 @@ import com.slytechs.protocol.pack.core.constants.PacketDescriptorType;
  * @author Mark Bednarczyk
  *
  */
-public class MainPacketReceiver
+public class PacketDissectorReceiver
 		implements PacketReceiver {
 
 	/** The Constant DESC_BUFFER_SIZE. */
@@ -75,12 +75,12 @@ public class MainPacketReceiver
 	 *
 	 * @param config the config
 	 */
-	public MainPacketReceiver(
+	public PacketDissectorReceiver(
 			PacketReceiverConfig config) {
 
 		this.config = config;
 		this.reusableDescBuffer = ByteBuffer
-				.allocateDirect(MainPacketReceiver.DESC_BUFFER_SIZE)
+				.allocateDirect(PacketDissectorReceiver.DESC_BUFFER_SIZE)
 				.order(ByteOrder.nativeOrder());
 	}
 

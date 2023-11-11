@@ -54,7 +54,7 @@ import com.slytechs.jnetpcap.pro.PcapProConfigurator.PreRxProcessor;
 import com.slytechs.jnetpcap.pro.PcapProConfigurator.PreRxProcessorFactory;
 import com.slytechs.jnetpcap.pro.PcapProHandler.OfPacketConsumer;
 import com.slytechs.jnetpcap.pro.internal.CaptureStatisticsImpl;
-import com.slytechs.jnetpcap.pro.internal.MainPacketReceiver;
+import com.slytechs.jnetpcap.pro.internal.PacketDissectorReceiver;
 import com.slytechs.jnetpcap.pro.internal.PacketReceiver;
 import com.slytechs.jnetpcap.pro.internal.PacketReceiverConfig;
 import com.slytechs.protocol.Frame.FrameNumber;
@@ -415,7 +415,7 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	private final PcapProContext context;
 
 	/** The packet dispatcher. */
-	private final MainPacketReceiver postProcessorRoot;
+	private final PacketDissectorReceiver postProcessorRoot;
 
 	/** The post processor. */
 	private PacketReceiver postProcessor;
@@ -450,7 +450,7 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 
 		this.preProcessorRoot = new StandardPcapDispatcher(pcapHandle, abi, this::breakloop);
 		this.preProcessor = this.preProcessorRoot;
-		this.postProcessorRoot = new MainPacketReceiver(config);
+		this.postProcessorRoot = new PacketDissectorReceiver(config);
 		this.postProcessor = postProcessorRoot;
 		this.context = new PcapProContext(Objects.requireNonNull(pcapType, "pcapType"));
 

@@ -413,7 +413,7 @@ public final class JavaIpfDispatcher extends AbstractPacketReceiver implements I
 	 * @param sink  the sink
 	 * @param user  the user
 	 * @return the int
-	 * @see com.slytechs.jnetpcap.pro.internal.MainPacketReceiver#dispatchPacket(int,
+	 * @see com.slytechs.jnetpcap.pro.internal.PacketDissectorReceiver#dispatchPacket(int,
 	 *      com.slytechs.jnetpcap.pro.PcapProHandler.OfPacket, java.lang.Object)
 	 */
 	@Override
@@ -447,7 +447,7 @@ public final class JavaIpfDispatcher extends AbstractPacketReceiver implements I
 	 * @param sink  the sink
 	 * @param user  the user
 	 * @return the int
-	 * @see com.slytechs.jnetpcap.pro.internal.MainPacketReceiver#loopPacket(int,
+	 * @see com.slytechs.jnetpcap.pro.internal.PacketDissectorReceiver#loopPacket(int,
 	 *      com.slytechs.jnetpcap.pro.PcapProHandler.OfPacket, java.lang.Object)
 	 */
 	@Override
