@@ -27,10 +27,10 @@ import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import com.slytechs.jnetpcap.pro.IpfConfiguration;
-import com.slytechs.jnetpcap.pro.IpfReassembler;
 import com.slytechs.jnetpcap.pro.internal.ipf.JavaIpfDispatcher.DatagramQueue;
 import com.slytechs.jnetpcap.pro.internal.ipf.TimeoutQueue.Expirable;
+import com.slytechs.jnetpcap.pro.processor.IpfConfiguration;
+import com.slytechs.jnetpcap.pro.processor.IpfReassembler;
 import com.slytechs.protocol.Registration;
 import com.slytechs.protocol.descriptor.IpfFragment;
 import com.slytechs.protocol.descriptor.IpfReassemblyLayout;

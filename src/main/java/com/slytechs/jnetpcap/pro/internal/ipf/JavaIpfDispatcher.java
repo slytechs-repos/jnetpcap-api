@@ -26,16 +26,16 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.function.Supplier;
 
-import org.jnetpcap.internal.PcapDispatcher;
+import org.jnetpcap.internal.PacketDispatcher;
 import org.jnetpcap.internal.PcapHeaderABI;
 
-import com.slytechs.jnetpcap.pro.IpfReassembler;
 import com.slytechs.jnetpcap.pro.IpfStatistics;
+import com.slytechs.jnetpcap.pro.ProHandler.OfPacket;
 import com.slytechs.jnetpcap.pro.PcapPro.PcapProContext;
-import com.slytechs.jnetpcap.pro.PcapProHandler.OfPacket;
 import com.slytechs.jnetpcap.pro.internal.AbstractPacketReceiver;
 import com.slytechs.jnetpcap.pro.internal.CaptureStatisticsImpl;
 import com.slytechs.jnetpcap.pro.internal.PacketReceiver;
+import com.slytechs.jnetpcap.pro.processor.IpfReassembler;
 import com.slytechs.protocol.Packet;
 import com.slytechs.protocol.descriptor.IpfFragDissector;
 import com.slytechs.protocol.descriptor.IpfFragment;
@@ -48,7 +48,6 @@ import com.slytechs.protocol.runtime.hash.Checksums;
  *
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
- * @author Mark Bednarczyk
  */
 public final class JavaIpfDispatcher extends AbstractPacketReceiver implements IpfDispatcher {
 
@@ -155,7 +154,7 @@ public final class JavaIpfDispatcher extends AbstractPacketReceiver implements I
 	 * @param context the context
 	 */
 	public JavaIpfDispatcher(
-			PcapDispatcher pcap,
+			PacketDispatcher pcap,
 			PacketReceiver packet,
 			IpfReassembler config,
 			PcapProContext context) {
@@ -414,7 +413,7 @@ public final class JavaIpfDispatcher extends AbstractPacketReceiver implements I
 	 * @param user  the user
 	 * @return the int
 	 * @see com.slytechs.jnetpcap.pro.internal.PacketDissectorReceiver#dispatchPacket(int,
-	 *      com.slytechs.jnetpcap.pro.PcapProHandler.OfPacket, java.lang.Object)
+	 *      com.slytechs.jnetpcap.pro.ProHandler.OfPacket, java.lang.Object)
 	 */
 	@Override
 	public <U> int receivePacketWithDispatch(int count, OfPacket<U> sink, U user) {
@@ -431,7 +430,7 @@ public final class JavaIpfDispatcher extends AbstractPacketReceiver implements I
 	 * @param packetFactory the packet factory
 	 * @return the int
 	 * @see com.slytechs.jnetpcap.pro.internal.PacketReceiver#receivePacketWithDispatch(int,
-	 *      com.slytechs.jnetpcap.pro.PcapProHandler.OfPacket, java.lang.Object,
+	 *      com.slytechs.jnetpcap.pro.ProHandler.OfPacket, java.lang.Object,
 	 *      java.util.function.Supplier)
 	 */
 	@Override
@@ -448,7 +447,7 @@ public final class JavaIpfDispatcher extends AbstractPacketReceiver implements I
 	 * @param user  the user
 	 * @return the int
 	 * @see com.slytechs.jnetpcap.pro.internal.PacketDissectorReceiver#loopPacket(int,
-	 *      com.slytechs.jnetpcap.pro.PcapProHandler.OfPacket, java.lang.Object)
+	 *      com.slytechs.jnetpcap.pro.ProHandler.OfPacket, java.lang.Object)
 	 */
 	@Override
 	public <U> int receivePacketWithLoop(int count, OfPacket<U> sink, U user) {

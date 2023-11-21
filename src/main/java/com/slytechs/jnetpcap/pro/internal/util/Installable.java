@@ -15,18 +15,16 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
+package com.slytechs.jnetpcap.pro.internal.util;
+
+import com.slytechs.protocol.runtime.util.HasPriority;
 
 /**
- * Provides packet dissection and IP fragment reassembly services.
+ * Marker interface for installable modules, processors and features.
  * 
- * @author Sly Technologies Inc.
+ * @author Sly Technologies Inc
  * @author repos@slytechs.com
- *
  */
-module com.slytechs.jnetpcap.pro {
-	exports com.slytechs.jnetpcap.pro;
-	exports com.slytechs.jnetpcap.pro.processor;
+public interface Installable extends HasPriority {
 
-	requires transitive org.jnetpcap;
-	requires transitive com.slytechs.protocol;
 }

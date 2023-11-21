@@ -17,11 +17,11 @@
  */
 package com.slytechs.jnetpcap.pro.internal.ipf;
 
-import org.jnetpcap.internal.PcapDispatcher;
+import org.jnetpcap.internal.PacketDispatcher;
 
-import com.slytechs.jnetpcap.pro.IpfReassembler;
 import com.slytechs.jnetpcap.pro.PcapPro.PcapProContext;
 import com.slytechs.jnetpcap.pro.internal.PacketReceiver;
+import com.slytechs.jnetpcap.pro.processor.IpfReassembler;
 
 /**
  * The Interface IpfDispatcher.
@@ -41,7 +41,7 @@ public interface IpfDispatcher extends PacketReceiver {
 	 * @return the ipf dispatcher
 	 */
 	static IpfDispatcher newInstance(
-			PcapDispatcher pcap,
+			PacketDispatcher pcap,
 			PacketReceiver packet,
 			IpfReassembler config,
 			PcapProContext context) {
@@ -62,7 +62,7 @@ public interface IpfDispatcher extends PacketReceiver {
 	 * @return the ipf dispatcher
 	 */
 	static IpfDispatcher newJavaInstance(
-			PcapDispatcher pcap,
+			PacketDispatcher pcap,
 			PacketReceiver packet,
 			IpfReassembler config,
 			PcapProContext context) {
@@ -88,7 +88,7 @@ public interface IpfDispatcher extends PacketReceiver {
 	 * @return the ipf dispatcher
 	 */
 	static IpfDispatcher newNativeInstance(
-			PcapDispatcher pcap,
+			PacketDispatcher pcap,
 			PacketReceiver packet,
 			IpfReassembler config,
 			PcapProContext context) {

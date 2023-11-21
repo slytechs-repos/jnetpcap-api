@@ -27,12 +27,12 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
 import org.jnetpcap.PcapException;
-import org.jnetpcap.internal.PcapDispatcher;
+import org.jnetpcap.internal.PacketDispatcher;
 import org.jnetpcap.util.PcapPacketRef;
 
 import com.slytechs.jnetpcap.pro.CaptureStatistics;
-import com.slytechs.jnetpcap.pro.PcapProHandler;
-import com.slytechs.jnetpcap.pro.PcapProHandler.OfPacket;
+import com.slytechs.jnetpcap.pro.ProHandler;
+import com.slytechs.jnetpcap.pro.ProHandler.OfPacket;
 import com.slytechs.protocol.Packet;
 import com.slytechs.protocol.descriptor.PacketDescriptor;
 import com.slytechs.protocol.descriptor.PacketDissector;
@@ -65,7 +65,7 @@ public class PacketDissectorReceiver
 	protected final CaptureStatisticsImpl stats = (CaptureStatisticsImpl) CaptureStatistics.newInstance();
 
 	/** The pcap dispatcher. */
-	protected PcapDispatcher pcapDispatcher;
+	protected PacketDispatcher packetDispatcher;
 
 	/** The one time session. */
 	private Arena oneTimeSession;
@@ -82,6 +82,7 @@ public class PacketDissectorReceiver
 		this.reusableDescBuffer = ByteBuffer
 				.allocateDirect(PacketDissectorReceiver.DESC_BUFFER_SIZE)
 				.order(ByteOrder.nativeOrder());
+		this.reusablePacket = new Packet(config.descriptorType);
 	}
 
 	/**
@@ -249,7 +250,7 @@ public class PacketDissectorReceiver
 	 */
 	@Override
 	public Packet getPacketWithNext() throws PcapException {
-		PcapPacketRef packetRef = pcapDispatcher.next();
+		PcapPacketRef packetRef = packetDispatcher.next();
 
 		MemorySegment pcapHdr = packetRef.header();
 		MemorySegment pktData = packetRef.data();
@@ -283,7 +284,7 @@ public class PacketDissectorReceiver
 	 */
 	@Override
 	public Packet getPacketWithNextExtended() throws PcapException, TimeoutException {
-		PcapPacketRef packetRef = pcapDispatcher.nextEx();
+		PcapPacketRef packetRef = packetDispatcher.nextEx();
 
 		MemorySegment pcapHdr = packetRef.header();
 		MemorySegment pktData = packetRef.data();
@@ -367,7 +368,7 @@ public class PacketDissectorReceiver
 	private void onNativeCallbackException(RuntimeException e, int caplen, int wirelen) {
 		stats.incDropped(caplen, wirelen, 1);
 
-		pcapDispatcher.onNativeCallbackException(e);
+		packetDispatcher.onNativeCallbackException(e);
 	}
 
 	/**
@@ -378,7 +379,7 @@ public class PacketDissectorReceiver
 		if (e instanceof RuntimeException runtime)
 			onNativeCallbackException(runtime, caplen, wirelen);
 		else
-			pcapDispatcher.onNativeCallbackException(new IllegalStateException("unable to process packet", e));
+			packetDispatcher.onNativeCallbackException(new IllegalStateException("unable to process packet", e));
 	}
 
 	/**
@@ -454,12 +455,12 @@ public class PacketDissectorReceiver
 	 * @param packetFactory the packet factory
 	 * @return the int
 	 * @see com.slytechs.jnetpcap.pro.internal.PacketReceiver#receivePacketWithDispatch(int,
-	 *      com.slytechs.jnetpcap.pro.PcapProHandler.OfPacket, java.lang.Object,
+	 *      com.slytechs.jnetpcap.pro.ProHandler.OfPacket, java.lang.Object,
 	 *      java.util.function.Supplier)
 	 */
 	@Override
 	public <U> int receivePacketWithDispatch(int count, OfPacket<U> sink, U user, Supplier<Packet> packetFactory) {
-		return pcapDispatcher.dispatchNative(count, (ignore, pcapHdr, pktData) -> {
+		return packetDispatcher.dispatchNative(count, (ignore, pcapHdr, pktData) -> {
 
 			try (var arena = Arena.ofShared()) {
 
@@ -491,7 +492,7 @@ public class PacketDissectorReceiver
 	 * @return the int
 	 */
 	@Override
-	public <U> int receivePacketWithDispatch(int count, PcapProHandler.OfPacket<U> sink, U user) {
+	public <U> int receivePacketWithDispatch(int count, ProHandler.OfPacket<U> sink, U user) {
 		return receivePacketWithDispatch(count, sink, user, this::getReusablePacket);
 	}
 
@@ -505,8 +506,8 @@ public class PacketDissectorReceiver
 	 * @return the int
 	 */
 	@Override
-	public <U> int receivePacketWithLoop(int count, PcapProHandler.OfPacket<U> sink, U user) {
-		return pcapDispatcher.loopNative(count, (ignore, pcapHdr, pktData) -> {
+	public <U> int receivePacketWithLoop(int count, ProHandler.OfPacket<U> sink, U user) {
+		return packetDispatcher.loopNative(count, (ignore, pcapHdr, pktData) -> {
 
 			/*
 			 * Initialize outside the try-catch to attempt to read caplen for any exceptions
@@ -538,10 +539,10 @@ public class PacketDissectorReceiver
 	/**
 	 * Sets the pcap dispatcher.
 	 *
-	 * @param pcapDispatcher the new pcap dispatcher
+	 * @param packetDispatcher the new pcap dispatcher
 	 */
-	public void setPcapDispatcher(PcapDispatcher pcapDispatcher) {
-		this.pcapDispatcher = pcapDispatcher;
+	public void setPcapDispatcher(PacketDispatcher packetDispatcher) {
+		this.packetDispatcher = packetDispatcher;
 	}
 
 }

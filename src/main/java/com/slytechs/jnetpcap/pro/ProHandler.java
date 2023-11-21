@@ -31,7 +31,7 @@ import com.slytechs.protocol.descriptor.IpfFragment;
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  */
-public interface PcapProHandler extends PcapHandler {
+public interface ProHandler extends PcapHandler {
 
 	/**
 	 * A dispatcher which dispatches high level packets with protocol header
@@ -40,7 +40,7 @@ public interface PcapProHandler extends PcapHandler {
 	 * @param <U> the generic type
 	 */
 	@FunctionalInterface
-	public interface OfPacket<U> extends PcapProHandler {
+	public interface OfPacket<U> extends ProHandler {
 		
 		/** Empty/No-op callback handler. */
 		OfPacket<?> EMPTY = (u, p) -> {};
@@ -85,7 +85,7 @@ public interface PcapProHandler extends PcapHandler {
 	 * information.
 	 */
 	@FunctionalInterface
-	public interface OfPacketConsumer extends PcapProHandler, Consumer<Packet> {
+	public interface OfPacketConsumer extends ProHandler, Consumer<Packet> {
 
 		/**
 		 * Accept a packet.

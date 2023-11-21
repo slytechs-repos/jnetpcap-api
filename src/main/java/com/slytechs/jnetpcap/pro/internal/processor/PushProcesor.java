@@ -15,18 +15,29 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
+package com.slytechs.jnetpcap.pro.internal.processor;
+
+import java.lang.foreign.MemorySegment;
+
+import com.slytechs.protocol.Packet;
 
 /**
- * Provides packet dissection and IP fragment reassembly services.
+ * Base packet data chain processing interface.
  * 
- * @author Sly Technologies Inc.
+ * @author Sly Technologies Inc
  * @author repos@slytechs.com
- *
  */
-module com.slytechs.jnetpcap.pro {
-	exports com.slytechs.jnetpcap.pro;
-	exports com.slytechs.jnetpcap.pro.processor;
+public interface PushProcesor {
 
-	requires transitive org.jnetpcap;
-	requires transitive com.slytechs.protocol;
+	public interface MemorySegmentProcessor extends PushProcesor {
+		void processMemorySegment(MemorySegment desc, MemorySegment data);
+		
+		void setSink(MemorySegmentProcessor sink);
+	}
+
+	public interface PacketProcessor extends PushProcesor {
+		void processPacket(Packet packet);
+		
+		void setSink(PacketProcessor sink);
+	}
 }

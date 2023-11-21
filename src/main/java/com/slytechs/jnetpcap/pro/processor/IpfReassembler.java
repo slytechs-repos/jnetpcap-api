@@ -15,14 +15,13 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.slytechs.jnetpcap.pro;
+package com.slytechs.jnetpcap.pro.processor;
 
 import static com.slytechs.protocol.runtime.util.SystemProperties.*;
 
 import java.util.concurrent.TimeUnit;
 
-import com.slytechs.jnetpcap.pro.PcapProConfigurator.PostRxProcessor;
-import com.slytechs.jnetpcap.pro.internal.ipf.IpfDispatcher;
+import com.slytechs.jnetpcap.pro.internal.processor.PushProcesor;
 import com.slytechs.protocol.runtime.time.TimestampSource;
 import com.slytechs.protocol.runtime.time.TimestampSource.AssignableTimestampSource;
 import com.slytechs.protocol.runtime.time.TimestampUnit;
@@ -35,117 +34,152 @@ import com.slytechs.protocol.runtime.util.MemoryUnit;
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  */
-public class IpfReassembler extends PcapProConfigurator<IpfReassembler> implements PostRxProcessor {
+public class IpfReassembler extends ProProcessor<IpfReassembler> {
 
 	/** The Constant PREFIX. */
 	private static final String PREFIX = "ipf";
 
-	// @formatter:off
-	/** System property which defines the maximum IP datagram size (default is 64KB). */
-	public static final String PROPERTY_IPF_MAX_DGRAM_BYTES        = "ipf.dgram.maxBytes";
-	
-	/** System property which defines the default table size, number of entries (default is 16K). */
-	public static final String PROPERTY_IPF_TABLE_SIZE             = "ipf.tableSize";
-	
-	/** System property which defines the reassembly buffer for IPF (default is 1MB). */
-	public static final String PROPERTY_IPF_BUFFER_SIZE            = "ipf.bufferSize";
-	
-	/** System property which defines timeout period during IPF reassembly/Tracking (default is 2 seconds). */
-	public static final String PROPERTY_IPF_TIMEOUT                = "ipf.timeout";
-	
-	/** The property ipf timeout queue size. */
-	public static final String PROPERTY_IPF_TIMEOUT_QUEUE_SIZE     = "ipf.timeout.queueSize";
-	
-	/** 
-	 * System property which determines IPF fragment timeout for incomplete reassembly (default false).
-	 * When true, IPF will stop reassembling when last fragment is seen even when Dgram is incomplete.
-	 * If false the IPF reassembly will timeout/stop when timeout interval expires.  
+	/**
+	 * System property which defines the maximum IP datagram size (default is 64KB).
 	 */
-	public static final String PROPERTY_IPF_TIMEOUT_ON_LAST             = "ipf.timeout.onLast";
-	
-	/** System property which enables original IPF fragment pass-through (default is true). */
-	public static final String PROPERTY_IPF_PASSTHROUGH                 = "ipf.frags.passthrough";
-	
-	/** System property which enables IPF data pass-through/forwarding (default is true). */
-	public static final String PROPERTY_IPF_DGRAMS_SEND                 = "ipf.dgrams.send";
-	
-	/** System property which enables reassembled but incomplete, IPF dgram injection/pass-through (default is false). */
-	public static final String PROPERTY_IPF_DGRAMS_SEND_INCOMPLETE      = "ipf.dgrams.send.incomplete";
-	
-	/** System property which enables reassembled and fully complete, IPF dgram injection/pass-through (default is false). */
-	public static final String PROPERTY_IPF_DGRAMS_SEND_COMPLETE        = "ipf.dgrams.send.complete";
-	
-	/** System property which defines the maximum number of IP fragments which can be tracked at once. */
-	public static final String PROPERTY_IPF_MAX_FRAGMENT_COUNT          = "ipf.fragment.maxCount";
-	
-	/** System property which enables attachment of reassembled dgram to the last IP fragment (default is true). */
-	public static final String PROPERTY_IPF_ATTACH_COMPLETE             = "ipf.attach.complete";
-	
-	/** System property which enables attachment of partially reassembled IP dgram to the last IP fragment (default is true). */
-	public static final String PROPERTY_IPF_ATTACH_INCOMPLETE           = "ipf.attach.incomplete";
-	
-	/** System property which enables IPF fragment tracking and reassembly (default is false). */
-	public static final String PROPERTY_IPF_ENABLE                      = "ipf.enable";
-	
-	/** System property which enables IPF fragment reassembly (default true). */
-	public static final String PROPERTY_IPF_ENABLE_REASSEMBLY           = "ipf.enable.reassembly";
-	
-	/** System property which enables IPF fragment tracking (default false). */
-	public static final String PROPERTY_IPF_ENABLE_TRACKING             = "ipf.enable.tracking";
-	// @formatter:on
+	public static final String PROPERTY_IPF_MAX_DGRAM_BYTES = "ipf.dgram.maxBytes";
 
-	// @formatter:off
-	
+	/**
+	 * System property which defines the default table size, number of entries
+	 * (default is 16K).
+	 */
+	public static final String PROPERTY_IPF_TABLE_SIZE = "ipf.tableSize";
+
+	/**
+	 * System property which defines the reassembly buffer for IPF (default is 1MB).
+	 */
+	public static final String PROPERTY_IPF_BUFFER_SIZE = "ipf.bufferSize";
+
+	/**
+	 * System property which defines timeout period during IPF reassembly/Tracking
+	 * (default is 2 seconds).
+	 */
+	public static final String PROPERTY_IPF_TIMEOUT = "ipf.timeout";
+
+	/** The property ipf timeout queue size. */
+	public static final String PROPERTY_IPF_TIMEOUT_QUEUE_SIZE = "ipf.timeout.queueSize";
+
+	/**
+	 * System property which determines IPF fragment timeout for incomplete
+	 * reassembly (default false). When true, IPF will stop reassembling when last
+	 * fragment is seen even when Dgram is incomplete. If false the IPF reassembly
+	 * will timeout/stop when timeout interval expires.
+	 */
+	public static final String PROPERTY_IPF_TIMEOUT_ON_LAST = "ipf.timeout.onLast";
+
+	/**
+	 * System property which enables original IPF fragment pass-through (default is
+	 * true).
+	 */
+	public static final String PROPERTY_IPF_PASSTHROUGH = "ipf.frags.passthrough";
+
+	/**
+	 * System property which enables IPF data pass-through/forwarding (default is
+	 * true).
+	 */
+	public static final String PROPERTY_IPF_DGRAMS_SEND = "ipf.dgrams.send";
+
+	/**
+	 * System property which enables reassembled but incomplete, IPF dgram
+	 * injection/pass-through (default is false).
+	 */
+	public static final String PROPERTY_IPF_DGRAMS_SEND_INCOMPLETE = "ipf.dgrams.send.incomplete";
+
+	/**
+	 * System property which enables reassembled and fully complete, IPF dgram
+	 * injection/pass-through (default is false).
+	 */
+	public static final String PROPERTY_IPF_DGRAMS_SEND_COMPLETE = "ipf.dgrams.send.complete";
+
+	/**
+	 * System property which defines the maximum number of IP fragments which can be
+	 * tracked at once.
+	 */
+	public static final String PROPERTY_IPF_MAX_FRAGMENT_COUNT = "ipf.fragment.maxCount";
+
+	/**
+	 * System property which enables attachment of reassembled dgram to the last IP
+	 * fragment (default is true).
+	 */
+	public static final String PROPERTY_IPF_ATTACH_COMPLETE = "ipf.attach.complete";
+
+	/**
+	 * System property which enables attachment of partially reassembled IP dgram to
+	 * the last IP fragment (default is true).
+	 */
+	public static final String PROPERTY_IPF_ATTACH_INCOMPLETE = "ipf.attach.incomplete";
+
+	/**
+	 * System property which enables IPF fragment tracking and reassembly (default
+	 * is false).
+	 */
+	public static final String PROPERTY_IPF_ENABLE = "ipf.enable";
+
+	/** System property which enables IPF fragment reassembly (default true). */
+	public static final String PROPERTY_IPF_ENABLE_REASSEMBLY = "ipf.enable.reassembly";
+
+	/** System property which enables IPF fragment tracking (default false). */
+	public static final String PROPERTY_IPF_ENABLE_TRACKING = "ipf.enable.tracking";
+
 	/** The max dgram bytes. */
 	/* Hashtable and IP reassembler properties */
-	private int     maxDgramBytes         = intValue (PROPERTY_IPF_MAX_DGRAM_BYTES,        64,  MemoryUnit.KILOBYTES);
-	
+	private int maxDgramBytes = intValue(PROPERTY_IPF_MAX_DGRAM_BYTES, 64, MemoryUnit.KILOBYTES);
+
 	/** The buffer size. */
-	private int     bufferSize            = intValue (PROPERTY_IPF_BUFFER_SIZE,            16,  MemoryUnit.MEGABYTES);
-	
+	private int bufferSize = intValue(PROPERTY_IPF_BUFFER_SIZE, 16, MemoryUnit.MEGABYTES);
+
 	/** The table size. */
-	private int     tableSize             = intValue (PROPERTY_IPF_TABLE_SIZE,             256, CountUnit.COUNT);
-	
+	private int tableSize = intValue(PROPERTY_IPF_TABLE_SIZE, 256, CountUnit.COUNT);
+
 	/** The max fragment count. */
-	private int     maxFragmentCount      = intValue (PROPERTY_IPF_MAX_FRAGMENT_COUNT,     16,  CountUnit.COUNT);
+	private int maxFragmentCount = intValue(PROPERTY_IPF_MAX_FRAGMENT_COUNT, 16, CountUnit.COUNT);
 
 	/** The timeout milli. */
 	/* Timeout Queue properties */
-	private long    timeoutMilli         = longValue(PROPERTY_IPF_TIMEOUT,                2000);
-	
+	private long timeoutMilli = longValue(PROPERTY_IPF_TIMEOUT, 2000);
+
 	/** The timeout on last. */
-	private boolean timeoutOnLast         = boolValue(PROPERTY_IPF_TIMEOUT_ON_LAST,        false);
-	
+	private boolean timeoutOnLast = boolValue(PROPERTY_IPF_TIMEOUT_ON_LAST, false);
+
 	/** The timeout queue size. */
-	private int     timeoutQueueSize      = intValue (PROPERTY_IPF_TIMEOUT_QUEUE_SIZE,     256, CountUnit.COUNT);
+	private int timeoutQueueSize = intValue(PROPERTY_IPF_TIMEOUT_QUEUE_SIZE, 256, CountUnit.COUNT);
 
 	/** The tracking enabled. */
 	/* IPF modes */
-	private boolean trackingEnabled       = boolValue(PROPERTY_IPF_ENABLE_TRACKING,        false);
-	
+	private boolean trackingEnabled = boolValue(PROPERTY_IPF_ENABLE_TRACKING, false);
+
 	/** The reassembly enabled. */
-	private boolean reassemblyEnabled     = boolValue(PROPERTY_IPF_ENABLE_REASSEMBLY,      true);
+	private boolean reassemblyEnabled = boolValue(PROPERTY_IPF_ENABLE_REASSEMBLY, true);
 
 	/** The passthrough. */
-	/* Fragment pass-through and reassembly buffer attachment to fragment properties */
-	private boolean passthrough           = boolValue(PROPERTY_IPF_PASSTHROUGH,             false);
-	
+	/*
+	 * Fragment pass-through and reassembly buffer attachment to fragment properties
+	 */
+	private boolean passthrough = boolValue(PROPERTY_IPF_PASSTHROUGH, false);
+
 	/** The attach incomplete. */
-	private boolean attachIncomplete      = boolValue(PROPERTY_IPF_ATTACH_INCOMPLETE,  false);
-	
+	private boolean attachIncomplete = boolValue(PROPERTY_IPF_ATTACH_INCOMPLETE, false);
+
 	/** The attach complete. */
-	private boolean attachComplete        = boolValue(PROPERTY_IPF_ATTACH_COMPLETE,    false);
-	
+	private boolean attachComplete = boolValue(PROPERTY_IPF_ATTACH_COMPLETE, false);
+
 	/** The send. */
-	/* Datagram dispatcher send properties - dgrams are inserted into dispatcher stream */
-	private boolean send                  = boolValue(PROPERTY_IPF_DGRAMS_SEND,            true);
-	
+	/*
+	 * Datagram dispatcher send properties - dgrams are inserted into dispatcher
+	 * stream
+	 */
+	private boolean send = boolValue(PROPERTY_IPF_DGRAMS_SEND, true);
+
 	/** The send incomplete. */
-	private boolean sendIncomplete        = boolValue(PROPERTY_IPF_DGRAMS_SEND_INCOMPLETE, false);
-	
+	private boolean sendIncomplete = boolValue(PROPERTY_IPF_DGRAMS_SEND_INCOMPLETE, false);
+
 	/** The send complete. */
-	private boolean sendComplete          = boolValue(PROPERTY_IPF_DGRAMS_SEND_COMPLETE,   true);
-	// @formatter:on
+	private boolean sendComplete = boolValue(PROPERTY_IPF_DGRAMS_SEND_COMPLETE, true);
 
 	/** The time source. */
 	private AssignableTimestampSource timeSource;
@@ -157,22 +191,22 @@ public class IpfReassembler extends PcapProConfigurator<IpfReassembler> implemen
 
 		/** The pass. */
 		public final boolean pass;
-		
+
 		/** The dgrams complete. */
 		public final boolean dgramsComplete;
-		
+
 		/** The dgrams incomplete. */
 		public final boolean dgramsIncomplete; // On timeout-duration or timeout-last
-		
+
 		/** The tracking. */
 		public final boolean tracking;
-		
+
 		/** The pass complete. */
 		public final boolean passComplete;
-		
+
 		/** The pass incomplete. */
 		public final boolean passIncomplete; // On timeout-last
-		
+
 		/** The time source. */
 		public final AssignableTimestampSource timeSource;
 
@@ -223,8 +257,8 @@ public class IpfReassembler extends PcapProConfigurator<IpfReassembler> implemen
 	/**
 	 * Instantiates a new ipf reassembler.
 	 */
-	public IpfReassembler() {
-		super(PREFIX, IpfDispatcher::newInstance);
+	public IpfReassembler(int priority) {
+		super(priority, PREFIX);
 
 		useSystemTimesource();
 	}
@@ -613,5 +647,13 @@ public class IpfReassembler extends PcapProConfigurator<IpfReassembler> implemen
 		timeSource = TimestampSource.system();
 
 		return this;
+	}
+
+	/**
+	 * @see com.slytechs.jnetpcap.pro.processor.ProProcessor#newDataProcessorInstance()
+	 */
+	@Override
+	protected PushProcesor newDataProcessorInstance() {
+		throw new UnsupportedOperationException("not implemented yet");
 	}
 }

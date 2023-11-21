@@ -23,8 +23,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.jnetpcap.internal.PcapHeaderABI;
 
-import com.slytechs.jnetpcap.pro.IpfConfiguration;
 import com.slytechs.jnetpcap.pro.internal.PacketReceiverConfig;
+import com.slytechs.jnetpcap.pro.processor.IpfConfiguration;
 import com.slytechs.protocol.runtime.time.TimestampSource;
 import com.slytechs.protocol.runtime.time.TimestampSource.AssignableTimestampSource;
 import com.slytechs.protocol.runtime.time.TimestampUnit;
@@ -190,7 +190,7 @@ public class IpfConfig extends PacketReceiverConfig implements IpfConfiguration 
 	 *
 	 * @param enable the enable
 	 * @return the ipf configuration
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enable(boolean)
+	 * @see com.slytechs.jnetpcap.pro.processor.IpfConfiguration#enable(boolean)
 	 */
 	@Override
 	public IpfConfiguration enable(boolean enable) {
@@ -204,7 +204,7 @@ public class IpfConfig extends PacketReceiverConfig implements IpfConfiguration 
 	 *
 	 * @param ipfAttachComplete the ipf attach complete
 	 * @return the ipf configuration
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enableAttachComplete(boolean)
+	 * @see com.slytechs.jnetpcap.pro.processor.IpfConfiguration#enableAttachComplete(boolean)
 	 */
 	@Override
 	public IpfConfiguration enableAttachComplete(boolean ipfAttachComplete) {
@@ -217,7 +217,7 @@ public class IpfConfig extends PacketReceiverConfig implements IpfConfiguration 
 	 *
 	 * @param ipfAttachIncomplete the ipf attach incomplete
 	 * @return the ipf configuration
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enableAttachIncomplete(boolean)
+	 * @see com.slytechs.jnetpcap.pro.processor.IpfConfiguration#enableAttachIncomplete(boolean)
 	 */
 	@Override
 	public IpfConfiguration enableAttachIncomplete(boolean ipfAttachIncomplete) {
@@ -230,7 +230,7 @@ public class IpfConfig extends PacketReceiverConfig implements IpfConfiguration 
 	 *
 	 * @param enable the enable
 	 * @return the ipf configuration
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enablePassthrough(boolean)
+	 * @see com.slytechs.jnetpcap.pro.processor.IpfConfiguration#enablePassthrough(boolean)
 	 */
 	@Override
 	public IpfConfiguration enablePassthrough(boolean enable) {
@@ -244,7 +244,7 @@ public class IpfConfig extends PacketReceiverConfig implements IpfConfiguration 
 	 *
 	 * @param passDgramsComplete the pass dgrams complete
 	 * @return the ipf configuration
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enableSendComplete(boolean)
+	 * @see com.slytechs.jnetpcap.pro.processor.IpfConfiguration#enableSendComplete(boolean)
 	 */
 	@Override
 	public IpfConfiguration enableSendComplete(boolean passDgramsComplete) {
@@ -257,7 +257,7 @@ public class IpfConfig extends PacketReceiverConfig implements IpfConfiguration 
 	 *
 	 * @param passFragments the pass fragments
 	 * @return the ipf configuration
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enableFragments(boolean)
+	 * @see com.slytechs.jnetpcap.pro.processor.IpfConfiguration#enableFragments(boolean)
 	 */
 	@Override
 	public IpfConfiguration enableFragments(boolean passFragments) {
@@ -270,7 +270,7 @@ public class IpfConfig extends PacketReceiverConfig implements IpfConfiguration 
 	 *
 	 * @param passDgramsIncomplete the pass dgrams incomplete
 	 * @return the ipf configuration
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enableSendIncomplete(boolean)
+	 * @see com.slytechs.jnetpcap.pro.processor.IpfConfiguration#enableSendIncomplete(boolean)
 	 */
 	@Override
 	public IpfConfiguration enableSendIncomplete(boolean passDgramsIncomplete) {
@@ -283,7 +283,7 @@ public class IpfConfig extends PacketReceiverConfig implements IpfConfiguration 
 	 *
 	 * @param enable the enable
 	 * @return the ipf configuration
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enableReassembly(boolean)
+	 * @see com.slytechs.jnetpcap.pro.processor.IpfConfiguration#enableReassembly(boolean)
 	 */
 	@Override
 	public IpfConfiguration enableReassembly(boolean enable) {
@@ -297,7 +297,7 @@ public class IpfConfig extends PacketReceiverConfig implements IpfConfiguration 
 	 *
 	 * @param enable the enable
 	 * @return the ipf configuration
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#enableTracking(boolean)
+	 * @see com.slytechs.jnetpcap.pro.processor.IpfConfiguration#enableTracking(boolean)
 	 */
 	@Override
 	public IpfConfiguration enableTracking(boolean enable) {
@@ -410,7 +410,7 @@ public class IpfConfig extends PacketReceiverConfig implements IpfConfiguration 
 	 * Checks if is timeout on last.
 	 *
 	 * @return true, if is timeout on last
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#isTimeoutOnLast()
+	 * @see com.slytechs.jnetpcap.pro.processor.IpfConfiguration#isTimeoutOnLast()
 	 */
 	@Override
 	public boolean isTimeoutOnLast() {
@@ -418,7 +418,7 @@ public class IpfConfig extends PacketReceiverConfig implements IpfConfiguration 
 	}
 
 	/**
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#isPassthrough()
+	 * @see com.slytechs.jnetpcap.pro.processor.IpfConfiguration#isPassthrough()
 	 */
 	@Override
 	public boolean isPassthrough() {
@@ -481,7 +481,7 @@ public class IpfConfig extends PacketReceiverConfig implements IpfConfiguration 
 	 * @param size the size
 	 * @param unit the unit
 	 * @return the ipf configuration
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#setBufferSize(long,
+	 * @see com.slytechs.jnetpcap.pro.processor.IpfConfiguration#setBufferSize(long,
 	 *      com.slytechs.protocol.runtime.util.MemoryUnit)
 	 */
 	@Override
@@ -497,7 +497,7 @@ public class IpfConfig extends PacketReceiverConfig implements IpfConfiguration 
 	 *
 	 * @param lastOrTimeout the last or timeout
 	 * @return the ipf configuration
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#setTimeoutOnLast(boolean)
+	 * @see com.slytechs.jnetpcap.pro.processor.IpfConfiguration#setTimeoutOnLast(boolean)
 	 */
 	@Override
 	public IpfConfiguration setTimeoutOnLast(boolean lastOrTimeout) {
@@ -512,7 +512,7 @@ public class IpfConfig extends PacketReceiverConfig implements IpfConfiguration 
 	 * @param size the size
 	 * @param unit the unit
 	 * @return the ipf configuration
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#setMaxDgramSize(long,
+	 * @see com.slytechs.jnetpcap.pro.processor.IpfConfiguration#setMaxDgramSize(long,
 	 *      com.slytechs.protocol.runtime.util.MemoryUnit)
 	 */
 	@Override
@@ -529,7 +529,7 @@ public class IpfConfig extends PacketReceiverConfig implements IpfConfiguration 
 	 * @param ipfMaxFragTrackCount the ipf max frag track count
 	 * @param unit                 the unit
 	 * @return the ipf configuration
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#setMaxFragmentCount(int)
+	 * @see com.slytechs.jnetpcap.pro.processor.IpfConfiguration#setMaxFragmentCount(int)
 	 */
 	@Override
 	public IpfConfiguration setMaxFragmentCount(int ipfMaxFragTrackCount, CountUnit unit) {
@@ -543,7 +543,7 @@ public class IpfConfig extends PacketReceiverConfig implements IpfConfiguration 
 	 * @param size the size
 	 * @param unit the unit
 	 * @return the ipf configuration
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#setTableSize(long,
+	 * @see com.slytechs.jnetpcap.pro.processor.IpfConfiguration#setTableSize(long,
 	 *      com.slytechs.protocol.runtime.util.CountUnit)
 	 */
 	@Override
@@ -560,7 +560,7 @@ public class IpfConfig extends PacketReceiverConfig implements IpfConfiguration 
 	 * @param timeout the timeout
 	 * @param unit    the unit
 	 * @return the ipf configuration
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#setTimeout(long,
+	 * @see com.slytechs.jnetpcap.pro.processor.IpfConfiguration#setTimeout(long,
 	 *      java.util.concurrent.TimeUnit)
 	 */
 	@Override
@@ -587,7 +587,7 @@ public class IpfConfig extends PacketReceiverConfig implements IpfConfiguration 
 	 * Use packet timesource.
 	 *
 	 * @return the ipf configuration
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#usePacketTimesource()
+	 * @see com.slytechs.jnetpcap.pro.processor.IpfConfiguration#usePacketTimesource()
 	 */
 	@Override
 	public IpfConfiguration usePacketTimesource() {
@@ -600,7 +600,7 @@ public class IpfConfig extends PacketReceiverConfig implements IpfConfiguration 
 	 * Use system timesource.
 	 *
 	 * @return the ipf configuration
-	 * @see com.slytechs.jnetpcap.pro.IpfConfiguration#useSystemTimesource()
+	 * @see com.slytechs.jnetpcap.pro.processor.IpfConfiguration#useSystemTimesource()
 	 */
 	@Override
 	public IpfConfiguration useSystemTimesource() {

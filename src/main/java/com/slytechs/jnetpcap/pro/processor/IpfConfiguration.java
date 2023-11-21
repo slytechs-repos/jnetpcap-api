@@ -15,7 +15,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.slytechs.jnetpcap.pro;
+package com.slytechs.jnetpcap.pro.processor;
 
 import java.util.concurrent.TimeUnit;
 

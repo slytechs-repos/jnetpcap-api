@@ -21,10 +21,10 @@ import java.lang.foreign.MemorySegment;
 import java.util.concurrent.TimeUnit;
 
 import org.jnetpcap.PcapHandler.NativeCallback;
-import org.jnetpcap.internal.PcapDispatcher;
+import org.jnetpcap.internal.PacketDispatcher;
 
-import com.slytechs.jnetpcap.pro.PacketDelay;
 import com.slytechs.jnetpcap.pro.PcapPro.PcapProContext;
+import com.slytechs.jnetpcap.pro.processor.PacketDelay;
 
 /**
  * The Class PacketDelayPreProcessor.
@@ -32,7 +32,7 @@ import com.slytechs.jnetpcap.pro.PcapPro.PcapProContext;
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  */
-public class PacketDelayPreProcessor extends AbstractPcapDispatcher implements PcapDispatcher {
+public class PacketDelayPreProcessor extends AbstractPcapDispatcher implements PacketDispatcher {
 
 	/** The config. */
 	private final PacketDelay config;
@@ -43,12 +43,12 @@ public class PacketDelayPreProcessor extends AbstractPcapDispatcher implements P
 	/**
 	 * Instantiates a new packet delay pre processor.
 	 *
-	 * @param pcapDispatcher the pcap dispatcher
+	 * @param packetDispatcher the pcap dispatcher
 	 * @param config         the config
 	 * @param context        the context
 	 */
-	public PacketDelayPreProcessor(PcapDispatcher pcapDispatcher, Object config, PcapProContext context) {
-		super(pcapDispatcher);
+	public PacketDelayPreProcessor(PacketDispatcher packetDispatcher, Object config, PcapProContext context) {
+		super(packetDispatcher);
 		this.context = context;
 
 		if (!(config instanceof PacketDelay cfg))

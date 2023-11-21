@@ -15,7 +15,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.slytechs.jnetpcap.pro;
+package com.slytechs.jnetpcap.pro.processor;
 
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -23,8 +23,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 
-import com.slytechs.jnetpcap.pro.PcapProConfigurator.PreRxProcessor;
-import com.slytechs.jnetpcap.pro.internal.PacketRepeaterPreProcessor;
+import com.slytechs.jnetpcap.pro.internal.processor.PushProcesor;
 import com.slytechs.protocol.runtime.time.TimestampUnit;
 import com.slytechs.protocol.runtime.util.SystemProperties;
 
@@ -42,7 +41,7 @@ import com.slytechs.protocol.runtime.util.SystemProperties;
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  */
-public final class PacketRepeater extends PcapProConfigurator<PacketRepeater> implements PreRxProcessor {
+public final class PacketRepeater extends ProProcessor<PacketRepeater> {
 
 	/** The Constant PREFIX. */
 	private static final String PREFIX = "packet.repeater";
@@ -74,8 +73,8 @@ public final class PacketRepeater extends PcapProConfigurator<PacketRepeater> im
 	/**
 	 * Instantiates a new packet repeater.
 	 */
-	public PacketRepeater() {
-		super(PREFIX, PacketRepeaterPreProcessor::new);
+	public PacketRepeater(int priority) {
+		super(priority, PREFIX);
 	}
 
 	/**
@@ -284,5 +283,13 @@ public final class PacketRepeater extends PcapProConfigurator<PacketRepeater> im
 	 */
 	public TimestampUnit getTimestampUnit() {
 		return timestampUnit;
+	}
+
+	/**
+	 * @see com.slytechs.jnetpcap.pro.processor.ProProcessor#newDataProcessorInstance()
+	 */
+	@Override
+	protected PushProcesor newDataProcessorInstance() {
+		throw new UnsupportedOperationException("not implemented yet");
 	}
 }

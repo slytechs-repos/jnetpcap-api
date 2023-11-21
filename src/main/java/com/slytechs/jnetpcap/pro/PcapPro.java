@@ -18,6 +18,9 @@
 package com.slytechs.jnetpcap.pro;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.Reader;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.lang.foreign.MemorySegment;
 import java.util.LinkedList;
@@ -27,9 +30,12 @@ import java.util.Optional;
 import java.util.Stack;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.IntFunction;
+import java.util.function.Supplier;
 
+import org.jnetpcap.BpFilter;
 import org.jnetpcap.Pcap0_4;
 import org.jnetpcap.Pcap0_6;
 import org.jnetpcap.Pcap1_0;
@@ -40,23 +46,25 @@ import org.jnetpcap.PcapDumper;
 import org.jnetpcap.PcapException;
 import org.jnetpcap.PcapIf;
 import org.jnetpcap.constant.PcapCode;
+import org.jnetpcap.constant.PcapDirection;
 import org.jnetpcap.constant.PcapDlt;
 import org.jnetpcap.constant.PcapTStampPrecision;
+import org.jnetpcap.constant.PcapTstampType;
 import org.jnetpcap.internal.NonSealedPcap;
+import org.jnetpcap.internal.PacketDispatcher;
 import org.jnetpcap.internal.PcapDispatcher;
 import org.jnetpcap.internal.PcapHeaderABI;
-import org.jnetpcap.internal.StandardPcapDispatcher;
 import org.jnetpcap.util.PcapPacketRef;
 
-import com.slytechs.jnetpcap.pro.PcapProConfigurator.PostRxProcessor;
-import com.slytechs.jnetpcap.pro.PcapProConfigurator.PostRxProcessorFactory;
-import com.slytechs.jnetpcap.pro.PcapProConfigurator.PreRxProcessor;
-import com.slytechs.jnetpcap.pro.PcapProConfigurator.PreRxProcessorFactory;
-import com.slytechs.jnetpcap.pro.PcapProHandler.OfPacketConsumer;
+import com.slytechs.jnetpcap.pro.ProHandler.OfPacketConsumer;
 import com.slytechs.jnetpcap.pro.internal.CaptureStatisticsImpl;
 import com.slytechs.jnetpcap.pro.internal.PacketDissectorReceiver;
 import com.slytechs.jnetpcap.pro.internal.PacketReceiver;
 import com.slytechs.jnetpcap.pro.internal.PacketReceiverConfig;
+import com.slytechs.jnetpcap.pro.internal.processor.PushProcesor.MemorySegmentProcessor;
+import com.slytechs.jnetpcap.pro.internal.processor.PushProcesor.PacketProcessor;
+import com.slytechs.jnetpcap.pro.internal.util.Installable;
+import com.slytechs.jnetpcap.pro.processor.ProProcessor;
 import com.slytechs.protocol.Frame.FrameNumber;
 import com.slytechs.protocol.Packet;
 import com.slytechs.protocol.Registration;
@@ -101,6 +109,91 @@ import com.slytechs.protocol.runtime.util.RuntimeMultipleExceptions;
 public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 
 	/**
+	 * @author Sly Technologies Inc
+	 * @author repos@slytechs.com
+	 */
+	public interface Configuration extends AutoCloseable {
+		
+		Configuration enableIpf(boolean b);
+
+		<T extends Installable> T install(IntFunction<T> processorFactory);
+		<T extends Installable> T install(int priority, IntFunction<T> processorFactory);
+
+		void read(String resource) throws IOException;
+
+		void read(Reader in) throws IOException;
+
+		void read(File configFile) throws FileNotFoundException, IOException;
+
+		Configuration uninstall(Class<? extends ProcessorConfigurator<?>> processorClass);
+
+		Configuration uninstall(ProProcessor<?> processor);
+
+		Configuration uninstAll(boolean preProcessors, boolean postProcessors);
+
+		Configuration uninstallAll();
+
+		Configuration setFrameNumber(FrameNumber frameNumberAssigner);
+
+		Configuration setFrameStartingNumber(long startingNo);
+
+		Configuration setBufferSize(long size, MemoryUnit unit) throws PcapException;
+
+		Configuration setPacketType(PacketDescriptorType type);
+
+		Configuration setPacketFormatter(PacketFormat formatter);
+
+		Configuration setPacketFactory(Function<PacketDescriptorType, Packet> factory);
+
+		Configuration setPacket(Packet reusablePacket);
+
+		Configuration setPortNumber(int portNo);
+
+		Configuration setTimestampUnit(TimestampUnit unit);
+
+		Configuration setUncaughtExceptionHandler(Consumer<? super Throwable> exceptionHandler);
+
+		Configuration setUncaughtExceptionHandler(UncaughtExceptionHandler exceptionHandler);
+
+		Configuration setBufferSize(int newSize) throws PcapException;
+
+		Configuration setDatalink(int newDatalink) throws PcapException;
+
+		Configuration setDatalink(Optional<PcapDlt> newDatalink) throws PcapException;
+
+		Configuration setDatalink(PcapDlt newDlt) throws PcapException;
+
+		Configuration setDirection(int newDirection) throws PcapException;
+
+		Configuration setDirection(Optional<PcapDirection> newDirection) throws PcapException;
+
+		Configuration setDirection(PcapDirection newDirection) throws PcapException;
+
+		Configuration setFilter(BpFilter newFilter) throws PcapException;
+
+		Configuration setFilter(Optional<BpFilter> newFilter) throws PcapException;
+
+		Configuration setImmediateMode(boolean newMode) throws PcapException;
+
+		Configuration setNonBlock(boolean nonBlockingMode) throws PcapException;
+
+		Configuration setPromisc(boolean promiscousMode) throws PcapException;
+
+		Configuration setRfmon(boolean enabelRfmonitor) throws PcapException;
+
+		Configuration setSnaplen(int newSnaplen) throws PcapException;
+
+		Configuration setTimeout(int newTimeoutInMillis) throws PcapException;
+
+		Configuration setTstampPrecision(PcapTStampPrecision newTimestampPrecision) throws PcapException;
+
+		Configuration setTstampType(PcapTstampType newTimestampType) throws PcapException;
+
+		@Override
+		void close() throws PcapActivatedException, PcapException;
+	}
+
+	/**
 	 * Context structure for the PcapPro class and its numerous processors.
 	 */
 	public final static class PcapProContext {
@@ -109,10 +202,10 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 		private TimeSource timeSource = TimeSource.ofRebased();
 
 		/** The pre processors. */
-		public final Stack<PcapProConfigurator<?>> preProcessors = new Stack<>();
+		public final Stack<ProcessorConfigurator<?>> preProcessors = new Stack<>();
 
 		/** The post processors. */
-		public final Stack<PcapProConfigurator<?>> postProcessors = new Stack<>();
+		public final Stack<ProcessorConfigurator<?>> postProcessors = new Stack<>();
 
 		/** The pcap type. */
 		public final PcapType pcapType;
@@ -421,10 +514,10 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	private PacketReceiver postProcessor;
 
 	/** The pre processor root. */
-	private final PcapDispatcher preProcessorRoot;
+	private final PacketDispatcher preProcessorRoot;
 
 	/** The pre processor. */
-	private PcapDispatcher preProcessor;
+	private PacketDispatcher preProcessor;
 
 	/** The is active. */
 	private boolean isActive;
@@ -448,7 +541,7 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 		config.abi = Objects.requireNonNull(abi, "abi");
 		config.portName = name;
 
-		this.preProcessorRoot = new StandardPcapDispatcher(pcapHandle, abi, this::breakloop);
+		this.preProcessorRoot = new PcapDispatcher(pcapHandle, abi, this::breakloop);
 		this.preProcessor = this.preProcessorRoot;
 		this.postProcessorRoot = new PacketDissectorReceiver(config);
 		this.postProcessor = postProcessorRoot;
@@ -456,7 +549,7 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 
 		postProcessorRoot.setPcapDispatcher(preProcessor);
 
-		setDescriptorType(PacketDescriptorType.TYPE2);
+		setPacketType(PacketDescriptorType.TYPE2);
 		enablePacketFormatter(true);
 	}
 
@@ -490,9 +583,9 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 			this.postProcessor.activate();
 			super.activate();
 		} catch (PcapActivatedException e) {} // Offline/dead handles are active already
-		
+
 		try {
-			
+
 			installAllPreProcessors();
 			installMainPacketProcessor();
 			installAllPostProcessors();
@@ -528,7 +621,7 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 * @param list         the list
 	 * @param classToCheck the class to check
 	 */
-	private void checkIfProcessorNotInstalledOrElseThrow(List<PcapProConfigurator<?>> list,
+	private void checkIfProcessorNotInstalledOrElseThrow(List<ProcessorConfigurator<?>> list,
 			Class<?> classToCheck) {
 
 		boolean found = list.stream()
@@ -578,7 +671,7 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 *         PCAP_ERROR_BREAK if the loop terminated due to a call to
 	 *         pcap_breakloop() before any packets were processed
 	 */
-	public int dispatch(int count, OfPacketConsumer packetConsumer) {
+	public int dispatch(int count, ProHandler.OfPacketConsumer packetConsumer) {
 		return dispatch(count, (u, p) -> packetConsumer.accept(p), 0);
 	}
 
@@ -643,7 +736,7 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 *         pcap_breakloop() before any packets were processed
 	 * @since libpcap 0.4
 	 */
-	public <U> int dispatch(int count, PcapProHandler.OfPacket<U> handler, U user) {
+	public <U> int dispatch(int count, ProHandler.OfPacket<U> handler, U user) {
 		checkIfActiveOrElseThrow();
 
 		return postProcessor.receivePacketWithDispatch(count, handler, user);
@@ -658,36 +751,8 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 *         PCAP_ERROR_BREAK if the loop terminated due to a call to
 	 *         pcap_breakloop() before any packets were processed
 	 */
-	public int dispatch(OfPacketConsumer packetConsumer) {
+	public int dispatch(ProHandler.OfPacketConsumer packetConsumer) {
 		return dispatch(0, (u, p) -> packetConsumer.accept(p), 0);
-	}
-
-	/**
-	 * Install factory.
-	 *
-	 * @param <T> the generic type
-	 * @param b   the b
-	 * @return the t
-	 */
-	public <T extends PostRxProcessor> PcapPro enableIpf(boolean b) {
-
-		if (b)
-			install(IpfReassembler::new);
-		else
-			uninstall(IpfReassembler.class);
-
-		return this;
-	}
-
-	/**
-	 * Enable ipf if.
-	 *
-	 * @param <T> the generic type
-	 * @param b   the b
-	 * @return the pcap pro
-	 */
-	public <T extends PostRxProcessor> PcapPro enableIpfIf(BooleanSupplier b) {
-		return enableIpf(b.getAsBoolean());
 	}
 
 	/**
@@ -800,6 +865,10 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 		return Optional.ofNullable(preProcessor.getUncaughtException());
 	}
 
+	public Configuration configure() {
+		return new ProConfigurationImpl(this);
+	}
+
 	/**
 	 * Install factory.
 	 *
@@ -807,10 +876,10 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 * @param postProcessorSupplier the post processor supplier
 	 * @return the t
 	 */
-	public <T extends PostRxProcessor> T install(PostRxProcessorFactory<T> postProcessorSupplier) {
+	public <T extends PacketProcessor> T installPost(Supplier<T> postProcessorSupplier) {
 		checkIfInactiveOrElseThrow();
 
-		return install(postProcessorSupplier.newInstance());
+		return install(postProcessorSupplier.get());
 	}
 
 	/**
@@ -820,10 +889,10 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 * @param preProcessorSupplier the pre processor supplier
 	 * @return the t
 	 */
-	public <T extends PreRxProcessor> T install(PreRxProcessorFactory<T> preProcessorSupplier) {
+	public <T extends MemorySegmentProcessor> T installPre(Supplier<T> preProcessorSupplier) {
 		checkIfInactiveOrElseThrow();
 
-		return install(preProcessorSupplier.newInstance());
+		return install(preProcessorSupplier.get());
 	}
 
 	/**
@@ -833,11 +902,11 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 * @param postProcessor the post processor
 	 * @return the t
 	 */
-	public <T extends PostRxProcessor> T install(T postProcessor) {
+	public <T extends PacketProcessor> T install(T postProcessor) {
 		checkIfInactiveOrElseThrow();
 		checkIfProcessorNotInstalledOrElseThrow(context.postProcessors, postProcessor.getClass());
 
-		if (!(postProcessor instanceof PcapProConfigurator<?> processor))
+		if (!(postProcessor instanceof ProcessorConfigurator<?> processor))
 			throw new IllegalArgumentException("invalid post-processor [%s]"
 					.formatted(postProcessor.getClass()));
 
@@ -853,11 +922,11 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 * @param preProcessor the pre processor
 	 * @return the t
 	 */
-	public <T extends PreRxProcessor> T install(T preProcessor) {
+	public <T extends MemorySegmentProcessor> T install(T preProcessor) {
 		checkIfInactiveOrElseThrow();
 		checkIfProcessorNotInstalledOrElseThrow(context.preProcessors, preProcessor.getClass());
 
-		if (!(preProcessor instanceof PcapProConfigurator<?> processor))
+		if (!(preProcessor instanceof ProcessorConfigurator<?> processor))
 			throw new IllegalArgumentException("invalid pre-processor [%s]"
 					.formatted(preProcessor.getClass()));
 
@@ -900,7 +969,7 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 *
 	 * @param processor the processor
 	 */
-	private void installPostProcessor(PcapProConfigurator<?> processor) {
+	private void installPostProcessor(ProcessorConfigurator<?> processor) {
 		this.postProcessor = processor.newDispatcherInstance(preProcessor, postProcessor, context);
 		onClose(this.postProcessor::close);
 	}
@@ -910,7 +979,7 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 *
 	 * @param processor the processor
 	 */
-	private void installPreProcessor(PcapProConfigurator<?> processor) {
+	private void installPreProcessor(ProcessorConfigurator<?> processor) {
 		this.preProcessor = processor.newDispatcherInstance(this.preProcessor, context);
 		onClose(this.preProcessor::close);
 	}
@@ -994,7 +1063,7 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 *         pcap_breakloop() before any packets were processed
 	 * @since libpcap 0.4
 	 */
-	public <U> int loop(int count, PcapProHandler.OfPacket<U> handler, U user) {
+	public <U> int loop(int count, ProHandler.OfPacket<U> handler, U user) {
 		return postProcessor.receivePacketWithLoop(count, handler, user);
 	}
 
@@ -1154,7 +1223,7 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 * @param type the type
 	 * @return the pcap pro
 	 */
-	public PcapPro setDescriptorType(PacketDescriptorType type) {
+	public PcapPro setPacketType(PacketDescriptorType type) {
 		config.descriptorType = type;
 		config.dissector = PacketDissector.dissector(type);
 
@@ -1195,6 +1264,14 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 		config.formatter = formatter;
 
 		return this;
+	}
+
+	public PcapPro setPacketFactory(Function<PacketDescriptorType, Packet> factory) {
+		throw new UnsupportedOperationException();
+	}
+
+	public PcapPro setPacket(Packet reusablePacket) {
+		throw new UnsupportedOperationException();
 	}
 
 	/**
@@ -1254,7 +1331,7 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 * @param processorClass the processor class
 	 * @return this pcap pro handle
 	 */
-	public <T extends PcapProConfigurator<?>> PcapPro uninstall(Class<T> processorClass) {
+	public <T extends ProcessorConfigurator<?>> PcapPro uninstall(Class<T> processorClass) {
 
 		context.preProcessors.stream()
 				.filter(p -> p.getClass().equals(processorClass))
@@ -1276,7 +1353,7 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 * @param processor the processor instance
 	 * @return this pcap pro handle
 	 */
-	public <T extends PcapProConfigurator<T>> PcapPro uninstall(PcapProConfigurator<T> processor) {
+	public <T extends ProcessorConfigurator<T>> PcapPro uninstall(ProcessorConfigurator<T> processor) {
 
 		context.preProcessors.stream()
 				.filter(p -> p.equals(processor))

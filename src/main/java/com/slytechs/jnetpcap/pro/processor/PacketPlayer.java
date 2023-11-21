@@ -15,14 +15,13 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.slytechs.jnetpcap.pro;
+package com.slytechs.jnetpcap.pro.processor;
 
 import java.util.concurrent.TimeUnit;
 
 import org.jnetpcap.internal.PcapHeaderABI;
 
-import com.slytechs.jnetpcap.pro.PcapProConfigurator.PreRxProcessor;
-import com.slytechs.jnetpcap.pro.internal.PacketPlayerPreProcessor;
+import com.slytechs.jnetpcap.pro.internal.processor.PushProcesor;
 import com.slytechs.protocol.runtime.time.TimestampUnit;
 import com.slytechs.protocol.runtime.util.SystemProperties;
 
@@ -32,46 +31,46 @@ import com.slytechs.protocol.runtime.util.SystemProperties;
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  */
-public class PacketPlayer extends PcapProConfigurator<PacketPlayer> implements PreRxProcessor {
+public class PacketPlayer extends ProProcessor<PacketPlayer> {
 
 	/** The Constant PREFIX. */
 	private static final String PREFIX = "packet.player";
-	
+
 	/** The Constant PROPERTY_PACKET_PLAYER_ENABLE. */
 	public static final String PROPERTY_PACKET_PLAYER_ENABLE = PREFIX + ".enable";
-	
+
 	/** The Constant PROPERTY_PACKET_PLAYER_SYNC. */
 	public static final String PROPERTY_PACKET_PLAYER_SYNC = PREFIX + ".sync";
-	
+
 	/** The Constant PROPERTY_PACKET_PLAYER_SPEED. */
 	public static final String PROPERTY_PACKET_PLAYER_SPEED = PREFIX + ".speed";
 
 	/** The sync. */
 	private boolean sync = SystemProperties.boolValue(PROPERTY_PACKET_PLAYER_SYNC, true);
-	
+
 	/** The speed. */
 	private double speed = SystemProperties.doubleValue(PROPERTY_PACKET_PLAYER_SPEED, 1.0);
-	
+
 	/** The reference time nano. */
 	private long referenceTimeNano;
-	
+
 	/** The timestamp unit. */
 	private TimestampUnit timestampUnit = TimestampUnit.PCAP_MICRO;
-	
+
 	/** The abi. */
 	private PcapHeaderABI abi = PcapHeaderABI.selectOfflineAbi(false);
-	
+
 	/** The min ifg nano. */
 	private long minIfgNano = 0;
-	
+
 	/** The max ifg nano. */
 	private long maxIfgNano = Long.MAX_VALUE;
 
 	/**
 	 * Instantiates a new packet player.
 	 */
-	public PacketPlayer() {
-		super(PREFIX, PacketPlayerPreProcessor::new);
+	public PacketPlayer(int priority) {
+		super(priority, PREFIX);
 	}
 
 	/**
@@ -227,6 +226,14 @@ public class PacketPlayer extends PcapProConfigurator<PacketPlayer> implements P
 	 */
 	public PcapHeaderABI getAbi() {
 		return abi;
+	}
+
+	/**
+	 * @see com.slytechs.jnetpcap.pro.processor.ProProcessor#newDataProcessorInstance()
+	 */
+	@Override
+	protected PushProcesor newDataProcessorInstance() {
+		throw new UnsupportedOperationException("not implemented yet");
 	}
 
 }

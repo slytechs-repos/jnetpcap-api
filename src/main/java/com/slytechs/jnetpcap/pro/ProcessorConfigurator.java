@@ -20,12 +20,13 @@ package com.slytechs.jnetpcap.pro;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
 
-import org.jnetpcap.internal.PcapDispatcher;
+import org.jnetpcap.internal.PacketDispatcher;
 
 import com.slytechs.jnetpcap.pro.PcapPro.PcapProContext;
 import com.slytechs.jnetpcap.pro.internal.AbstractPacketReceiver.PacketDispatcherFactory;
 import com.slytechs.jnetpcap.pro.internal.AbstractPcapDispatcher.PcapDispatcherFactory;
 import com.slytechs.jnetpcap.pro.internal.PacketReceiver;
+import com.slytechs.protocol.runtime.util.HasPriority;
 import com.slytechs.protocol.runtime.util.SystemProperties;
 
 /**
@@ -35,63 +36,7 @@ import com.slytechs.protocol.runtime.util.SystemProperties;
  * @author repos@slytechs.com
  * @param <T> the generic type
  */
-public class PcapProConfigurator<T extends PcapProConfigurator<T>> {
-
-	/**
-	 * Marker interface for all RX processors which capture/receive packets/data.
-	 */
-	public interface RxProcessor {
-
-	}
-
-	/**
-	 * Marker interface for all TX processor which transmit/save packets/data.
-	 */
-	public interface TxProcessor {
-
-	}
-
-	/**
-	 * A factory for creating Post objects.
-	 *
-	 * @param <T> the generic type
-	 */
-	public interface PostRxProcessorFactory<T extends PostRxProcessor> {
-
-		/**
-		 * New instance.
-		 *
-		 * @return the t
-		 */
-		T newInstance();
-	}
-
-	/**
-	 * Marker interface for post-processors operate on protocol dissected packets.
-	 */
-	public interface PostRxProcessor extends RxProcessor {
-	}
-
-	/**
-	 * A factory for creating Pre objects.
-	 *
-	 * @param <T> the generic type
-	 */
-	public interface PreRxProcessorFactory<T extends PreRxProcessor> extends RxProcessor {
-
-		/**
-		 * New instance.
-		 *
-		 * @return the t
-		 */
-		T newInstance();
-	}
-
-	/**
-	 * Marker interface for pre-processors which operate on raw native packets.
-	 */
-	public interface PreRxProcessor extends RxProcessor {
-	}
+public class ProcessorConfigurator<T extends ProcessorConfigurator<T>> implements HasPriority {
 
 	/** The enable. */
 	private boolean enable;
@@ -105,13 +50,16 @@ public class PcapProConfigurator<T extends PcapProConfigurator<T>> {
 	/** The context. */
 	private PcapProContext context;
 
+	private final int priority;
+
 	/**
 	 * Instantiates a new pcap pro configurator.
-	 *
+	 * @param priority TODO
 	 * @param properyPrefix the propery prefix
 	 * @param factory       the factory
 	 */
-	protected PcapProConfigurator(String properyPrefix, PcapDispatcherFactory factory) {
+	protected ProcessorConfigurator(int priority, String properyPrefix, PcapDispatcherFactory factory) {
+		this.priority = priority;
 		this.pcapBasedFactory = Objects.requireNonNull(factory, "factory");
 		this.packetBasedFactory = null;
 
@@ -120,11 +68,12 @@ public class PcapProConfigurator<T extends PcapProConfigurator<T>> {
 
 	/**
 	 * Instantiates a new pcap pro configurator.
-	 *
+	 * @param priority TODO
 	 * @param properyPrefix the propery prefix
 	 * @param factory       the factory
 	 */
-	protected PcapProConfigurator(String properyPrefix, PacketDispatcherFactory<T> factory) {
+	protected ProcessorConfigurator(int priority, String properyPrefix, PacketDispatcherFactory<T> factory) {
+		this.priority = priority;
 		this.pcapBasedFactory = null;
 		this.packetBasedFactory = Objects.requireNonNull(factory, "factory");
 
@@ -168,25 +117,25 @@ public class PcapProConfigurator<T extends PcapProConfigurator<T>> {
 	/**
 	 * New dispatcher instance.
 	 *
-	 * @param pcapDispatcher the pcap dispatcher
+	 * @param packetDispatcher the pcap dispatcher
 	 * @param context        the context
 	 * @return the pcap dispatcher
 	 */
-	final PcapDispatcher newDispatcherInstance(PcapDispatcher pcapDispatcher, PcapProContext context) {
-		return pcapBasedFactory.newInstance(pcapDispatcher, us(), context);
+	public final PacketDispatcher newDispatcherInstance(PacketDispatcher packetDispatcher, PcapProContext context) {
+		return pcapBasedFactory.newInstance(packetDispatcher, us(), context);
 	}
 
 	/**
 	 * New dispatcher instance.
 	 *
-	 * @param pcapDispatcher the pcap dispatcher
+	 * @param packetDispatcher the pcap dispatcher
 	 * @param packetReceiver the packet receiver
 	 * @param context        the context
 	 * @return the packet receiver
 	 */
-	final PacketReceiver newDispatcherInstance(PcapDispatcher pcapDispatcher, PacketReceiver packetReceiver,
+	public final PacketReceiver newDispatcherInstance(PacketDispatcher packetDispatcher, PacketReceiver packetReceiver,
 			PcapProContext context) {
-		return packetBasedFactory.newInstance(pcapDispatcher, packetReceiver, us(), context);
+		return packetBasedFactory.newInstance(packetDispatcher, packetReceiver, us(), context);
 	}
 
 	/**
@@ -218,4 +167,11 @@ public class PcapProConfigurator<T extends PcapProConfigurator<T>> {
 		return (T) this;
 	}
 
+	/**
+	 * @see com.slytechs.protocol.runtime.util.HasPriority#priority()
+	 */
+	@Override
+	public int priority() {
+		throw new UnsupportedOperationException("not implemented yet");
+	}
 }

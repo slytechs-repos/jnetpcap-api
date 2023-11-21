@@ -21,11 +21,11 @@ import java.lang.foreign.MemorySegment;
 import java.util.concurrent.TimeUnit;
 
 import org.jnetpcap.PcapHandler.NativeCallback;
-import org.jnetpcap.internal.PcapDispatcher;
+import org.jnetpcap.internal.PacketDispatcher;
 import org.jnetpcap.internal.PcapHeaderABI;
 
-import com.slytechs.jnetpcap.pro.PacketRepeater;
 import com.slytechs.jnetpcap.pro.PcapPro.PcapProContext;
+import com.slytechs.jnetpcap.pro.processor.PacketRepeater;
 import com.slytechs.protocol.runtime.time.TimestampUnit;
 
 /**
@@ -34,7 +34,7 @@ import com.slytechs.protocol.runtime.time.TimestampUnit;
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  */
-public class PacketRepeaterPreProcessor extends AbstractPcapDispatcher implements PcapDispatcher {
+public class PacketRepeaterPreProcessor extends AbstractPcapDispatcher implements PacketDispatcher {
 
 	/** The config. */
 	private final PacketRepeater config;
@@ -54,12 +54,12 @@ public class PacketRepeaterPreProcessor extends AbstractPcapDispatcher implement
 	/**
 	 * Instantiates a new packet repeater pre processor.
 	 *
-	 * @param pcapDispatcher the pcap dispatcher
+	 * @param packetDispatcher the pcap dispatcher
 	 * @param config         the config
 	 * @param context        the context
 	 */
-	public PacketRepeaterPreProcessor(PcapDispatcher pcapDispatcher, Object config, PcapProContext context) {
-		super(pcapDispatcher);
+	public PacketRepeaterPreProcessor(PacketDispatcher packetDispatcher, Object config, PcapProContext context) {
+		super(packetDispatcher);
 		this.context = context;
 
 		if (!(config instanceof PacketRepeater cfg))

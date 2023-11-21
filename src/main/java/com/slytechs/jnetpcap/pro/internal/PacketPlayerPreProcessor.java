@@ -22,11 +22,11 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import org.jnetpcap.PcapHandler.NativeCallback;
-import org.jnetpcap.internal.PcapDispatcher;
+import org.jnetpcap.internal.PacketDispatcher;
 import org.jnetpcap.internal.PcapHeaderABI;
 
-import com.slytechs.jnetpcap.pro.PacketPlayer;
 import com.slytechs.jnetpcap.pro.PcapPro.PcapProContext;
+import com.slytechs.jnetpcap.pro.processor.PacketPlayer;
 import com.slytechs.protocol.runtime.time.TimeSource;
 import com.slytechs.protocol.runtime.time.TimestampUnit;
 
@@ -36,7 +36,7 @@ import com.slytechs.protocol.runtime.time.TimestampUnit;
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  */
-public class PacketPlayerPreProcessor extends AbstractPcapDispatcher implements PcapDispatcher {
+public class PacketPlayerPreProcessor extends AbstractPcapDispatcher implements PacketDispatcher {
 
 	/** The context. */
 	private final PcapProContext context;
@@ -65,12 +65,12 @@ public class PacketPlayerPreProcessor extends AbstractPcapDispatcher implements 
 	/**
 	 * Instantiates a new packet player pre processor.
 	 *
-	 * @param pcapDispatcher the pcap dispatcher
+	 * @param packetDispatcher the pcap dispatcher
 	 * @param config         the config
 	 * @param context        the context
 	 */
-	public PacketPlayerPreProcessor(PcapDispatcher pcapDispatcher, Object config, PcapProContext context) {
-		super(pcapDispatcher);
+	public PacketPlayerPreProcessor(PacketDispatcher packetDispatcher, Object config, PcapProContext context) {
+		super(packetDispatcher);
 
 		if (!(config instanceof PacketPlayer cfg))
 			throw new IllegalStateException("Not a PacketPlayer processor");

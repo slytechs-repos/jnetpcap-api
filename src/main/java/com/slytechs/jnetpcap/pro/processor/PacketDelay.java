@@ -15,12 +15,11 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.slytechs.jnetpcap.pro;
+package com.slytechs.jnetpcap.pro.processor;
 
 import java.util.concurrent.TimeUnit;
 
-import com.slytechs.jnetpcap.pro.PcapProConfigurator.PreRxProcessor;
-import com.slytechs.jnetpcap.pro.internal.PacketDelayPreProcessor;
+import com.slytechs.jnetpcap.pro.internal.processor.PushProcesor;
 import com.slytechs.protocol.runtime.util.SystemProperties;
 
 /**
@@ -29,14 +28,14 @@ import com.slytechs.protocol.runtime.util.SystemProperties;
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  */
-public final class PacketDelay extends PcapProConfigurator<PacketDelay> implements PreRxProcessor {
+public final class PacketDelay extends ProProcessor<PacketDelay> {
 
 	/** The Constant PREFIX. */
 	private static final String PREFIX = "packet.delay";
-	
+
 	/** The Constant PROPERTY_PACKET_REPEATER_ENABLE. */
 	public static final String PROPERTY_PACKET_REPEATER_ENABLE = PREFIX + ".enable";
-	
+
 	/** The Constant PROPERTY_PACKET_REPEATER_DELAY_NANO. */
 	public static final String PROPERTY_PACKET_REPEATER_DELAY_NANO = PREFIX + ".delayNano";
 
@@ -46,8 +45,8 @@ public final class PacketDelay extends PcapProConfigurator<PacketDelay> implemen
 	/**
 	 * Instantiates a new packet delay.
 	 */
-	public PacketDelay() {
-		super(PREFIX, PacketDelayPreProcessor::new);
+	public PacketDelay(int priority) {
+		super(priority, PREFIX);
 	}
 
 	/**
@@ -80,5 +79,13 @@ public final class PacketDelay extends PcapProConfigurator<PacketDelay> implemen
 	 */
 	public long getDelayNano() {
 		return delayNano;
+	}
+
+	/**
+	 * @see com.slytechs.jnetpcap.pro.processor.ProProcessor#newDataProcessorInstance()
+	 */
+	@Override
+	protected PushProcesor newDataProcessorInstance() {
+		throw new UnsupportedOperationException("not implemented yet");
 	}
 }

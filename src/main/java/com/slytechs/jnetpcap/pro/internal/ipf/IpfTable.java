@@ -19,8 +19,8 @@ package com.slytechs.jnetpcap.pro.internal.ipf;
 
 import java.nio.ByteBuffer;
 
-import com.slytechs.jnetpcap.pro.IpfReassembler;
 import com.slytechs.jnetpcap.pro.internal.ipf.JavaIpfDispatcher.DatagramQueue;
+import com.slytechs.jnetpcap.pro.processor.IpfReassembler;
 import com.slytechs.protocol.descriptor.IpfFragment;
 import com.slytechs.protocol.runtime.hash.CuckooHashTable;
 import com.slytechs.protocol.runtime.hash.HashTable;

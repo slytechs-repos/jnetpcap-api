@@ -19,14 +19,14 @@ package com.slytechs.jnetpcap.pro.internal.ipf;
 
 import java.lang.foreign.MemorySegment;
 
-import org.jnetpcap.internal.PcapDispatcher;
+import org.jnetpcap.internal.PacketDispatcher;
 import org.jnetpcap.internal.PcapForeignDowncall;
 import org.jnetpcap.internal.PcapForeignInitializer;
 
-import com.slytechs.jnetpcap.pro.IpfReassembler;
 import com.slytechs.jnetpcap.pro.PcapPro.PcapProContext;
 import com.slytechs.jnetpcap.pro.internal.AbstractPacketReceiver;
 import com.slytechs.jnetpcap.pro.internal.PacketReceiver;
+import com.slytechs.jnetpcap.pro.processor.IpfReassembler;
 
 /**
  * The Class IpfDispatcherNative.
@@ -51,7 +51,7 @@ public class IpfDispatcherNative
 	 * @param context the context
 	 */
 	public IpfDispatcherNative(
-			PcapDispatcher pcap,
+			PacketDispatcher pcap,
 			PacketReceiver packet,
 			IpfReassembler config,
 			PcapProContext context) {

@@ -15,18 +15,20 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
+package com.slytechs.jnetpcap.pro.internal.processor;
 
 /**
- * Provides packet dissection and IP fragment reassembly services.
- * 
- * @author Sly Technologies Inc.
+ * @author Sly Technologies Inc
  * @author repos@slytechs.com
  *
  */
-module com.slytechs.jnetpcap.pro {
-	exports com.slytechs.jnetpcap.pro;
-	exports com.slytechs.jnetpcap.pro.processor;
+public class PacketProcessors {
 
-	requires transitive org.jnetpcap;
-	requires transitive com.slytechs.protocol;
+	/**
+	 * 
+	 */
+	public PacketProcessors() {
+		// TODO Auto-generated constructor stub
+	}
+
 }
