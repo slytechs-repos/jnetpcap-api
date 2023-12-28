@@ -17,13 +17,13 @@
 	<dependencies>
 		<dependency>
 			<groupId>com.slytechs.jnet.jnetpcap</groupId>
-			<artifactId>jnetpcap-pro-api</artifactId>
-			<version>0.1.0-SNAPSHOT</version>
+			<artifactId>jnetpcap-api</artifactId>
+			<version>2.0.3-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>com.slytechs.jnet.protocol</groupId>
 			<artifactId>protocol-pack-web</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
+			<version>${protocol-sdk.version}</version>
 		</dependency>
 	</dependencies>
 </project>

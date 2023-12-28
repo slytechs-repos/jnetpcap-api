@@ -28,4 +28,5 @@ module com.slytechs.jnet.jnetpcap {
 
 	requires transitive org.jnetpcap;
 	requires transitive com.slytechs.jnet.protocol.core;
+	requires com.slytechs.jnet.jnetruntime;
 }
