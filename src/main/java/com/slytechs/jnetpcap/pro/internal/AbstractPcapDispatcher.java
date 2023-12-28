@@ -23,7 +23,6 @@ import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 
 import org.jnetpcap.PcapException;
-import org.jnetpcap.PcapHandler.NativeCallback;
 import org.jnetpcap.internal.PcapDispatcher;
 import org.jnetpcap.internal.PcapHeaderABI;
 import org.jnetpcap.util.PcapPacketRef;
@@ -243,6 +242,14 @@ public class AbstractPcapDispatcher implements PcapDispatcher {
 	@Override
 	public void setUncaughtExceptionHandler(UncaughtExceptionHandler exceptionHandler) {
 		getPcapDispatcher().setUncaughtExceptionHandler(exceptionHandler);
+	}
+
+	/**
+	 * @see org.jnetpcap.PcapHandler.NativeCallback#nativeCallback(java.lang.foreign.MemorySegment, java.lang.foreign.MemorySegment, java.lang.foreign.MemorySegment)
+	 */
+	@Override
+	public void nativeCallback(MemorySegment user, MemorySegment header, MemorySegment packet) {
+		throw new UnsupportedOperationException("not implemented yet");
 	}
 
 }

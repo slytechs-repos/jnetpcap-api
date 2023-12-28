@@ -2,12 +2,12 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>com.slytechs.jnet</groupId>
-	<artifactId>jnetpcap-pro</artifactId>
+	<groupId>com.slytechs.jnet.jnetpcap</groupId>
+	<artifactId>jnetpcap-pro-api</artifactId>
 	<!-- mvn versions:set -DnewVersion=_new_version_ -->
-	<version>1.0.0-SNAPSHOT</version>
-	<name>jNetPcap</name>
-	<description>A protocol enabled jNetPcap with IP Fragment reassembly.</description>
+	<version>0.1.0-SNAPSHOT</version>
+	<name>jNetPcap Pro API</name>
+	<description>A protocol aware PCAP API for packet dissection, reassembly and analysis</description>
 	<url>https://www.slytechs.com</url>
 	<properties>
 		<jdk.version>21</jdk.version>
@@ -59,9 +59,9 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>com.slytechs.jnet</groupId> 
-			<artifactId>jnetpcap</artifactId>
-			<version>2.0.0-SNAPSHOT</version>
+			<groupId>com.slytechs.jnet.jnetpcap</groupId> 
+			<artifactId>jnetpcap-api</artifactId>
+			<version>2.0.3-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>com.slytechs.jnet</groupId>
