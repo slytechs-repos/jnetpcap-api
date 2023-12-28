@@ -15,17 +15,26 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
+package com.slytechs.jnetpcap.internal.ipf;
 
 /**
- * Provides packet dissection and IP fragment reassembly services.
- * 
- * @author Sly Technologies Inc.
- * @author repos@slytechs.com
+ * The Class IpfReassemblyException.
  *
+ * @author Sly Technologies Inc
+ * @author repos@slytechs.com
  */
-module com.slytechs.jnetpcap.pro {
-	exports com.slytechs.jnetpcap;
+public class IpfReassemblyException extends Exception {
 
-	requires transitive org.jnetpcap;
-	requires transitive com.slytechs.protocol;
+	/** The Constant serialVersionUID. */
+	private static final long serialVersionUID = -4119643911938328725L;
+
+	/**
+	 * Instantiates a new ipf reassembly exception.
+	 *
+	 * @param message the message
+	 */
+	public IpfReassemblyException(String message) {
+		super(message);
+	}
+
 }
