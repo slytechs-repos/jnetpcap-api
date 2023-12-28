@@ -23,7 +23,7 @@
  * @author repos@slytechs.com
  *
  */
-module com.slytechs.jnetpcap.pro {
+module com.slytechs.jnetpcap {
 	exports com.slytechs.jnetpcap;
 
 	requires transitive org.jnetpcap;
