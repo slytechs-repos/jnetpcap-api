@@ -22,6 +22,11 @@
 		</dependency>
 		<dependency>
 			<groupId>com.slytechs.jnet.protocol</groupId>
+			<artifactId>protocol-pack-api</artifactId>
+			<version>${protocol-sdk.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.slytechs.jnet.protocol</groupId>
 			<artifactId>protocol-pack-web</artifactId>
 			<version>${protocol-sdk.version}</version>
 		</dependency>
