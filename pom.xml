@@ -8,9 +8,9 @@
 		<artifactId>jnetpcap-sdk-parent</artifactId>
 		<version>0.10.0-SNAPSHOT</version>
 	</parent>
-	<artifactId>jnetpcap-pro-api</artifactId>
+	<artifactId>jnetpcap-api</artifactId>
 	<!-- mvn versions:set -DnewVersion=_new_version_ -->
-	<name>jNetPcap Pro API</name>
+	<name>jNetPcap API</name>
 	<description>A protocol aware PCAP API for packet dissection, reassembly and
 		analysis</description>
 
