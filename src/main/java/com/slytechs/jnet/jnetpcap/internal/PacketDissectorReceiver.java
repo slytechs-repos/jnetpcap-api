@@ -27,6 +27,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
 import org.jnetpcap.PcapException;
+import org.jnetpcap.internal.ForeignUtils;
 import org.jnetpcap.internal.PcapDispatcher;
 import org.jnetpcap.util.PcapPacketRef;
 
@@ -466,10 +467,10 @@ public class PacketDissectorReceiver
 			try (var arena = Arena.ofShared()) {
 
 				int hdrlen = config.abi.headerLength();
-				pcapHdr = pcapHdr.reinterpret(hdrlen, arena, EMPTY_CLEANUP);
+				pcapHdr = pcapHdr.reinterpret(hdrlen, arena, ForeignUtils.EMPTY_CLEANUP);
 
 				int caplen = config.abi.captureLength(pcapHdr);
-				pktData = pktData.reinterpret(caplen, arena, EMPTY_CLEANUP);
+				pktData = pktData.reinterpret(caplen, arena, ForeignUtils.EMPTY_CLEANUP);
 
 				Packet packet = processPacket(pcapHdr, pktData, arena);
 				if (packet != null)
