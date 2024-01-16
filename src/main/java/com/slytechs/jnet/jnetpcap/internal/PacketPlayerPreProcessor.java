@@ -26,7 +26,7 @@ import org.jnetpcap.internal.PcapDispatcher;
 import org.jnetpcap.internal.PcapHeaderABI;
 
 import com.slytechs.jnet.jnetpcap.PacketPlayer;
-import com.slytechs.jnet.jnetpcap.PcapPro.PcapProContext;
+import com.slytechs.jnet.jnetpcap.NetPcap.PcapProContext;
 import com.slytechs.jnet.jnetruntime.time.TimeSource;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
 

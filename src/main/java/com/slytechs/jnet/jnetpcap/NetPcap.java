@@ -98,7 +98,7 @@ import com.slytechs.jnet.protocol.meta.PacketFormat;
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  */
-public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
+public final class NetPcap extends NonSealedPcap implements CaptureStatistics {
 
 	/**
 	 * Context structure for the PcapPro class and its numerous processors.
@@ -166,8 +166,8 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 * @throws PcapException the pcap exception
 	 * @since libpcap 1.0
 	 */
-	public static PcapPro create(PcapIf device) throws PcapException {
-		return Pcap1_0.create(PcapPro::newLiveInstance, device.name());
+	public static NetPcap create(PcapIf device) throws PcapException {
+		return Pcap1_0.create(NetPcap::newLiveInstance, device.name());
 	}
 
 	/**
@@ -189,8 +189,8 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 * @throws PcapException the pcap exception
 	 * @since libpcap 1.0
 	 */
-	public static PcapPro create(String device) throws PcapException {
-		return Pcap1_9.create(PcapPro::newLiveInstance, device);
+	public static NetPcap create(String device) throws PcapException {
+		return Pcap1_9.create(NetPcap::newLiveInstance, device);
 	}
 
 	/**
@@ -204,8 +204,8 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 * @return the new pcap-pro instance initialized to a new pcap native handle and
 	 *         specific native architecture ABI
 	 */
-	static PcapPro newDeadInstance(MemorySegment pcapHandle, String name, PcapHeaderABI abi) {
-		return new PcapPro(pcapHandle, name, abi, PcapType.DEAD_HANDLE);
+	static NetPcap newDeadInstance(MemorySegment pcapHandle, String name, PcapHeaderABI abi) {
+		return new NetPcap(pcapHandle, name, abi, PcapType.DEAD_HANDLE);
 	}
 
 	/**
@@ -219,8 +219,8 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 * @return the new pcap-pro instance initialized to a new pcap native handle and
 	 *         specific native architecture ABI
 	 */
-	static PcapPro newLiveInstance(MemorySegment pcapHandle, String name, PcapHeaderABI abi) {
-		return new PcapPro(pcapHandle, name, abi, PcapType.LIVE_CAPTURE);
+	static NetPcap newLiveInstance(MemorySegment pcapHandle, String name, PcapHeaderABI abi) {
+		return new NetPcap(pcapHandle, name, abi, PcapType.LIVE_CAPTURE);
 	}
 
 	/**
@@ -234,8 +234,8 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 * @return the new pcap-pro instance initialized to a new pcap native handle and
 	 *         specific native architecture ABI
 	 */
-	static PcapPro newOfflineInstance(MemorySegment pcapHandle, String name, PcapHeaderABI abi) {
-		return new PcapPro(pcapHandle, name, abi, PcapType.OFFLINE_READER);
+	static NetPcap newOfflineInstance(MemorySegment pcapHandle, String name, PcapHeaderABI abi) {
+		return new NetPcap(pcapHandle, name, abi, PcapType.OFFLINE_READER);
 	}
 
 	/**
@@ -266,8 +266,8 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 * @throws PcapException any errors
 	 * @since libpcap 0.6
 	 */
-	public static PcapPro openDead(PcapDlt linktype, int snaplen) throws PcapException {
-		return Pcap0_6.openDead(PcapPro::newDeadInstance, linktype, snaplen);
+	public static NetPcap openDead(PcapDlt linktype, int snaplen) throws PcapException {
+		return Pcap0_6.openDead(NetPcap::newDeadInstance, linktype, snaplen);
 	}
 
 	/**
@@ -302,9 +302,9 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 * @throws PcapException any errors
 	 * @since libpcap 1.5.1
 	 */
-	public static PcapPro openDeadWithTstampPrecision(PcapDlt linktype, int snaplen, PcapTStampPrecision precision)
+	public static NetPcap openDeadWithTstampPrecision(PcapDlt linktype, int snaplen, PcapTStampPrecision precision)
 			throws PcapException {
-		return Pcap1_5.openDeadWithTstampPrecision(PcapPro::newDeadInstance, linktype, snaplen, precision);
+		return Pcap1_5.openDeadWithTstampPrecision(NetPcap::newDeadInstance, linktype, snaplen, precision);
 	}
 
 	/**
@@ -328,13 +328,13 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 * @throws PcapException any errors
 	 * @since libpcap 0.4
 	 */
-	public static PcapPro openLive(PcapIf device,
+	public static NetPcap openLive(PcapIf device,
 			int snaplen,
 			boolean promisc,
 			long timeout,
 			TimeUnit unit) throws PcapException {
 
-		return Pcap0_4.openLive(PcapPro::newLiveInstance, device.name(), snaplen, promisc, timeout, unit);
+		return Pcap0_4.openLive(NetPcap::newLiveInstance, device.name(), snaplen, promisc, timeout, unit);
 	}
 
 	/**
@@ -358,13 +358,13 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 * @throws PcapException any errors
 	 * @since libpcap 0.4
 	 */
-	public static PcapPro openLive(String device,
+	public static NetPcap openLive(String device,
 			int snaplen,
 			boolean promisc,
 			long timeout,
 			TimeUnit unit) throws PcapException {
 
-		return Pcap0_4.openLive(PcapPro::newLiveInstance, device, snaplen, promisc, timeout, unit);
+		return Pcap0_4.openLive(NetPcap::newLiveInstance, device, snaplen, promisc, timeout, unit);
 	}
 
 	/**
@@ -380,8 +380,8 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 * @throws PcapException any errors
 	 * @since libpcap 0.4
 	 */
-	public static PcapPro openOffline(File file) throws PcapException {
-		return Pcap0_4.openOffline(PcapPro::newOfflineInstance, file.getAbsolutePath());
+	public static NetPcap openOffline(File file) throws PcapException {
+		return Pcap0_4.openOffline(NetPcap::newOfflineInstance, file.getAbsolutePath());
 	}
 
 	/**
@@ -401,8 +401,8 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 * @throws PcapException any errors
 	 * @since libpcap 0.4
 	 */
-	public static PcapPro openOffline(String fname) throws PcapException {
-		return Pcap0_4.openOffline(PcapPro::newOfflineInstance, fname);
+	public static NetPcap openOffline(String fname) throws PcapException {
+		return Pcap0_4.openOffline(NetPcap::newOfflineInstance, fname);
 	}
 
 	/** The ipf config. */
@@ -443,7 +443,7 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 * @param pcapType   the pcap handle type such as LIVE, OFFLINE or DEAD
 	 *                   depending how the pcap-pro handle was opened
 	 */
-	PcapPro(MemorySegment pcapHandle, String name, PcapHeaderABI abi, PcapType pcapType) {
+	NetPcap(MemorySegment pcapHandle, String name, PcapHeaderABI abi, PcapType pcapType) {
 		super(pcapHandle, name, abi);
 		config.abi = Objects.requireNonNull(abi, "abi");
 		config.portName = name;
@@ -669,7 +669,7 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 * @param b   the b
 	 * @return the t
 	 */
-	public <T extends PostRxProcessor> PcapPro enableIpf(boolean b) {
+	public <T extends PostRxProcessor> NetPcap enableIpf(boolean b) {
 
 		if (b)
 			installPost(IpfReassembler::new);
@@ -686,7 +686,7 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 * @param b   the b
 	 * @return the pcap pro
 	 */
-	public <T extends PostRxProcessor> PcapPro enableIpfIf(BooleanSupplier b) {
+	public <T extends PostRxProcessor> NetPcap enableIpfIf(BooleanSupplier b) {
 		return enableIpf(b.getAsBoolean());
 	}
 
@@ -697,7 +697,7 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 *          to builtin "terse" packet format
 	 * @return this pcap pro instance
 	 */
-	public PcapPro enablePacketFormatter(boolean b) {
+	public NetPcap enablePacketFormatter(boolean b) {
 
 		if (b)
 			setPacketFormatter(new PacketFormat());
@@ -1154,7 +1154,7 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 * @param type the type
 	 * @return the pcap pro
 	 */
-	public PcapPro setDescriptorType(PacketDescriptorType type) {
+	public NetPcap setDescriptorType(PacketDescriptorType type) {
 		config.descriptorType = type;
 		config.dissector = PacketDissector.dissector(type);
 
@@ -1169,7 +1169,7 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 * @param frameNumberAssigner the frame number assigner
 	 * @return the pcap pro
 	 */
-	public PcapPro setFrameNumber(FrameNumber frameNumberAssigner) {
+	public NetPcap setFrameNumber(FrameNumber frameNumberAssigner) {
 		config.frameNo = frameNumberAssigner;
 
 		return this;
@@ -1181,7 +1181,7 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 * @param startingNo the starting no
 	 * @return the pcap pro
 	 */
-	public PcapPro setFrameStartingNumber(long startingNo) {
+	public NetPcap setFrameStartingNumber(long startingNo) {
 		return setFrameNumber(FrameNumber.starting(startingNo));
 	}
 
@@ -1191,7 +1191,7 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 * @param formatter the formatter
 	 * @return the pcap pro
 	 */
-	public PcapPro setPacketFormatter(PacketFormat formatter) {
+	public NetPcap setPacketFormatter(PacketFormat formatter) {
 		config.formatter = formatter;
 
 		return this;
@@ -1203,7 +1203,7 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 * @param portNo the port no
 	 * @return the pcap pro
 	 */
-	public PcapPro setPortNumber(int portNo) {
+	public NetPcap setPortNumber(int portNo) {
 		config.portNo = portNo;
 
 		return this;
@@ -1216,7 +1216,7 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 * @param unit the new timestamp unit
 	 * @return this pcap
 	 */
-	public PcapPro setTimestampUnit(TimestampUnit unit) {
+	public NetPcap setTimestampUnit(TimestampUnit unit) {
 		config.timestampUnit = unit;
 
 		return this;
@@ -1229,7 +1229,7 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 * @return the pcap
 	 */
 	@Override
-	public final PcapPro setUncaughtExceptionHandler(Consumer<? super Throwable> exceptionHandler) {
+	public final NetPcap setUncaughtExceptionHandler(Consumer<? super Throwable> exceptionHandler) {
 		return setUncaughtExceptionHandler((t, e) -> exceptionHandler.accept(e));
 	}
 
@@ -1241,7 +1241,7 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 * @see org.jnetpcap.Pcap#setUncaughtExceptionHandler(java.lang.Thread.UncaughtExceptionHandler)
 	 */
 	@Override
-	public final PcapPro setUncaughtExceptionHandler(UncaughtExceptionHandler exceptionHandler) {
+	public final NetPcap setUncaughtExceptionHandler(UncaughtExceptionHandler exceptionHandler) {
 		super.setUncaughtExceptionHandler(exceptionHandler);
 
 		return this;
@@ -1254,7 +1254,7 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 * @param processorClass the processor class
 	 * @return this pcap pro handle
 	 */
-	public <T extends PcapProConfigurator<?>> PcapPro uninstall(Class<T> processorClass) {
+	public <T extends PcapProConfigurator<?>> NetPcap uninstall(Class<T> processorClass) {
 
 		context.preProcessors.stream()
 				.filter(p -> p.getClass().equals(processorClass))
@@ -1276,7 +1276,7 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 * @param processor the processor instance
 	 * @return this pcap pro handle
 	 */
-	public <T extends PcapProConfigurator<T>> PcapPro uninstall(PcapProConfigurator<T> processor) {
+	public <T extends PcapProConfigurator<T>> NetPcap uninstall(PcapProConfigurator<T> processor) {
 
 		context.preProcessors.stream()
 				.filter(p -> p.equals(processor))
@@ -1300,7 +1300,7 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 * @param postProcessors the post processors
 	 * @return the pcap pro
 	 */
-	public PcapPro uninstAll(boolean preProcessors, boolean postProcessors) {
+	public NetPcap uninstAll(boolean preProcessors, boolean postProcessors) {
 		checkIfInactiveOrElseThrow();
 
 		if (preProcessors)
@@ -1318,7 +1318,7 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 *
 	 * @return reference to this pcap handle
 	 */
-	public PcapPro uninstallAll() {
+	public NetPcap uninstallAll() {
 		checkIfInactiveOrElseThrow();
 
 		return uninstAll(true, true);
@@ -1339,7 +1339,7 @@ public final class PcapPro extends NonSealedPcap implements CaptureStatistics {
 	 * @since libpcap 1.0
 	 * @since jNetPcap Pro 1.0
 	 */
-	public PcapPro setBufferSize(long size, MemoryUnit unit) throws PcapException {
+	public NetPcap setBufferSize(long size, MemoryUnit unit) throws PcapException {
 
 		super.setBufferSize(unit.toBytesAsInt(size));
 

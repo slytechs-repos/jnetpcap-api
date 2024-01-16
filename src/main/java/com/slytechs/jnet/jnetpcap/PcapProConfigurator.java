@@ -22,7 +22,7 @@ import java.util.function.BooleanSupplier;
 
 import org.jnetpcap.internal.PcapDispatcher;
 
-import com.slytechs.jnet.jnetpcap.PcapPro.PcapProContext;
+import com.slytechs.jnet.jnetpcap.NetPcap.PcapProContext;
 import com.slytechs.jnet.jnetpcap.internal.PacketReceiver;
 import com.slytechs.jnet.jnetpcap.internal.AbstractPacketReceiver.PacketDispatcherFactory;
 import com.slytechs.jnet.jnetpcap.internal.AbstractPcapDispatcher.PcapDispatcherFactory;

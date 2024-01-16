@@ -24,7 +24,7 @@ import org.jnetpcap.PcapHandler.NativeCallback;
 import org.jnetpcap.internal.PcapDispatcher;
 
 import com.slytechs.jnet.jnetpcap.PacketDelay;
-import com.slytechs.jnet.jnetpcap.PcapPro.PcapProContext;
+import com.slytechs.jnet.jnetpcap.NetPcap.PcapProContext;
 
 /**
  * The Class PacketDelayPreProcessor.

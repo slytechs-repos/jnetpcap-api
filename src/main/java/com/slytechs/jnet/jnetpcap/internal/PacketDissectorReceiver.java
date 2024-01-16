@@ -150,7 +150,7 @@ public class PacketDissectorReceiver
 		config.dissector.writeDescriptor(reusableDescBuffer.clear());
 		config.dissector.reset();
 
-		Packet packet = reusablePacket;
+		Packet packet = new Packet();
 		PacketDescriptor desc = packet.descriptor();
 
 		packet.bind(bpkt.flip(), mpacket);
@@ -371,7 +371,8 @@ public class PacketDissectorReceiver
 	}
 
 	/**
-	 * @see com.slytechs.jnet.jnetpcap.internal.PacketReceiver#onNativeCallbackException(java.lang.Throwable, int, int)
+	 * @see com.slytechs.jnet.jnetpcap.internal.PacketReceiver#onNativeCallbackException(java.lang.Throwable,
+	 *      int, int)
 	 */
 	@Override
 	public void onNativeCallbackException(Throwable e, int caplen, int wirelen) {
@@ -382,7 +383,8 @@ public class PacketDissectorReceiver
 	}
 
 	/**
-	 * @see com.slytechs.jnet.jnetpcap.internal.PacketReceiver#processPacket(java.nio.ByteBuffer, java.lang.foreign.MemorySegment, int, int, long)
+	 * @see com.slytechs.jnet.jnetpcap.internal.PacketReceiver#processPacket(java.nio.ByteBuffer,
+	 *      java.lang.foreign.MemorySegment, int, int, long)
 	 */
 	@Override
 	public <U> Packet processPacket(
@@ -463,6 +465,12 @@ public class PacketDissectorReceiver
 
 			try (var arena = Arena.ofShared()) {
 
+				int hdrlen = config.abi.headerLength();
+				pcapHdr = pcapHdr.reinterpret(hdrlen, arena, EMPTY_CLEANUP);
+
+				int caplen = config.abi.captureLength(pcapHdr);
+				pktData = pktData.reinterpret(caplen, arena, EMPTY_CLEANUP);
+
 				Packet packet = processPacket(pcapHdr, pktData, arena);
 				if (packet != null)
 					sink.handlePacket(user, packet);
@@ -471,7 +479,7 @@ public class PacketDissectorReceiver
 
 		}, MemorySegment.NULL); // We don't pass user object to native dispatcher
 	}
-	
+
 	/**
 	 * Gets the singleton packet.
 	 *

@@ -29,7 +29,7 @@ import org.jnetpcap.internal.PcapDispatcher;
 
 import com.slytechs.jnet.jnetpcap.CaptureStatistics;
 import com.slytechs.jnet.jnetpcap.PcapProConfigurator;
-import com.slytechs.jnet.jnetpcap.PcapPro.PcapProContext;
+import com.slytechs.jnet.jnetpcap.NetPcap.PcapProContext;
 import com.slytechs.jnet.jnetpcap.PcapProHandler.OfPacket;
 import com.slytechs.jnet.protocol.Packet;
 import com.slytechs.jnet.protocol.core.constants.PacketDescriptorType;
