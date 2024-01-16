@@ -383,7 +383,7 @@ public class IpfDgramReassembler implements Expirable {
 
 		this.expiration = timeSource.timestamp() + config.getTimeoutMilli();
 		this.tableEntry.setKey(key);
-		this.session = Arena.ofAuto();
+		this.session = Arena.ofShared();
 
 		this.buffer.clear();
 		this.observedSize = 0;
