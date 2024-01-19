@@ -1,19 +1,18 @@
 # jNetPcap API
 A full featured, protocol enabled, java API with IP Fragment tracking and reassembly.
 
-## About
+## Overview
 
-**jNetPcap API** is a Java library that provides access to libpcap, a low-level network monitoring library. The library allows Java developers to write applications that can capture, read, and manipulate network packets in real-time.
+**jNetPcap API** is a Java module, which provides the main API (application programming interface) for you application. The API is build on and extends the lower level [**jnetpcap-wrapper**][jnetpcap-wrapper] module for raw **libpcap** capabilities. 
 
-To use **jNetPcap API**, you need to download and install the library and add it to your Java project's classpath. Once you have done that, you can use the Java API provided by jNetPcap* to interact with network packets.
+The API provides extensive functionality for 
 
-The library includes a set of classes and methods that allow you to capture network packets, filter and search through them, extract and analyze packet data, and ultimately write custom network analysis applications.
+* packet processing
+* deep packet inspection
+* protocol analysis
+* packet generation for transmission.
 
-To begin capturing packets, you can create an instance of the `Pcap` class, which represents a network interface that the library will use to capture packets. Then you can create a `PcapPacketHandler` instance to process each packet as it is captured.
-
-**jNetPcap API** also includes functionality for creating filters to capture only the packets that match certain criteria, such as a specific port, protocol, or IP address. Additionally, the library supports packet decoding and analysis for a variety of common protocols, including TCP, UDP, and ICMP wtih IP fragment reassembly if desired.
-
-> **Note!** TCP stream reassebly is provided by **jNetWorks SDK** (Available soon!) library which is a more advanced network capture and analsysis SDK, and currently not available with **jNetPcap API**.
+[**jNetPcap SDK**][jnetpcap-sdk], which is a parent module for all of **jNetPcap API** artifacts, ensures that all of the available protocol packs and required modules are available for use.
 
 ## How to use this library
 The **jNetPcap API** library provides the starting point for your application. 
@@ -22,6 +21,8 @@ The **jNetPcap API** library provides the starting point for your application.
 The library requires [**jnetpcap-wrapper**][jnetpcap-wrapper], a low level *libpcap* module and the [**protocol-pack-sdk**][protocol-pack-sdk] modules which provide runtime and protocol support to **jNetPcap API**, grouped in numerous protocol packs.
 
 #### Maven Central setup
+The easiest way to setup your application, is to add `jnetpcap-api` module as a dependency in your Maven `pom.xml` project file. This will allow Maven to download all of the required prerequisites for you project.
+
 ```
 <dependency>
 	<groupId>com.slytechs.jnet.jnetpcap</groupId>
@@ -102,7 +103,8 @@ pcap
 		.activateIpf(); // Or Pcap.activate() if using Pcap.create(...)
 ```
 
-[protocol-pack-sdk]: https://github.com/slytechs-repos/protocol-pack-sdk
-[jnetpcap-wrapper]: https://github.com/slytechs-repos/jnetpcap-wrapper
-[jnetpcap-examples]: https://github.com/slytechs-repos/jnetpcap-examples
-[jnetworks]: https://github.com/slytechs-repos/jnetworks-sdk
+[protocol-pack-sdk]: <https://github.com/slytechs-repos/protocol-pack-sdk>
+[jnetpcap-sdk]: <https://github.com/slytechs-repos/jnetpcap-sdk>
+[jnetpcap-wrapper]: <https://github.com/slytechs-repos/jnetpcap-wrapper>
+[jnetpcap-examples]: <https://github.com/slytechs-repos/jnetpcap-examples>
+[jnetworks-sdk]: <https://github.com/slytechs-repos/jnetworks-sdk>
