@@ -1,5 +1,5 @@
 # jNetPcap API
-A protocol enabled **jNetPcap Wrapper** library with IP Fragment tracking and reassembly.
+A full featured, protocol enabled, java API with IP Fragment tracking and reassembly.
 
 ## About
 
@@ -18,8 +18,17 @@ To begin capturing packets, you can create an instance of the `Pcap` class, whic
 ## How to use this library
 The **jNetPcap API** library provides the starting point for your application. 
 
-### Prerequisites
-The library requires [**jnetpcap-wrapper**][jnetpcap-wrapper] low level *libpcap* module and the [**protocol-pack-sdk**][protocol-pack-sdk] modules which provide runtime and protocol support to **jNetPcap API**, grouped in numerous protocol packs.
+### Setup
+The library requires [**jnetpcap-wrapper**][jnetpcap-wrapper], a low level *libpcap* module and the [**protocol-pack-sdk**][protocol-pack-sdk] modules which provide runtime and protocol support to **jNetPcap API**, grouped in numerous protocol packs.
+
+#### Maven Central setup
+```
+<dependency>
+	<groupId>com.slytechs.jnet.jnetpcap</groupId>
+	<artifactId>jnetpcap-api</artifactId>
+	<version>0.10.0</version>
+</dependency>
+```
 
 ## Examples
 To get started lets take a look at a couple of examples.
