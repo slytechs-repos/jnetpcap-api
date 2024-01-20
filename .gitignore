@@ -54,3 +54,4 @@ eagle.epf
 /.project
 /.settings/
 /target/
+/pom.xml.versionsBackup
