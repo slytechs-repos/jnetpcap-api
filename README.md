@@ -1,3 +1,5 @@
+![Maven Central](https://img.shields.io/maven-central/v/com.slytechs.jnet.jnetpcap/jnetpcap-api)
+
 # jNetPcap API
 A full featured, protocol enabled, java API with IP Fragment tracking and reassembly.
 
