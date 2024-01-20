@@ -15,16 +15,43 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.slytechs.jnetpcap.pro.internal.ipf;
+package com.slytechs.jnet.jnetpcap;
 
 /**
- * IP Fragment tracking table.
- * 
+ * The Class IpfStatistics.
+ *
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
- * @author Mark Bednarczyk
- *
  */
-public interface IpfTable {
+public final class IpfStatistics {
 
+	/** The table insertion failure. */
+	private long tableInsertionFailure;
+	
+	/** The ipfprocessing failure. */
+	private long ipfprocessingFailure;
+
+	/**
+	 * Instantiates a new ipf statistics.
+	 */
+	public IpfStatistics() {
+	}
+
+	/**
+	 * Inc table insertion failure.
+	 *
+	 * @param delta the delta
+	 */
+	public void incTableInsertionFailure(int delta) {
+		tableInsertionFailure += delta;
+	}
+
+	/**
+	 * Inc ipf processing failure.
+	 *
+	 * @param delta the delta
+	 */
+	public void incIpfProcessingFailure(int delta) {
+		ipfprocessingFailure += delta;
+	}
 }

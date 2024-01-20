@@ -15,13 +15,15 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.slytechs.jnetpcap.pro;
+package com.slytechs.jnet.jnetpcap;
 
-import java.lang.foreign.MemoryAddress;
+import java.nio.ByteBuffer;
+import java.util.function.Consumer;
 
 import org.jnetpcap.PcapHandler;
 
-import com.slytechs.protocol.Packet;
+import com.slytechs.jnet.protocol.Packet;
+import com.slytechs.jnet.protocol.descriptor.IpfFragment;
 
 /**
  * Marker interface for all Pcap pro packet handlers.
@@ -39,6 +41,20 @@ public interface PcapProHandler extends PcapHandler {
 	 */
 	@FunctionalInterface
 	public interface OfPacket<U> extends PcapProHandler {
+		
+		/** Empty/No-op callback handler. */
+		OfPacket<?> EMPTY = (u, p) -> {};
+		
+		/**
+		 * Empty/No-op callback handler.
+		 *
+		 * @param <U> the generic type
+		 * @return the of packet
+		 */
+		@SuppressWarnings("unchecked")
+		static <U> OfPacket<U> empty() {
+			return (OfPacket<U>) EMPTY;
+		}
 
 		/**
 		 * Handle a packet.
@@ -48,25 +64,36 @@ public interface PcapProHandler extends PcapHandler {
 		 */
 		void handlePacket(U user, Packet packet);
 	}
+	
+	/**
+	 * The Interface IpfHandler.
+	 */
+	public interface IpfHandler {
+		
+		/**
+		 * Handle ipf.
+		 *
+		 * @param frag      the frag
+		 * @param carrier   the carrier
+		 * @param ipPayload the ip payload
+		 */
+		void handleIpf(IpfFragment frag, ByteBuffer carrier, ByteBuffer ipPayload);
+	}
 
 	/**
-	 * Callback from a native IP fragment tracker and reassembler
+	 * A dispatcher which dispatches high level packets with protocol header
+	 * information.
 	 */
 	@FunctionalInterface
-	public interface NativeIpfCallback {
+	public interface OfPacketConsumer extends PcapProHandler, Consumer<Packet> {
 
 		/**
-		 * Handle native IPF (IP Fragment) callback.
+		 * Accept a packet.
 		 *
-		 * @param ipfDescriptor the IPF descriptor
-		 * @param pktDescriptor the standard packet descriptor
-		 * @param pkt           packet data
-		 * @param user          user opaque value returned back
+		 * @param packet packet data
 		 */
-		void handleNativeIpfCallback(
-				MemoryAddress ipfDescriptor,
-				MemoryAddress pktDescriptor,
-				MemoryAddress pkt,
-				MemoryAddress user);
+		@Override
+		void accept(Packet packet);
 	}
+
 }
