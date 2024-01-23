@@ -26,8 +26,8 @@ import org.jnetpcap.internal.PcapHeaderABI;
 import com.slytechs.jnet.jnetpcap.IpfConfiguration;
 import com.slytechs.jnet.jnetpcap.internal.PacketReceiverConfig;
 import com.slytechs.jnet.jnetruntime.time.TimestampSource;
-import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
 import com.slytechs.jnet.jnetruntime.time.TimestampSource.AssignableTimestampSource;
+import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
 import com.slytechs.jnet.jnetruntime.util.CountUnit;
 import com.slytechs.jnet.jnetruntime.util.MemoryUnit;
 
@@ -106,22 +106,22 @@ public class IpfConfig extends PacketReceiverConfig implements IpfConfiguration 
 
 		/** The pass. */
 		final boolean pass;
-		
+
 		/** The dgrams complete. */
 		final boolean dgramsComplete;
-		
+
 		/** The dgrams incomplete. */
 		final boolean dgramsIncomplete; // On timeout-duration or timeout-last
-		
+
 		/** The tracking. */
 		final boolean tracking;
-		
+
 		/** The pass complete. */
 		final boolean passComplete;
-		
+
 		/** The pass incomplete. */
 		final boolean passIncomplete; // On timeout-last
-		
+
 		/** The time source. */
 		final AssignableTimestampSource timeSource;
 
@@ -149,7 +149,7 @@ public class IpfConfig extends PacketReceiverConfig implements IpfConfiguration 
 		public AssignableTimestampSource getTimeSource() {
 			return timeSource;
 		}
-		
+
 		/**
 		 * Gets the pcap abi.
 		 *
@@ -158,7 +158,7 @@ public class IpfConfig extends PacketReceiverConfig implements IpfConfiguration 
 		public PcapHeaderABI getPcapAbi() {
 			return abi;
 		}
-		
+
 		/**
 		 * Gets the timestamp unit.
 		 *
@@ -529,7 +529,6 @@ public class IpfConfig extends PacketReceiverConfig implements IpfConfiguration 
 	 * @param ipfMaxFragTrackCount the ipf max frag track count
 	 * @param unit                 the unit
 	 * @return the ipf configuration
-	 * @see com.slytechs.jnet.jnetpcap.IpfConfiguration#setMaxFragmentCount(int)
 	 */
 	@Override
 	public IpfConfiguration setMaxFragmentCount(int ipfMaxFragTrackCount, CountUnit unit) {

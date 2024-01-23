@@ -76,23 +76,16 @@ import com.slytechs.jnet.protocol.meta.PacketFormat;
  * fully reassembled IP datagrams instead of individual fragments along with any
  * other type of packets selected by the packet filter applied.
  * <p>
- * To enable IPF mode, use the fluent method {@link #enable(boolean)} before the
+ * To enable IPF mode, use the fluent method {@link #enableIpf(boolean)} before the
  * pcap handle is activated. Once enabled, numerous defaults are used and can be
  * changed by the use of the pcap handle. By default, IPF tracking and
- * reassembly are both enabled. Of course these settings can be changed by use
- * of {@link #enableTracking(boolean)} and {@link #enableReassembly(boolean)}
- * respectively. Further more, IPF reassembly can be configured to attach IPF
+ * reassembly are both enabled. Further more, IPF reassembly can be configured to attach IPF
  * reassembled buffer to the last IP fragment and/or inserted as a new IP
  * data-gram into the dispatcher's packet stream. This way the user packet
  * handler will receive fully reassembled IP datagrams as packets. The default
  * is to not forward individual IP fragments, but deliver the fully reassembled
  * IP data-gram as a new packet, containing all of the IP fragment data
  * combined.
- * </p>
- * <p>
- * If you would like to receive all of the IP fragments used in the reassembly
- * as well, use the method {@link #enablePassthrough(boolean)} which will cause
- * all of the IP fragments to be passed through in their original form.
  * </p>
  * 
  * @author Sly Technologies Inc

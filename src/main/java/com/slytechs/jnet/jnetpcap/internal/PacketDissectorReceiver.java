@@ -171,7 +171,6 @@ public class PacketDissectorReceiver
 	 * Gets the capture statistics.
 	 *
 	 * @return the capture statistics
-	 * @see com.slytechs.jnetpcap.pro.PacketReceiver#getCaptureStatistics()
 	 */
 	@Override
 	public CaptureStatistics getCaptureStatistics() {
