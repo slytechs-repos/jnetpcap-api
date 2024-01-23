@@ -13,6 +13,53 @@
 	<name>jNetPcap API</name>
 	<description>A protocol aware PCAP API for packet dissection, reassembly and
 		analysis</description>
+	<reporting>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>3.4.1</version>
+				<configuration>
+					<doctitle>Public API for ${project.name} ${project.version}</doctitle>
+					<windowtitle>Public API for ${project.name}
+						${project.version}</windowtitle>
+					<testDoctitle>Test API for ${project.name}
+						${project.version}</testDoctitle>
+					<testWindowtitle>Test API for ${project.name}
+						${project.version}</testWindowtitle>
+					<encoding>${java.encoding}</encoding>
+					<source>${jdk.version}</source>
+					<overview>${basedir}/Overview.html</overview>
+					<additionalOptions> ${java.preview} </additionalOptions>
+					<excludePackageNames>*.internal.*</excludePackageNames>
+				</configuration>
+				<reportSets>
+					<reportSet>
+						<id>aggregate-no-fork</id>
+						<configuration>
+							<goal>aggregate-no-fork</goal>
+							<show>public</show>
+							<skip>false</skip>
+						</configuration>
+						<reports>
+							<report>javadoc</report>
+						</reports>
+					</reportSet>
+					<reportSet>
+						<id>test-aggregate-no-fork</id>
+						<configuration>
+							<goal>test-aggregate-no-fork</goal>
+							<show>private</show>
+							<skip>true</skip>
+						</configuration>
+						<reports>
+							<report>test-javadoc</report>
+						</reports>
+					</reportSet>
+				</reportSets>
+			</plugin>
+		</plugins>
+	</reporting>
 
 	<dependencies>
 		<dependency>
@@ -33,4 +80,11 @@
 			<version>0.2.0-SNAPSHOT</version>
 		</dependency>
 	</dependencies>
+	<distributionManagement>
+		<!--  mvn clean site site:stage scm-publish:publish-scm  -->
+		<site>
+			<id>github</id>
+			<url>scm:git:git@github.com:slytechs-repos/${project.artifactId}.git</url>
+		</site>
+	</distributionManagement>
 </project>
