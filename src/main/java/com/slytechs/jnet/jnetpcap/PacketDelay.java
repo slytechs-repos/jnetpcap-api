@@ -19,7 +19,7 @@ package com.slytechs.jnet.jnetpcap;
 
 import java.util.concurrent.TimeUnit;
 
-import com.slytechs.jnet.jnetpcap.PcapProConfigurator.PreRxProcessor;
+import com.slytechs.jnet.jnetpcap.NetPcapConfigurator.PreRxProcessor;
 import com.slytechs.jnet.jnetpcap.internal.PacketDelayPreProcessor;
 import com.slytechs.jnet.jnetruntime.util.SystemProperties;
 
@@ -29,7 +29,7 @@ import com.slytechs.jnet.jnetruntime.util.SystemProperties;
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  */
-public final class PacketDelay extends PcapProConfigurator<PacketDelay> implements PreRxProcessor {
+public final class PacketDelay extends NetPcapConfigurator<PacketDelay> implements PreRxProcessor {
 
 	/** The Constant PREFIX. */
 	private static final String PREFIX = "packet.delay";

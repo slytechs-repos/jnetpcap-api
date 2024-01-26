@@ -21,7 +21,7 @@ import static com.slytechs.jnet.jnetruntime.util.SystemProperties.*;
 
 import java.util.concurrent.TimeUnit;
 
-import com.slytechs.jnet.jnetpcap.PcapProConfigurator.PostRxProcessor;
+import com.slytechs.jnet.jnetpcap.NetPcapConfigurator.PostRxProcessor;
 import com.slytechs.jnet.jnetpcap.internal.ipf.IpfDispatcher;
 import com.slytechs.jnet.jnetruntime.time.TimestampSource;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
@@ -35,7 +35,7 @@ import com.slytechs.jnet.jnetruntime.util.MemoryUnit;
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  */
-public class IpfReassembler extends PcapProConfigurator<IpfReassembler> implements PostRxProcessor {
+public class IpfReassembler extends NetPcapConfigurator<IpfReassembler> implements PostRxProcessor {
 
 	/** The Constant PREFIX. */
 	private static final String PREFIX = "ipf";

@@ -15,21 +15,23 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
+package com.slytechs.jnet.jnetpcap.processor.packet;
+
+import com.slytechs.jnet.jnetpcap.processor.AbstractProcessor;
+import com.slytechs.jnet.jnetpcap.processor.ProcessorType;
 
 /**
- * Provides packet dissection and IP fragment reassembly services.
- * 
- * @author Sly Technologies Inc.
+ * @author Sly Technologies Inc
  * @author repos@slytechs.com
  *
  */
-module com.slytechs.jnet.jnetpcap {
-	exports com.slytechs.jnet.jnetpcap;
-//	exports com.slytechs.jnet.jnetpcap.processor;
-//	exports com.slytechs.jnet.jnetpcap.processor.packet;
-//	exports com.slytechs.jnet.jnetpcap.processor.protocol;
+public class PacketRepeater extends AbstractProcessor<PacketRepeater> {
 
-	requires transitive org.jnetpcap;
-	requires transitive com.slytechs.jnet.protocol;
-	requires transitive com.slytechs.jnet.jnetruntime;
+	public PacketRepeater(int priority) {
+		super(ProcessorType.PACKET, priority);
+	}
+
+	public PacketRepeater repeatCount(int count) {
+		throw new UnsupportedOperationException();
+	}
 }

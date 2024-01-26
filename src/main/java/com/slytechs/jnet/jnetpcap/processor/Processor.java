@@ -15,21 +15,35 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
+package com.slytechs.jnet.jnetpcap.processor;
+
+import java.util.function.BooleanSupplier;
 
 /**
- * Provides packet dissection and IP fragment reassembly services.
- * 
- * @author Sly Technologies Inc.
+ * @author Sly Technologies Inc
  * @author repos@slytechs.com
- *
  */
-module com.slytechs.jnet.jnetpcap {
-	exports com.slytechs.jnet.jnetpcap;
-//	exports com.slytechs.jnet.jnetpcap.processor;
-//	exports com.slytechs.jnet.jnetpcap.processor.packet;
-//	exports com.slytechs.jnet.jnetpcap.processor.protocol;
+public interface Processor extends Comparable<Processor> {
 
-	requires transitive org.jnetpcap;
-	requires transitive com.slytechs.jnet.protocol;
-	requires transitive com.slytechs.jnet.jnetruntime;
+	/**
+	 * @see java.lang.Comparable#compareTo(java.lang.Object)
+	 */
+	@Override
+	default int compareTo(Processor o) {
+		return priority() - o.priority();
+	}
+
+	String name();
+
+	Processor name(String newName);
+
+	int priority();
+
+	ProcessorType type();
+
+	boolean isEnabled();
+
+	Processor enable(BooleanSupplier b);
+
+	Processor enable(boolean b);
 }

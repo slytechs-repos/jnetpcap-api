@@ -35,7 +35,7 @@ import com.slytechs.jnet.jnetruntime.util.SystemProperties;
  * @author repos@slytechs.com
  * @param <T> the generic type
  */
-public class PcapProConfigurator<T extends PcapProConfigurator<T>> {
+public class NetPcapConfigurator<T extends NetPcapConfigurator<T>> {
 
 	/**
 	 * Marker interface for all RX processors which capture/receive packets/data.
@@ -111,7 +111,7 @@ public class PcapProConfigurator<T extends PcapProConfigurator<T>> {
 	 * @param properyPrefix the propery prefix
 	 * @param factory       the factory
 	 */
-	protected PcapProConfigurator(String properyPrefix, PcapDispatcherFactory factory) {
+	protected NetPcapConfigurator(String properyPrefix, PcapDispatcherFactory factory) {
 		this.pcapBasedFactory = Objects.requireNonNull(factory, "factory");
 		this.packetBasedFactory = null;
 
@@ -124,7 +124,7 @@ public class PcapProConfigurator<T extends PcapProConfigurator<T>> {
 	 * @param properyPrefix the propery prefix
 	 * @param factory       the factory
 	 */
-	protected PcapProConfigurator(String properyPrefix, PacketDispatcherFactory<T> factory) {
+	protected NetPcapConfigurator(String properyPrefix, PacketDispatcherFactory<T> factory) {
 		this.pcapBasedFactory = null;
 		this.packetBasedFactory = Objects.requireNonNull(factory, "factory");
 

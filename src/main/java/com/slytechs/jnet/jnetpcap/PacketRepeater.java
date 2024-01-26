@@ -23,8 +23,9 @@ import java.util.function.BooleanSupplier;
 import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 
-import com.slytechs.jnet.jnetpcap.PcapProConfigurator.PreRxProcessor;
-import com.slytechs.jnet.jnetpcap.internal.PacketRepeaterPreProcessor;
+import com.slytechs.jnet.jnetruntime.pipeline.AbstractNetProcessor;
+import com.slytechs.jnet.jnetruntime.pipeline.NetPipeline;
+import com.slytechs.jnet.jnetruntime.pipeline.NetProcessorType;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
 import com.slytechs.jnet.jnetruntime.util.SystemProperties;
 
@@ -42,7 +43,7 @@ import com.slytechs.jnet.jnetruntime.util.SystemProperties;
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  */
-public final class PacketRepeater extends PcapProConfigurator<PacketRepeater> implements PreRxProcessor {
+public final class PacketRepeater extends AbstractNetProcessor<PacketRepeater> {
 
 	/** The Constant PREFIX. */
 	private static final String PREFIX = "packet.repeater";
@@ -74,8 +75,8 @@ public final class PacketRepeater extends PcapProConfigurator<PacketRepeater> im
 	/**
 	 * Instantiates a new packet repeater.
 	 */
-	public PacketRepeater() {
-		super(PREFIX, PacketRepeaterPreProcessor::new);
+	public PacketRepeater(NetPipeline pipeline, int priority) {
+		super(pipeline, priority, NetProcessorType.RX_PCAP_RAW);
 	}
 
 	/**
@@ -201,7 +202,7 @@ public final class PacketRepeater extends PcapProConfigurator<PacketRepeater> im
 	 * @return this packet repeater
 	 */
 	public PacketRepeater setRepeatCount(IntSupplier count) {
-		return setRepeatCount(count.getAsInt());
+		return repeatCount(count.getAsInt());
 	}
 
 	/**
@@ -217,7 +218,7 @@ public final class PacketRepeater extends PcapProConfigurator<PacketRepeater> im
 	 *              be sent, etc.
 	 * @return this packet repeater
 	 */
-	public PacketRepeater setRepeatCount(long count) {
+	public PacketRepeater repeatCount(long count) {
 		if (count < 0)
 			throw new IllegalArgumentException("repeat count can not be negative");
 
@@ -264,8 +265,8 @@ public final class PacketRepeater extends PcapProConfigurator<PacketRepeater> im
 	 *              be sent, etc.
 	 * @return this packet repeater
 	 */
-	public PacketRepeater setRepeatCount(LongSupplier count) {
-		return setRepeatCount(count.getAsLong());
+	public PacketRepeater repeatCount(LongSupplier count) {
+		return repeatCount(count.getAsLong());
 	}
 
 	/**
@@ -284,5 +285,29 @@ public final class PacketRepeater extends PcapProConfigurator<PacketRepeater> im
 	 */
 	public TimestampUnit getTimestampUnit() {
 		return timestampUnit;
+	}
+
+	/**
+	 * @see com.slytechs.jnet.jnetruntime.pipeline.NetProcessor#source()
+	 */
+	@Override
+	public Object source() {
+		throw new UnsupportedOperationException("not implemented yet");
+	}
+
+	/**
+	 * @see com.slytechs.jnet.jnetruntime.pipeline.NetProcessor#setup()
+	 */
+	@Override
+	public void setup() {
+		throw new UnsupportedOperationException("not implemented yet");
+	}
+
+	/**
+	 * @see com.slytechs.jnet.jnetruntime.pipeline.NetProcessor#dispose()
+	 */
+	@Override
+	public void dispose() {
+		throw new UnsupportedOperationException("not implemented yet");
 	}
 }

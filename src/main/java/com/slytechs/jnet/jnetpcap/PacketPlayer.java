@@ -21,8 +21,9 @@ import java.util.concurrent.TimeUnit;
 
 import org.jnetpcap.internal.PcapHeaderABI;
 
-import com.slytechs.jnet.jnetpcap.PcapProConfigurator.PreRxProcessor;
-import com.slytechs.jnet.jnetpcap.internal.PacketPlayerPreProcessor;
+import com.slytechs.jnet.jnetruntime.pipeline.AbstractNetProcessor;
+import com.slytechs.jnet.jnetruntime.pipeline.NetPipeline;
+import com.slytechs.jnet.jnetruntime.pipeline.NetProcessorType;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
 import com.slytechs.jnet.jnetruntime.util.SystemProperties;
 
@@ -32,46 +33,43 @@ import com.slytechs.jnet.jnetruntime.util.SystemProperties;
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  */
-public class PacketPlayer extends PcapProConfigurator<PacketPlayer> implements PreRxProcessor {
+public class PacketPlayer extends AbstractNetProcessor<PacketPlayer> {
 
 	/** The Constant PREFIX. */
 	private static final String PREFIX = "packet.player";
-	
+
 	/** The Constant PROPERTY_PACKET_PLAYER_ENABLE. */
 	public static final String PROPERTY_PACKET_PLAYER_ENABLE = PREFIX + ".enable";
-	
+
 	/** The Constant PROPERTY_PACKET_PLAYER_SYNC. */
 	public static final String PROPERTY_PACKET_PLAYER_SYNC = PREFIX + ".sync";
-	
+
 	/** The Constant PROPERTY_PACKET_PLAYER_SPEED. */
 	public static final String PROPERTY_PACKET_PLAYER_SPEED = PREFIX + ".speed";
 
 	/** The sync. */
 	private boolean sync = SystemProperties.boolValue(PROPERTY_PACKET_PLAYER_SYNC, true);
-	
+
 	/** The speed. */
 	private double speed = SystemProperties.doubleValue(PROPERTY_PACKET_PLAYER_SPEED, 1.0);
-	
+
 	/** The reference time nano. */
 	private long referenceTimeNano;
-	
+
 	/** The timestamp unit. */
 	private TimestampUnit timestampUnit = TimestampUnit.PCAP_MICRO;
-	
+
 	/** The abi. */
 	private PcapHeaderABI abi = PcapHeaderABI.selectOfflineAbi(false);
-	
+
 	/** The min ifg nano. */
 	private long minIfgNano = 0;
-	
+
 	/** The max ifg nano. */
 	private long maxIfgNano = Long.MAX_VALUE;
-
-	/**
-	 * Instantiates a new packet player.
-	 */
-	public PacketPlayer() {
-		super(PREFIX, PacketPlayerPreProcessor::new);
+	
+	public PacketPlayer(NetPipeline pipeline, int priority) {
+		super(pipeline, priority, NetProcessorType.RX_PCAP_RAW);
 	}
 
 	/**
@@ -227,6 +225,35 @@ public class PacketPlayer extends PcapProConfigurator<PacketPlayer> implements P
 	 */
 	public PcapHeaderABI getAbi() {
 		return abi;
+	}
+
+	/**
+	 * @see com.slytechs.jnet.jnetruntime.pipeline.NetProcessor#source()
+	 */
+	@Override
+	public Object source() {
+		throw new UnsupportedOperationException("not implemented yet");
+	}
+
+	/**
+	 * @see com.slytechs.jnet.jnetruntime.pipeline.NetProcessor#setup()
+	 */
+	@Override
+	public void setup() {
+	}
+
+	/**
+	 * @see com.slytechs.jnet.jnetruntime.pipeline.NetProcessor#dispose()
+	 */
+	@Override
+	public void dispose() {
+	}
+
+	/**
+	 * @param b
+	 */
+	public PacketPlayer emulateRealTime(boolean b) {
+		throw new UnsupportedOperationException("not implemented yet");
 	}
 
 }

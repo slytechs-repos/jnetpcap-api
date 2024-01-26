@@ -1,19 +1,17 @@
 /*
- * Sly Technologies Free License
- * 
- * Copyright 2023 Sly Technologies Inc.
+ * Copyright 2024 Sly Technologies Inc
  *
- * Licensed under the Sly Technologies Free License (the "License"); you may not
- * use this file except in compliance with the License. You may obtain a copy of
- * the License at
- * 
- * http://www.slytechs.com/free-license-text
- * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations under
- * the License.
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package com.slytechs.jnet.jnetpcap;
 
@@ -30,11 +28,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
-import org.jnetpcap.Pcap0_4;
-import org.jnetpcap.Pcap0_6;
-import org.jnetpcap.Pcap1_0;
-import org.jnetpcap.Pcap1_5;
-import org.jnetpcap.Pcap1_9;
+import org.jnetpcap.Pcap;
 import org.jnetpcap.PcapActivatedException;
 import org.jnetpcap.PcapDumper;
 import org.jnetpcap.PcapException;
@@ -42,21 +36,21 @@ import org.jnetpcap.PcapIf;
 import org.jnetpcap.constant.PcapCode;
 import org.jnetpcap.constant.PcapDlt;
 import org.jnetpcap.constant.PcapTStampPrecision;
-import org.jnetpcap.internal.NonSealedPcap;
+import org.jnetpcap.internal.DelegatePcap;
 import org.jnetpcap.internal.PcapDispatcher;
-import org.jnetpcap.internal.PcapHeaderABI;
 import org.jnetpcap.internal.StandardPcapDispatcher;
 import org.jnetpcap.util.PcapPacketRef;
 
-import com.slytechs.jnet.jnetpcap.PcapProConfigurator.PostRxProcessor;
-import com.slytechs.jnet.jnetpcap.PcapProConfigurator.PostRxProcessorFactory;
-import com.slytechs.jnet.jnetpcap.PcapProConfigurator.PreRxProcessor;
-import com.slytechs.jnet.jnetpcap.PcapProConfigurator.PreRxProcessorFactory;
-import com.slytechs.jnet.jnetpcap.PcapProHandler.OfPacketConsumer;
+import com.slytechs.jnet.jnetpcap.NetPcapConfigurator.PostRxProcessor;
+import com.slytechs.jnet.jnetpcap.NetPcapConfigurator.PostRxProcessorFactory;
+import com.slytechs.jnet.jnetpcap.NetPcapConfigurator.PreRxProcessor;
+import com.slytechs.jnet.jnetpcap.NetPcapConfigurator.PreRxProcessorFactory;
+import com.slytechs.jnet.jnetpcap.NetPcapHandler.OfPacketConsumer;
 import com.slytechs.jnet.jnetpcap.internal.CaptureStatisticsImpl;
 import com.slytechs.jnet.jnetpcap.internal.PacketDissectorReceiver;
 import com.slytechs.jnet.jnetpcap.internal.PacketReceiver;
 import com.slytechs.jnet.jnetpcap.internal.PacketReceiverConfig;
+import com.slytechs.jnet.jnetruntime.pipeline.NetPipeline;
 import com.slytechs.jnet.jnetruntime.time.TimeSource;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
 import com.slytechs.jnet.jnetruntime.util.MemoryUnit;
@@ -76,22 +70,114 @@ import com.slytechs.jnet.protocol.meta.PacketFormat;
  * fully reassembled IP datagrams instead of individual fragments along with any
  * other type of packets selected by the packet filter applied.
  * <p>
- * To enable IPF mode, use the fluent method {@link #enableIpf(boolean)} before the
- * pcap handle is activated. Once enabled, numerous defaults are used and can be
- * changed by the use of the pcap handle. By default, IPF tracking and
- * reassembly are both enabled. Further more, IPF reassembly can be configured to attach IPF
- * reassembled buffer to the last IP fragment and/or inserted as a new IP
- * data-gram into the dispatcher's packet stream. This way the user packet
- * handler will receive fully reassembled IP datagrams as packets. The default
- * is to not forward individual IP fragments, but deliver the fully reassembled
- * IP data-gram as a new packet, containing all of the IP fragment data
- * combined.
+ * To enable IPF mode, use the fluent method {@link #enableIpf(boolean)} before
+ * the pcap handle is activated. Once enabled, numerous defaults are used and
+ * can be changed by the use of the pcap handle. By default, IPF tracking and
+ * reassembly are both enabled. Further more, IPF reassembly can be configured
+ * to attach IPF reassembled buffer to the last IP fragment and/or inserted as a
+ * new IP data-gram into the dispatcher's packet stream. This way the user
+ * packet handler will receive fully reassembled IP datagrams as packets. The
+ * default is to not forward individual IP fragments, but deliver the fully
+ * reassembled IP data-gram as a new packet, containing all of the IP fragment
+ * data combined.
  * </p>
  * 
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  */
-public final class NetPcap extends NonSealedPcap implements CaptureStatistics {
+public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStatistics {
+
+	/**
+	 * A factory for creating Pcap::create handles.
+	 *
+	 * @param <T> the generic type
+	 */
+	public interface CreatePcapFactory<T> {
+
+		/**
+		 * New instance.
+		 *
+		 * @param device the device
+		 * @return the pcap
+		 * @throws PcapException the pcap exception
+		 */
+		Pcap newInstance(T device) throws PcapException;
+	}
+
+	/**
+	 * A factory for creating Pcap::openDead handles.
+	 */
+	public interface OpenDeadPcapFactory {
+
+		/**
+		 * New instance.
+		 *
+		 * @param linktype the linktype
+		 * @param snaplen  the snaplen
+		 * @return the pcap
+		 * @throws PcapException the pcap exception
+		 */
+		Pcap newInstance(PcapDlt linktype, int snaplen) throws PcapException;
+	}
+
+	/**
+	 * A factory for creating Pcap::openDeadWithTstampPrecision handles.
+	 */
+	public interface OpenDeadTsPcapFactory {
+
+		/**
+		 * New instance.
+		 *
+		 * @param linktype  the linktype
+		 * @param snaplen   the snaplen
+		 * @param precision the precision
+		 * @return the pcap
+		 * @throws PcapException the pcap exception
+		 */
+		Pcap newInstance(PcapDlt linktype, int snaplen, PcapTStampPrecision precision) throws PcapException;
+	}
+
+	/**
+	 * A factory for creating Pcap::openLive handles.
+	 *
+	 * @param <T> the generic device type
+	 */
+	public interface OpenLivePcapFactory<T> {
+
+		/**
+		 * New instance.
+		 *
+		 * @param device  the device
+		 * @param snaplen the snaplen
+		 * @param promisc the promisc
+		 * @param timeout the timeout
+		 * @param unit    the unit
+		 * @return the pcap
+		 * @throws PcapException the pcap exception
+		 */
+		Pcap newInstance(T device,
+				int snaplen,
+				boolean promisc,
+				long timeout,
+				TimeUnit unit) throws PcapException;
+	}
+
+	/**
+	 * A factory for creating Pcap::openOffline handles.
+	 *
+	 * @param <T> the generic type
+	 */
+	public interface OpenOfflinePcapFactory<T> {
+
+		/**
+		 * New instance.
+		 *
+		 * @param file the file
+		 * @return the pcap
+		 * @throws PcapException the pcap exception
+		 */
+		Pcap newInstance(T file) throws PcapException;
+	}
 
 	/**
 	 * Context structure for the PcapPro class and its numerous processors.
@@ -102,10 +188,10 @@ public final class NetPcap extends NonSealedPcap implements CaptureStatistics {
 		private TimeSource timeSource = TimeSource.ofRebased();
 
 		/** The pre processors. */
-		public final Stack<PcapProConfigurator<?>> preProcessors = new Stack<>();
+		public final Stack<NetPcapConfigurator<?>> preProcessors = new Stack<>();
 
 		/** The post processors. */
-		public final Stack<PcapProConfigurator<?>> postProcessors = new Stack<>();
+		public final Stack<NetPcapConfigurator<?>> postProcessors = new Stack<>();
 
 		/** The pcap type. */
 		public final PcapType pcapType;
@@ -142,6 +228,53 @@ public final class NetPcap extends NonSealedPcap implements CaptureStatistics {
 	}
 
 	/**
+	 * Create a live capture handle using a pcap factory.
+	 * 
+	 * {@code create} is used to create a packet capture handle to look at packets
+	 * on the network. source is a string that specifies the network device to open;
+	 * on Linux systems with 2.2 or later kernels, a source argument of "any" or
+	 * NULL can be used to capture packets from all interfaces. The returned handle
+	 * must be activated with pcap_activate() before pack' ets can be captured with
+	 * it; options for the capture, such as promiscu' ous mode, can be set on the
+	 * handle before activating it.
+	 *
+	 * @param factory the factory
+	 * @param device  pcap network interface that specifies the network device to
+	 *                open.
+	 * @return a new pcap object that needs to be activated using
+	 *         {@link #activate()} call
+	 * @throws PcapException the pcap exception
+	 * @since libpcap 1.0
+	 */
+	public static NetPcap create(CreatePcapFactory<PcapIf> factory, PcapIf device) throws PcapException {
+		return new NetPcap(factory.newInstance(device), PcapType.LIVE_CAPTURE);
+	}
+
+	/**
+	 * Create a live capture handle.
+	 * 
+	 * {@code create} is used to create a packet capture handle to look at packets
+	 * on the network. source is a string that specifies the network device to open;
+	 * on Linux systems with 2.2 or later kernels, a source argument of "any" or
+	 * NULL can be used to capture packets from all interfaces. The returned handle
+	 * must be activated with pcap_activate() before pack' ets can be captured with
+	 * it; options for the capture, such as promiscu' ous mode, can be set on the
+	 * handle before activating it.
+	 *
+	 * @param factory the factory
+	 * @param device  a string that specifies the network device to open; on Linux
+	 *                systems with 2.2 or later kernels, a source argument of "any"
+	 *                or NULL can be used to capture packets from all interfaces.
+	 * @return a new pcap object that needs to be activated using
+	 *         {@link #activate()} call
+	 * @throws PcapException the pcap exception
+	 * @since libpcap 1.0
+	 */
+	public static NetPcap create(CreatePcapFactory<String> factory, String device) throws PcapException {
+		return new NetPcap(factory.newInstance(device), PcapType.LIVE_CAPTURE);
+	}
+
+	/**
 	 * Create a live capture handle.
 	 * 
 	 * {@code create} is used to create a packet capture handle to look at packets
@@ -160,7 +293,7 @@ public final class NetPcap extends NonSealedPcap implements CaptureStatistics {
 	 * @since libpcap 1.0
 	 */
 	public static NetPcap create(PcapIf device) throws PcapException {
-		return Pcap1_0.create(NetPcap::newLiveInstance, device.name());
+		return create(Pcap::create, device);
 	}
 
 	/**
@@ -183,52 +316,20 @@ public final class NetPcap extends NonSealedPcap implements CaptureStatistics {
 	 * @since libpcap 1.0
 	 */
 	public static NetPcap create(String device) throws PcapException {
-		return Pcap1_9.create(NetPcap::newLiveInstance, device);
+		return create(Pcap::create, device);
 	}
 
 	/**
-	 * New dead pcap-pro handle instance.
+	 * Open dead.
 	 *
-	 * @param pcapHandle the pcap handle address
-	 * @param name       the name of the pcap handle
-	 * @param abi        the native ABI (Abstract Binary Interface) which describes
-	 *                   how native C structures and primitives are accessed
-	 *                   (compacted, padded, address width in bits etc.)
-	 * @return the new pcap-pro instance initialized to a new pcap native handle and
-	 *         specific native architecture ABI
+	 * @param factory  the factory
+	 * @param linktype the linktype
+	 * @param snaplen  the snaplen
+	 * @return the net pcap
+	 * @throws PcapException the pcap exception
 	 */
-	static NetPcap newDeadInstance(MemorySegment pcapHandle, String name, PcapHeaderABI abi) {
-		return new NetPcap(pcapHandle, name, abi, PcapType.DEAD_HANDLE);
-	}
-
-	/**
-	 * New live capture pcap-pro instance.
-	 *
-	 * @param pcapHandle the pcap handle address
-	 * @param name       the name of the pcap handle
-	 * @param abi        the native ABI (Abstract Binary Interface) which describes
-	 *                   how native C structures and primitives are accessed
-	 *                   (compacted, padded, address width in bits etc.)
-	 * @return the new pcap-pro instance initialized to a new pcap native handle and
-	 *         specific native architecture ABI
-	 */
-	static NetPcap newLiveInstance(MemorySegment pcapHandle, String name, PcapHeaderABI abi) {
-		return new NetPcap(pcapHandle, name, abi, PcapType.LIVE_CAPTURE);
-	}
-
-	/**
-	 * New offline file reader pcap-pro instance.
-	 *
-	 * @param pcapHandle the pcap handle address
-	 * @param name       the name of the pcap handle
-	 * @param abi        the native ABI (Abstract Binary Interface) which describes
-	 *                   how native C structures and primitives are accessed
-	 *                   (compacted, padded, address width in bits etc.)
-	 * @return the new pcap-pro instance initialized to a new pcap native handle and
-	 *         specific native architecture ABI
-	 */
-	static NetPcap newOfflineInstance(MemorySegment pcapHandle, String name, PcapHeaderABI abi) {
-		return new NetPcap(pcapHandle, name, abi, PcapType.OFFLINE_READER);
+	public static NetPcap openDead(OpenDeadPcapFactory factory, PcapDlt linktype, int snaplen) throws PcapException {
+		return new NetPcap(factory.newInstance(linktype, snaplen), PcapType.DEAD_HANDLE);
 	}
 
 	/**
@@ -260,7 +361,46 @@ public final class NetPcap extends NonSealedPcap implements CaptureStatistics {
 	 * @since libpcap 0.6
 	 */
 	public static NetPcap openDead(PcapDlt linktype, int snaplen) throws PcapException {
-		return Pcap0_6.openDead(NetPcap::newDeadInstance, linktype, snaplen);
+		return openDead(Pcap::openDead, linktype, snaplen);
+	}
+
+	/**
+	 * Open a fake pcap_t for compiling filters or opening a capture for output.
+	 * 
+	 * <p>
+	 * {@link #openDead(PcapDlt, int)} and
+	 * {@link #openDeadWithTstampPrecision(PcapDlt, int, PcapTStampPrecision)} are
+	 * used for creating a pcap_t structure to use when calling the other functions
+	 * in libpcap. It is typically used when just using libpcap for compiling BPF
+	 * full; it can also be used if using {@code #dumpOpen(String)},
+	 * {@link PcapDumper#dump(MemorySegment, MemorySegment)}, and
+	 * {@link PcapDumper#close()} to write a savefile if there is no pcap_t that
+	 * supplies the packets to be written.
+	 * </p>
+	 * 
+	 * <p>
+	 * When {@link #openDeadWithTstampPrecision(PcapDlt, int, PcapTStampPrecision)},
+	 * is used to create a {@code Pcap} handle for use with
+	 * {@link #dumpOpen(String)}, precision specifies the time stamp precision for
+	 * packets; PCAP_TSTAMP_PRECISION_MICRO should be specified if the packets to be
+	 * written have time stamps in seconds and microseconds, and
+	 * PCAP_TSTAMP_PRECISION_NANO should be specified if the packets to be written
+	 * have time stamps in seconds and nanoseconds. Its value does not affect
+	 * pcap_compile(3PCAP).
+	 * </p>
+	 *
+	 * @param factory   the delegate pcap factory
+	 * @param linktype  specifies the link-layer type for the pcap handle
+	 * @param snaplen   specifies the snapshot length for the pcap handle
+	 * @param precision the requested timestamp precision
+	 * @return A dead pcap handle
+	 * @throws PcapException any errors
+	 * @since libpcap 1.5.1
+	 */
+	public static NetPcap openDeadWithTstampPrecision(OpenDeadTsPcapFactory factory, PcapDlt linktype, int snaplen,
+			PcapTStampPrecision precision)
+			throws PcapException {
+		return new NetPcap(factory.newInstance(linktype, snaplen, precision), PcapType.DEAD_HANDLE);
 	}
 
 	/**
@@ -297,7 +437,69 @@ public final class NetPcap extends NonSealedPcap implements CaptureStatistics {
 	 */
 	public static NetPcap openDeadWithTstampPrecision(PcapDlt linktype, int snaplen, PcapTStampPrecision precision)
 			throws PcapException {
-		return Pcap1_5.openDeadWithTstampPrecision(NetPcap::newDeadInstance, linktype, snaplen, precision);
+		return openDeadWithTstampPrecision(Pcap::openDeadWithTstampPrecision, linktype, snaplen, precision);
+	}
+
+	/**
+	 * Open a device for capturing.
+	 * 
+	 * <p>
+	 * {@code openLive} is used to obtain a packet capture handle to look at packets
+	 * on the network. device is a string that specifies the network device to open;
+	 * on Linux systems with 2.2 or later kernels, a device argument of "any" or
+	 * NULL can be used to capture packets from all interfaces.
+	 * </p>
+	 *
+	 * @param factory the delegate pcap factory
+	 * @param device  the device name
+	 * @param snaplen specifies the snapshot length to be set on the handle
+	 * @param promisc specifies whether the interface is to be put into promiscuous
+	 *                mode. If promisc is non-zero, promiscuous mode will be set,
+	 *                otherwise it will not be set
+	 * @param timeout the packet buffer timeout, as a non-negative value, in units
+	 * @param unit    time timeout unit
+	 * @return the pcap handle
+	 * @throws PcapException any errors
+	 * @since libpcap 0.4
+	 */
+	public static NetPcap openLive(OpenLivePcapFactory<PcapIf> factory, PcapIf device,
+			int snaplen,
+			boolean promisc,
+			long timeout,
+			TimeUnit unit) throws PcapException {
+
+		return new NetPcap(factory.newInstance(device, snaplen, promisc, timeout, unit), PcapType.LIVE_CAPTURE);
+	}
+
+	/**
+	 * Open a device for capturing.
+	 * 
+	 * <p>
+	 * {@code openLive} is used to obtain a packet capture handle to look at packets
+	 * on the network. device is a string that specifies the network device to open;
+	 * on Linux systems with 2.2 or later kernels, a device argument of "any" or
+	 * NULL can be used to capture packets from all interfaces.
+	 * </p>
+	 *
+	 * @param factory the delegate pcap factory
+	 * @param device  the device name
+	 * @param snaplen specifies the snapshot length to be set on the handle
+	 * @param promisc specifies whether the interface is to be put into promiscuous
+	 *                mode. If promisc is non-zero, promiscuous mode will be set,
+	 *                otherwise it will not be set
+	 * @param timeout the packet buffer timeout, as a non-negative value, in units
+	 * @param unit    time timeout unit
+	 * @return the pcap handle
+	 * @throws PcapException any errors
+	 * @since libpcap 0.4
+	 */
+	public static NetPcap openLive(OpenLivePcapFactory<String> factory, String device,
+			int snaplen,
+			boolean promisc,
+			long timeout,
+			TimeUnit unit) throws PcapException {
+
+		return new NetPcap(factory.newInstance(device, snaplen, promisc, timeout, unit), PcapType.LIVE_CAPTURE);
 	}
 
 	/**
@@ -327,7 +529,7 @@ public final class NetPcap extends NonSealedPcap implements CaptureStatistics {
 			long timeout,
 			TimeUnit unit) throws PcapException {
 
-		return Pcap0_4.openLive(NetPcap::newLiveInstance, device.name(), snaplen, promisc, timeout, unit);
+		return openLive(Pcap::openLive, device, snaplen, promisc, timeout, unit);
 	}
 
 	/**
@@ -357,7 +559,7 @@ public final class NetPcap extends NonSealedPcap implements CaptureStatistics {
 			long timeout,
 			TimeUnit unit) throws PcapException {
 
-		return Pcap0_4.openLive(NetPcap::newLiveInstance, device, snaplen, promisc, timeout, unit);
+		return new NetPcap(Pcap.openLive(device, snaplen, promisc, timeout, unit), PcapType.LIVE_CAPTURE);
 	}
 
 	/**
@@ -374,7 +576,47 @@ public final class NetPcap extends NonSealedPcap implements CaptureStatistics {
 	 * @since libpcap 0.4
 	 */
 	public static NetPcap openOffline(File file) throws PcapException {
-		return Pcap0_4.openOffline(NetPcap::newOfflineInstance, file.getAbsolutePath());
+		return openOffline(Pcap::openOffline, file);
+	}
+
+	/**
+	 * Open a saved capture file for reading.
+	 * 
+	 * <p>
+	 * pcap_open_offline() and pcap_open_offline_with_tstamp_precision() are called
+	 * to open a ``savefile'' for reading.
+	 * </p>
+	 *
+	 * @param factory the delegate pcap factory
+	 * @param file    the offline capture file
+	 * @return the pcap handle
+	 * @throws PcapException any errors
+	 * @since libpcap 0.4
+	 */
+	public static NetPcap openOffline(OpenOfflinePcapFactory<File> factory, File file) throws PcapException {
+		return new NetPcap(factory.newInstance(file), PcapType.OFFLINE_READER);
+	}
+
+	/**
+	 * Open a saved capture file for reading.
+	 * 
+	 * <p>
+	 * pcap_open_offline() and pcap_open_offline_with_tstamp_precision() are called
+	 * to open a ``savefile'' for reading.
+	 * </p>
+	 *
+	 * @param factory the factory
+	 * @param fname   specifies the name of the file to open. The file can have the
+	 *                pcap file format as described in pcap-savefile(5), which is
+	 *                the file format used by, among other programs, tcpdump(1) and
+	 *                tcpslice(1), or can have the pcapng file format, although not
+	 *                all pcapng files can be read
+	 * @return the pcap handle
+	 * @throws PcapException any errors
+	 * @since libpcap 0.4
+	 */
+	public static NetPcap openOffline(OpenOfflinePcapFactory<String> factory, String fname) throws PcapException {
+		return new NetPcap(factory.newInstance(fname), PcapType.OFFLINE_READER);
 	}
 
 	/**
@@ -395,7 +637,7 @@ public final class NetPcap extends NonSealedPcap implements CaptureStatistics {
 	 * @since libpcap 0.4
 	 */
 	public static NetPcap openOffline(String fname) throws PcapException {
-		return Pcap0_4.openOffline(NetPcap::newOfflineInstance, fname);
+		return openOffline(Pcap::openOffline, fname);
 	}
 
 	/** The ipf config. */
@@ -428,20 +670,16 @@ public final class NetPcap extends NonSealedPcap implements CaptureStatistics {
 	/**
 	 * Instantiates a new pcap-pro native handle.
 	 *
-	 * @param pcapHandle the pcap handle address
-	 * @param name       the name of the pcap handle
-	 * @param abi        the native ABI (Abstract Binary Interface) which describes
-	 *                   how native C structures and primitives are accessed
-	 *                   (compacted, padded, address width in bits etc.)
-	 * @param pcapType   the pcap handle type such as LIVE, OFFLINE or DEAD
-	 *                   depending how the pcap-pro handle was opened
+	 * @param pcap     the pcap
+	 * @param pcapType the pcap handle type such as LIVE, OFFLINE or DEAD depending
+	 *                 how the pcap-pro handle was opened
 	 */
-	NetPcap(MemorySegment pcapHandle, String name, PcapHeaderABI abi, PcapType pcapType) {
-		super(pcapHandle, name, abi);
-		config.abi = Objects.requireNonNull(abi, "abi");
-		config.portName = name;
+	NetPcap(Pcap pcap, PcapType pcapType) {
+		super(pcap);
+		config.abi = Objects.requireNonNull(getPcapHeaderABI(), "abi");
+		config.portName = getName();
 
-		this.preProcessorRoot = new StandardPcapDispatcher(pcapHandle, abi, this::breakloop);
+		this.preProcessorRoot = new StandardPcapDispatcher(getPcapHandle(), getPcapHeaderABI(), this::breakloop);
 		this.preProcessor = this.preProcessorRoot;
 		this.postProcessorRoot = new PacketDissectorReceiver(config);
 		this.postProcessor = postProcessorRoot;
@@ -483,9 +721,9 @@ public final class NetPcap extends NonSealedPcap implements CaptureStatistics {
 			this.postProcessor.activate();
 			super.activate();
 		} catch (PcapActivatedException e) {} // Offline/dead handles are active already
-		
+
 		try {
-			
+
 			installAllPreProcessors();
 			installMainPacketProcessor();
 			installAllPostProcessors();
@@ -521,7 +759,7 @@ public final class NetPcap extends NonSealedPcap implements CaptureStatistics {
 	 * @param list         the list
 	 * @param classToCheck the class to check
 	 */
-	private void checkIfProcessorNotInstalledOrElseThrow(List<PcapProConfigurator<?>> list,
+	private void checkIfProcessorNotInstalledOrElseThrow(List<NetPcapConfigurator<?>> list,
 			Class<?> classToCheck) {
 
 		boolean found = list.stream()
@@ -557,22 +795,6 @@ public final class NetPcap extends NonSealedPcap implements CaptureStatistics {
 					"caught pcap-pro '%s' handle close actions errors".formatted(getName()),
 					exceptions);
 
-	}
-
-	/**
-	 * Dispatch which uses a simple packet consumer.
-	 *
-	 * @param count          A value of -1 or 0 for count is equivalent to infinity,
-	 *                       so that packets are processed until another ending
-	 *                       condition occurs
-	 * @param packetConsumer the packet consumer
-	 * @return returns 0 if count is exhausted or if, when reading from a
-	 *         ``savefile'', no more packets are available. It returns
-	 *         PCAP_ERROR_BREAK if the loop terminated due to a call to
-	 *         pcap_breakloop() before any packets were processed
-	 */
-	public int dispatch(int count, OfPacketConsumer packetConsumer) {
-		return dispatch(count, (u, p) -> packetConsumer.accept(p), 0);
 	}
 
 	/**
@@ -636,10 +858,26 @@ public final class NetPcap extends NonSealedPcap implements CaptureStatistics {
 	 *         pcap_breakloop() before any packets were processed
 	 * @since libpcap 0.4
 	 */
-	public <U> int dispatch(int count, PcapProHandler.OfPacket<U> handler, U user) {
+	public <U> int dispatch(int count, NetPcapHandler.OfPacket<U> handler, U user) {
 		checkIfActiveOrElseThrow();
 
 		return postProcessor.receivePacketWithDispatch(count, handler, user);
+	}
+
+	/**
+	 * Dispatch which uses a simple packet consumer.
+	 *
+	 * @param count          A value of -1 or 0 for count is equivalent to infinity,
+	 *                       so that packets are processed until another ending
+	 *                       condition occurs
+	 * @param packetConsumer the packet consumer
+	 * @return returns 0 if count is exhausted or if, when reading from a
+	 *         ``savefile'', no more packets are available. It returns
+	 *         PCAP_ERROR_BREAK if the loop terminated due to a call to
+	 *         pcap_breakloop() before any packets were processed
+	 */
+	public int dispatch(int count, OfPacketConsumer packetConsumer) {
+		return dispatch(count, (u, p) -> packetConsumer.accept(p), 0);
 	}
 
 	/**
@@ -794,32 +1032,6 @@ public final class NetPcap extends NonSealedPcap implements CaptureStatistics {
 	}
 
 	/**
-	 * Install factory.
-	 *
-	 * @param <T>                   the generic type
-	 * @param postProcessorSupplier the post processor supplier
-	 * @return the t
-	 */
-	public <T extends PostRxProcessor> T installPost(PostRxProcessorFactory<T> postProcessorSupplier) {
-		checkIfInactiveOrElseThrow();
-
-		return install(postProcessorSupplier.newInstance());
-	}
-
-	/**
-	 * Install factory.
-	 *
-	 * @param <T>                  the generic type
-	 * @param preProcessorSupplier the pre processor supplier
-	 * @return the t
-	 */
-	public <T extends PreRxProcessor> T installPre(PreRxProcessorFactory<T> preProcessorSupplier) {
-		checkIfInactiveOrElseThrow();
-
-		return install(preProcessorSupplier.newInstance());
-	}
-
-	/**
 	 * Install.
 	 *
 	 * @param <T>           the generic type
@@ -830,7 +1042,7 @@ public final class NetPcap extends NonSealedPcap implements CaptureStatistics {
 		checkIfInactiveOrElseThrow();
 		checkIfProcessorNotInstalledOrElseThrow(context.postProcessors, postProcessor.getClass());
 
-		if (!(postProcessor instanceof PcapProConfigurator<?> processor))
+		if (!(postProcessor instanceof NetPcapConfigurator<?> processor))
 			throw new IllegalArgumentException("invalid post-processor [%s]"
 					.formatted(postProcessor.getClass()));
 
@@ -850,7 +1062,7 @@ public final class NetPcap extends NonSealedPcap implements CaptureStatistics {
 		checkIfInactiveOrElseThrow();
 		checkIfProcessorNotInstalledOrElseThrow(context.preProcessors, preProcessor.getClass());
 
-		if (!(preProcessor instanceof PcapProConfigurator<?> processor))
+		if (!(preProcessor instanceof NetPcapConfigurator<?> processor))
 			throw new IllegalArgumentException("invalid pre-processor [%s]"
 					.formatted(preProcessor.getClass()));
 
@@ -889,13 +1101,39 @@ public final class NetPcap extends NonSealedPcap implements CaptureStatistics {
 	}
 
 	/**
+	 * Install factory.
+	 *
+	 * @param <T>                   the generic type
+	 * @param postProcessorSupplier the post processor supplier
+	 * @return the t
+	 */
+	public <T extends PostRxProcessor> T installPost(PostRxProcessorFactory<T> postProcessorSupplier) {
+		checkIfInactiveOrElseThrow();
+
+		return install(postProcessorSupplier.newInstance());
+	}
+
+	/**
 	 * Install post processor.
 	 *
 	 * @param processor the processor
 	 */
-	private void installPostProcessor(PcapProConfigurator<?> processor) {
+	private void installPostProcessor(NetPcapConfigurator<?> processor) {
 		this.postProcessor = processor.newDispatcherInstance(preProcessor, postProcessor, context);
 		onClose(this.postProcessor::close);
+	}
+
+	/**
+	 * Install factory.
+	 *
+	 * @param <T>                  the generic type
+	 * @param preProcessorSupplier the pre processor supplier
+	 * @return the t
+	 */
+	public <T extends PreRxProcessor> T installPre(PreRxProcessorFactory<T> preProcessorSupplier) {
+		checkIfInactiveOrElseThrow();
+
+		return install(preProcessorSupplier.newInstance());
 	}
 
 	/**
@@ -903,27 +1141,9 @@ public final class NetPcap extends NonSealedPcap implements CaptureStatistics {
 	 *
 	 * @param processor the processor
 	 */
-	private void installPreProcessor(PcapProConfigurator<?> processor) {
+	private void installPreProcessor(NetPcapConfigurator<?> processor) {
 		this.preProcessor = processor.newDispatcherInstance(this.preProcessor, context);
 		onClose(this.preProcessor::close);
-	}
-
-	/**
-	 * Process packets from a live capture or savefile.
-	 *
-	 * @param count          A value of -1 or 0 for count is equivalent to infinity,
-	 *                       so that packets are processed until another ending
-	 *                       condition occurs
-	 * @param packetConsumer the packet consumer
-	 * @return returns 0 if count is exhausted or if, when reading from a
-	 *         ``savefile'', no more packets are available. It returns
-	 *         PCAP_ERROR_BREAK if the loop terminated due to a call to
-	 *         pcap_breakloop() before any packets were processed
-	 */
-	public int loop(int count, OfPacketConsumer packetConsumer) {
-		checkIfActiveOrElseThrow();
-
-		return loop(count, (u, p) -> packetConsumer.accept(p), 0);
 	}
 
 	/**
@@ -987,8 +1207,26 @@ public final class NetPcap extends NonSealedPcap implements CaptureStatistics {
 	 *         pcap_breakloop() before any packets were processed
 	 * @since libpcap 0.4
 	 */
-	public <U> int loop(int count, PcapProHandler.OfPacket<U> handler, U user) {
+	public <U> int loop(int count, NetPcapHandler.OfPacket<U> handler, U user) {
 		return postProcessor.receivePacketWithLoop(count, handler, user);
+	}
+
+	/**
+	 * Process packets from a live capture or savefile.
+	 *
+	 * @param count          A value of -1 or 0 for count is equivalent to infinity,
+	 *                       so that packets are processed until another ending
+	 *                       condition occurs
+	 * @param packetConsumer the packet consumer
+	 * @return returns 0 if count is exhausted or if, when reading from a
+	 *         ``savefile'', no more packets are available. It returns
+	 *         PCAP_ERROR_BREAK if the loop terminated due to a call to
+	 *         pcap_breakloop() before any packets were processed
+	 */
+	public int loop(int count, OfPacketConsumer packetConsumer) {
+		checkIfActiveOrElseThrow();
+
+		return loop(count, (u, p) -> packetConsumer.accept(p), 0);
 	}
 
 	/**
@@ -1140,6 +1378,37 @@ public final class NetPcap extends NonSealedPcap implements CaptureStatistics {
 		return () -> closeActions.remove(closeAction);
 
 	}
+	
+	/**
+	 * Pipeline.
+	 *
+	 * @return the processor config
+	 */
+	public NetPipeline pipeline() {
+		throw new UnsupportedOperationException();
+	}
+
+	/**
+	 * Sets the buffer size for a not-yet- activated capture handle.
+	 * 
+	 * <p>
+	 * sets the buffer size that will be used on a capture handle when the handle is
+	 * activated to buffer_size, which is in units of bytes
+	 * </p>
+	 *
+	 * @param size the size of the buffer in specified units
+	 * @param unit memory units
+	 * @return this pcap handle
+	 * @throws PcapException the pcap exception
+	 * @since libpcap 1.0
+	 * @since jNetPcap Pro 1.0
+	 */
+	public NetPcap setBufferSize(long size, MemoryUnit unit) throws PcapException {
+
+		super.setBufferSize(unit.toBytesAsInt(size));
+
+		return this;
+	}
 
 	/**
 	 * Sets the descriptor type.
@@ -1247,7 +1516,7 @@ public final class NetPcap extends NonSealedPcap implements CaptureStatistics {
 	 * @param processorClass the processor class
 	 * @return this pcap pro handle
 	 */
-	public <T extends PcapProConfigurator<?>> NetPcap uninstall(Class<T> processorClass) {
+	public <T extends NetPcapConfigurator<?>> NetPcap uninstall(Class<T> processorClass) {
 
 		context.preProcessors.stream()
 				.filter(p -> p.getClass().equals(processorClass))
@@ -1269,7 +1538,7 @@ public final class NetPcap extends NonSealedPcap implements CaptureStatistics {
 	 * @param processor the processor instance
 	 * @return this pcap pro handle
 	 */
-	public <T extends PcapProConfigurator<T>> NetPcap uninstall(PcapProConfigurator<T> processor) {
+	public <T extends NetPcapConfigurator<T>> NetPcap uninstall(NetPcapConfigurator<T> processor) {
 
 		context.preProcessors.stream()
 				.filter(p -> p.equals(processor))
@@ -1315,27 +1584,5 @@ public final class NetPcap extends NonSealedPcap implements CaptureStatistics {
 		checkIfInactiveOrElseThrow();
 
 		return uninstAll(true, true);
-	}
-
-	/**
-	 * Sets the buffer size for a not-yet- activated capture handle.
-	 * 
-	 * <p>
-	 * sets the buffer size that will be used on a capture handle when the handle is
-	 * activated to buffer_size, which is in units of bytes
-	 * </p>
-	 *
-	 * @param size the size of the buffer in specified units
-	 * @param unit memory units
-	 * @return this pcap handle
-	 * @throws PcapException the pcap exception
-	 * @since libpcap 1.0
-	 * @since jNetPcap Pro 1.0
-	 */
-	public NetPcap setBufferSize(long size, MemoryUnit unit) throws PcapException {
-
-		super.setBufferSize(unit.toBytesAsInt(size));
-
-		return this;
 	}
 }

@@ -32,8 +32,8 @@ import org.jnetpcap.internal.PcapDispatcher;
 import org.jnetpcap.util.PcapPacketRef;
 
 import com.slytechs.jnet.jnetpcap.CaptureStatistics;
-import com.slytechs.jnet.jnetpcap.PcapProHandler;
-import com.slytechs.jnet.jnetpcap.PcapProHandler.OfPacket;
+import com.slytechs.jnet.jnetpcap.NetPcapHandler;
+import com.slytechs.jnet.jnetpcap.NetPcapHandler.OfPacket;
 import com.slytechs.jnet.protocol.Packet;
 import com.slytechs.jnet.protocol.core.constants.PacketDescriptorType;
 import com.slytechs.jnet.protocol.descriptor.PacketDescriptor;
@@ -456,7 +456,7 @@ public class PacketDissectorReceiver
 	 * @param packetFactory the packet factory
 	 * @return the int
 	 * @see com.slytechs.jnet.jnetpcap.internal.PacketReceiver#receivePacketWithDispatch(int,
-	 *      com.slytechs.jnetpcap.pro.PcapProHandler.OfPacket, java.lang.Object,
+	 *      com.slytechs.NetPcapHandler.pro.PcapProHandler.OfPacket, java.lang.Object,
 	 *      java.util.function.Supplier)
 	 */
 	@Override
@@ -499,7 +499,7 @@ public class PacketDissectorReceiver
 	 * @return the int
 	 */
 	@Override
-	public <U> int receivePacketWithDispatch(int count, PcapProHandler.OfPacket<U> sink, U user) {
+	public <U> int receivePacketWithDispatch(int count, NetPcapHandler.OfPacket<U> sink, U user) {
 		return receivePacketWithDispatch(count, sink, user, this::getReusablePacket);
 	}
 
@@ -513,7 +513,7 @@ public class PacketDissectorReceiver
 	 * @return the int
 	 */
 	@Override
-	public <U> int receivePacketWithLoop(int count, PcapProHandler.OfPacket<U> sink, U user) {
+	public <U> int receivePacketWithLoop(int count, NetPcapHandler.OfPacket<U> sink, U user) {
 		return pcapDispatcher.loopNative(count, (ignore, pcapHdr, pktData) -> {
 
 			/*

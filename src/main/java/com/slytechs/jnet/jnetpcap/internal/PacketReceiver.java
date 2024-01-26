@@ -26,7 +26,7 @@ import java.util.function.Supplier;
 import org.jnetpcap.PcapException;
 
 import com.slytechs.jnet.jnetpcap.CaptureStatistics;
-import com.slytechs.jnet.jnetpcap.PcapProHandler;
+import com.slytechs.jnet.jnetpcap.NetPcapHandler;
 import com.slytechs.jnet.protocol.Packet;
 import com.slytechs.jnet.protocol.core.constants.PacketDescriptorType;
 import com.slytechs.jnet.protocol.descriptor.PacketDissector;
@@ -95,7 +95,7 @@ public interface PacketReceiver extends AutoCloseable {
 	 * @param user  the user
 	 * @return the int
 	 */
-	<U> int receivePacketWithDispatch(int count, PcapProHandler.OfPacket<U> sink, U user);
+	<U> int receivePacketWithDispatch(int count, NetPcapHandler.OfPacket<U> sink, U user);
 
 	/**
 	 * Receive packet with dispatch.
@@ -107,7 +107,7 @@ public interface PacketReceiver extends AutoCloseable {
 	 * @param packetFactory the packet factory
 	 * @return the int
 	 */
-	<U> int receivePacketWithDispatch(int count, PcapProHandler.OfPacket<U> sink, U user, Supplier<Packet> packetFactory);
+	<U> int receivePacketWithDispatch(int count, NetPcapHandler.OfPacket<U> sink, U user, Supplier<Packet> packetFactory);
 
 	/**
 	 * Gets the dissector.
@@ -132,7 +132,7 @@ public interface PacketReceiver extends AutoCloseable {
 	 * @param user  the user
 	 * @return the int
 	 */
-	<U> int receivePacketWithLoop(int count, PcapProHandler.OfPacket<U> sink, U user);
+	<U> int receivePacketWithLoop(int count, NetPcapHandler.OfPacket<U> sink, U user);
 
 	/**
 	 * Gets the capture statistics.
