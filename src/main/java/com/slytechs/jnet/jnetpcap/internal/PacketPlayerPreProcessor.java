@@ -112,16 +112,16 @@ public class PacketPlayerPreProcessor extends AbstractPcapDispatcher implements 
 	 * @param handler the handler
 	 * @param user    the user
 	 * @return the int
-	 * @see com.slytechs.jnet.jnetpcap.internal.AbstractPcapDispatcher#dispatchNative(int,
+	 * @see com.slytechs.jnet.jnetpcap.internal.AbstractPcapDispatcher#invokeDispatchNativeCallback(int,
 	 *      org.jnetpcap.PcapHandler.NativeCallback,
 	 *      java.lang.foreign.MemorySegment)
 	 */
 	@Override
-	public int dispatchNative(int count, NativeCallback handler, MemorySegment user) {
+	public int invokeDispatchNativeCallback(int count, NativeCallback handler, MemorySegment user) {
 		if (initialized == false)
 			initialize();
 
-		return super.dispatchNative(count, (MemorySegment u, MemorySegment header, MemorySegment packet) -> {
+		return super.invokeDispatchNativeCallback(count, (MemorySegment u, MemorySegment header, MemorySegment packet) -> {
 
 			if (referenceTimeNano == 0)
 				referenceTimeNano = getTimestampNano(header);

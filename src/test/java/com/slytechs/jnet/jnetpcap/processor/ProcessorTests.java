@@ -40,17 +40,17 @@ class ProcessorTests {
 		try (var pcap = NetPcap.openOffline(WinPcap::openOffline, FILE)) {
 
 
-			try (var pipeline = pcap.pipeline()) {
+			try (var processors = pcap.pipeline()) {
 //				pipeline.install(PacketDissector::new)
 //						.enable(true)
 //						.descriptor(PacketDescriptorType.TYPE2)
 //						.packetFactory(Packet::new)
 //						.forEach(System.out::println);
 
-				pipeline.install(PacketPlayer::new)
+				processors.install(PacketPlayer::new)
 						.emulateRealTime(true);
 
-				pipeline.install(PacketRepeater::new)
+				processors.install(PacketRepeater::new)
 						.repeatCount(10);
 			}
 		}

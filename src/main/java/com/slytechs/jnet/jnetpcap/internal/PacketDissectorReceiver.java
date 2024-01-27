@@ -461,7 +461,7 @@ public class PacketDissectorReceiver
 	 */
 	@Override
 	public <U> int receivePacketWithDispatch(int count, OfPacket<U> sink, U user, Supplier<Packet> packetFactory) {
-		return pcapDispatcher.dispatchNative(count, (ignore, pcapHdr, pktData) -> {
+		return pcapDispatcher.invokeDispatchNativeCallback(count, (ignore, pcapHdr, pktData) -> {
 
 			try (var arena = Arena.ofShared()) {
 
@@ -514,7 +514,7 @@ public class PacketDissectorReceiver
 	 */
 	@Override
 	public <U> int receivePacketWithLoop(int count, NetPcapHandler.OfPacket<U> sink, U user) {
-		return pcapDispatcher.loopNative(count, (ignore, pcapHdr, pktData) -> {
+		return pcapDispatcher.invokeLoopNativeCallback(count, (ignore, pcapHdr, pktData) -> {
 
 			/*
 			 * Initialize outside the try-catch to attempt to read caplen for any exceptions

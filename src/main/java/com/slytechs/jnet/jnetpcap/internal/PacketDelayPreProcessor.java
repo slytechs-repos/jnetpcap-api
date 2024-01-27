@@ -64,15 +64,15 @@ public class PacketDelayPreProcessor extends AbstractPcapDispatcher implements P
 	 * @param handler the handler
 	 * @param user    the user
 	 * @return the int
-	 * @see com.slytechs.jnet.jnetpcap.internal.AbstractPcapDispatcher#dispatchNative(int,
+	 * @see com.slytechs.jnet.jnetpcap.internal.AbstractPcapDispatcher#invokeDispatchNativeCallback(int,
 	 *      org.jnetpcap.PcapHandler.NativeCallback,
 	 *      java.lang.foreign.MemorySegment)
 	 */
 	@Override
-	public int dispatchNative(int count, NativeCallback handler, MemorySegment user) {
+	public int invokeDispatchNativeCallback(int count, NativeCallback handler, MemorySegment user) {
 		long delayNano = config.getDelay(TimeUnit.NANOSECONDS);
 
-		return super.dispatchNative(count, (MemorySegment u, MemorySegment header, MemorySegment packet) -> {
+		return super.invokeDispatchNativeCallback(count, (MemorySegment u, MemorySegment header, MemorySegment packet) -> {
 
 			handler.nativeCallback(u, header, packet);
 
@@ -106,15 +106,15 @@ public class PacketDelayPreProcessor extends AbstractPcapDispatcher implements P
 	 * @param handler the handler
 	 * @param user    the user
 	 * @return the int
-	 * @see com.slytechs.jnet.jnetpcap.internal.AbstractPcapDispatcher#loopNative(int,
+	 * @see com.slytechs.jnet.jnetpcap.internal.AbstractPcapDispatcher#invokeLoopNativeCallback(int,
 	 *      org.jnetpcap.PcapHandler.NativeCallback,
 	 *      java.lang.foreign.MemorySegment)
 	 */
 	@Override
-	public int loopNative(int count, NativeCallback handler, MemorySegment user) {
+	public int invokeLoopNativeCallback(int count, NativeCallback handler, MemorySegment user) {
 		long delayNano = config.getDelay(TimeUnit.NANOSECONDS);
 
-		return super.loopNative(count, (MemorySegment u, MemorySegment header, MemorySegment packet) -> {
+		return super.invokeLoopNativeCallback(count, (MemorySegment u, MemorySegment header, MemorySegment packet) -> {
 
 			handler.nativeCallback(u, header, packet);
 

@@ -109,13 +109,13 @@ public class AbstractPcapDispatcher implements PcapDispatcher {
 	 * @param handler the handler
 	 * @param user    the user
 	 * @return the int
-	 * @see org.jnetpcap.internal.PcapDispatcher#dispatchNative(int,
+	 * @see org.jnetpcap.internal.PcapDispatcher#invokeDispatchNativeCallback(int,
 	 *      org.jnetpcap.PcapHandler.NativeCallback,
 	 *      java.lang.foreign.MemorySegment)
 	 */
 	@Override
-	public int dispatchNative(int count, NativeCallback handler, MemorySegment user) {
-		return getPcapDispatcher().dispatchNative(count, handler, user);
+	public int invokeDispatchNativeCallback(int count, NativeCallback handler, MemorySegment user) {
+		return getPcapDispatcher().invokeDispatchNativeCallback(count, handler, user);
 	}
 
 	/**
@@ -125,12 +125,12 @@ public class AbstractPcapDispatcher implements PcapDispatcher {
 	 * @param callbackFunc the callback func
 	 * @param userData     the user data
 	 * @return the int
-	 * @see org.jnetpcap.internal.PcapDispatcher#dispatchRaw(int,
+	 * @see org.jnetpcap.internal.PcapDispatcher#invokePcapDispatchFunction(int,
 	 *      java.lang.foreign.MemorySegment, java.lang.foreign.MemorySegment)
 	 */
 	@Override
-	public int dispatchRaw(int count, MemorySegment callbackFunc, MemorySegment userData) {
-		return getPcapDispatcher().dispatchRaw(count, callbackFunc, userData);
+	public int invokePcapDispatchFunction(int count, MemorySegment callbackFunc, MemorySegment userData) {
+		return getPcapDispatcher().invokePcapDispatchFunction(count, callbackFunc, userData);
 	}
 
 	/**
@@ -182,13 +182,13 @@ public class AbstractPcapDispatcher implements PcapDispatcher {
 	 * @param handler the handler
 	 * @param user    the user
 	 * @return the int
-	 * @see org.jnetpcap.internal.PcapDispatcher#loopNative(int,
+	 * @see org.jnetpcap.internal.PcapDispatcher#invokeLoopNativeCallback(int,
 	 *      org.jnetpcap.PcapHandler.NativeCallback,
 	 *      java.lang.foreign.MemorySegment)
 	 */
 	@Override
-	public int loopNative(int count, NativeCallback handler, MemorySegment user) {
-		return getPcapDispatcher().loopNative(count, handler, user);
+	public int invokeLoopNativeCallback(int count, NativeCallback handler, MemorySegment user) {
+		return getPcapDispatcher().invokeLoopNativeCallback(count, handler, user);
 	}
 
 	/**
@@ -198,12 +198,12 @@ public class AbstractPcapDispatcher implements PcapDispatcher {
 	 * @param callbackFunc the callback func
 	 * @param userData     the user data
 	 * @return the int
-	 * @see org.jnetpcap.internal.PcapDispatcher#loopRaw(int,
+	 * @see org.jnetpcap.internal.PcapDispatcher#invokePcapLoopFunction(int,
 	 *      java.lang.foreign.MemorySegment, java.lang.foreign.MemorySegment)
 	 */
 	@Override
-	public int loopRaw(int count, MemorySegment callbackFunc, MemorySegment userData) {
-		return getPcapDispatcher().loopRaw(count, callbackFunc, userData);
+	public int invokePcapLoopFunction(int count, MemorySegment callbackFunc, MemorySegment userData) {
+		return getPcapDispatcher().invokePcapLoopFunction(count, callbackFunc, userData);
 	}
 
 	/**

@@ -95,17 +95,17 @@ public class PacketRepeaterPreProcessor extends AbstractPcapDispatcher implement
 	 * @param handler the handler
 	 * @param user    the user
 	 * @return the int
-	 * @see com.slytechs.jnet.jnetpcap.internal.AbstractPcapDispatcher#dispatchNative(int,
+	 * @see com.slytechs.jnet.jnetpcap.internal.AbstractPcapDispatcher#invokeDispatchNativeCallback(int,
 	 *      org.jnetpcap.PcapHandler.NativeCallback,
 	 *      java.lang.foreign.MemorySegment)
 	 */
 	@Override
-	public int dispatchNative(int count, NativeCallback handler, MemorySegment user) {
+	public int invokeDispatchNativeCallback(int count, NativeCallback handler, MemorySegment user) {
 		long repeatCount = config.getRepeatCount() + 1;
 		long delayNano = config.getIfgForRepeated(TimeUnit.NANOSECONDS);
 		boolean rewriteTs = config.isRewriteTimestamp();
 
-		return super.dispatchNative(count, (MemorySegment u, MemorySegment header, MemorySegment packet) -> {
+		return super.invokeDispatchNativeCallback(count, (MemorySegment u, MemorySegment header, MemorySegment packet) -> {
 
 			for (long i = 0; i < repeatCount; i++) {
 
@@ -143,17 +143,17 @@ public class PacketRepeaterPreProcessor extends AbstractPcapDispatcher implement
 	 * @param handler the handler
 	 * @param user    the user
 	 * @return the int
-	 * @see com.slytechs.jnet.jnetpcap.internal.AbstractPcapDispatcher#loopNative(int,
+	 * @see com.slytechs.jnet.jnetpcap.internal.AbstractPcapDispatcher#invokeLoopNativeCallback(int,
 	 *      org.jnetpcap.PcapHandler.NativeCallback,
 	 *      java.lang.foreign.MemorySegment)
 	 */
 	@Override
-	public int loopNative(int count, NativeCallback handler, MemorySegment user) {
+	public int invokeLoopNativeCallback(int count, NativeCallback handler, MemorySegment user) {
 		long repeatCount = config.getRepeatCount() + 1;
 		long delayNano = config.getIfgForRepeated(TimeUnit.NANOSECONDS);
 		boolean rewriteTs = config.isRewriteTimestamp();
 
-		return super.loopNative(count, (MemorySegment u, MemorySegment header, MemorySegment packet) -> {
+		return super.invokeLoopNativeCallback(count, (MemorySegment u, MemorySegment header, MemorySegment packet) -> {
 
 			for (int i = 0; i < repeatCount; i++) {
 

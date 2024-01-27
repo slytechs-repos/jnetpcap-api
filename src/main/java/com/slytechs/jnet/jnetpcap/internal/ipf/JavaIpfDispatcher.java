@@ -190,7 +190,7 @@ public final class JavaIpfDispatcher extends AbstractPacketReceiver implements I
 	 * @return the int
 	 */
 	protected <U> int dispatchIpf(int count, OfPacket<U> sink, U user) {
-		return super.dispatchNative(count, (ignore, pcapHdr, pktData) -> {
+		return super.invokeDispatchNativeCallback(count, (ignore, pcapHdr, pktData) -> {
 
 			try (var arena = Arena.ofShared()) {
 
@@ -214,7 +214,7 @@ public final class JavaIpfDispatcher extends AbstractPacketReceiver implements I
 	 * @return the int
 	 */
 	protected <U> int loopIpf(int count, OfPacket<U> sink, U user) {
-		return super.loopNative(count, (ignore, pcapHdr, pktData) -> {
+		return super.invokeLoopNativeCallback(count, (ignore, pcapHdr, pktData) -> {
 
 			try (var arena = Arena.ofShared()) {
 				

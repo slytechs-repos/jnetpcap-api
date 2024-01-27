@@ -25,6 +25,8 @@ import java.util.function.LongSupplier;
 
 import com.slytechs.jnet.jnetruntime.pipeline.AbstractNetProcessor;
 import com.slytechs.jnet.jnetruntime.pipeline.NetPipeline;
+import com.slytechs.jnet.jnetruntime.pipeline.NetProcessor;
+import com.slytechs.jnet.jnetruntime.pipeline.NetProcessorGroup;
 import com.slytechs.jnet.jnetruntime.pipeline.NetProcessorType;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
 import com.slytechs.jnet.jnetruntime.util.SystemProperties;
@@ -75,8 +77,8 @@ public final class PacketRepeater extends AbstractNetProcessor<PacketRepeater> {
 	/**
 	 * Instantiates a new packet repeater.
 	 */
-	public PacketRepeater(NetPipeline pipeline, int priority) {
-		super(pipeline, priority, NetProcessorType.RX_PCAP_RAW);
+	public PacketRepeater(NetProcessorGroup group, int priority) {
+		super(group, priority, NetProcessorType.RX_PCAP_RAW);
 	}
 
 	/**
@@ -288,10 +290,10 @@ public final class PacketRepeater extends AbstractNetProcessor<PacketRepeater> {
 	}
 
 	/**
-	 * @see com.slytechs.jnet.jnetruntime.pipeline.NetProcessor#source()
+	 * @see com.slytechs.jnet.jnetruntime.pipeline.NetProcessor#sink()
 	 */
 	@Override
-	public Object source() {
+	public Object sink() {
 		throw new UnsupportedOperationException("not implemented yet");
 	}
 
@@ -309,5 +311,11 @@ public final class PacketRepeater extends AbstractNetProcessor<PacketRepeater> {
 	@Override
 	public void dispose() {
 		throw new UnsupportedOperationException("not implemented yet");
+	}
+
+	@Override
+	public void link(NetProcessor<?> next) {
+		// TODO Auto-generated method stub
+		
 	}
 }

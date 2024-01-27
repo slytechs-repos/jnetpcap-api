@@ -17,12 +17,18 @@
  */
 package com.slytechs.jnet.jnetpcap;
 
+import java.lang.foreign.MemorySegment;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.jnetpcap.PcapHandler.OfMemorySegment;
 import org.jnetpcap.internal.PcapHeaderABI;
 
 import com.slytechs.jnet.jnetruntime.pipeline.AbstractNetProcessor;
 import com.slytechs.jnet.jnetruntime.pipeline.NetPipeline;
+import com.slytechs.jnet.jnetruntime.pipeline.NetProcessor;
+import com.slytechs.jnet.jnetruntime.pipeline.NetProcessorGroup;
 import com.slytechs.jnet.jnetruntime.pipeline.NetProcessorType;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
 import com.slytechs.jnet.jnetruntime.util.SystemProperties;
@@ -67,9 +73,9 @@ public class PacketPlayer extends AbstractNetProcessor<PacketPlayer> {
 
 	/** The max ifg nano. */
 	private long maxIfgNano = Long.MAX_VALUE;
-	
-	public PacketPlayer(NetPipeline pipeline, int priority) {
-		super(pipeline, priority, NetProcessorType.RX_PCAP_RAW);
+
+	public PacketPlayer(NetProcessorGroup group, int priority) {
+		super(group, priority, NetProcessorType.RX_PCAP_RAW);
 	}
 
 	/**
@@ -228,11 +234,19 @@ public class PacketPlayer extends AbstractNetProcessor<PacketPlayer> {
 	}
 
 	/**
-	 * @see com.slytechs.jnet.jnetruntime.pipeline.NetProcessor#source()
+	 * @see com.slytechs.jnet.jnetruntime.pipeline.NetProcessor#sink()
 	 */
 	@Override
-	public Object source() {
-		throw new UnsupportedOperationException("not implemented yet");
+	public Object sink() {
+
+		OfMemorySegment<Object> handler = this::segmentHandler;
+
+		return handler;
+	}
+
+	private void segmentHandler(Object u, MemorySegment hdr, MemorySegment pkt) {
+		for (var next : nextArray)
+			next.handleSegment(u, hdr, pkt);
 	}
 
 	/**
@@ -240,6 +254,8 @@ public class PacketPlayer extends AbstractNetProcessor<PacketPlayer> {
 	 */
 	@Override
 	public void setup() {
+		this.nextArray = nextList.toArray(OfMemorySegment[]::new);
+		nextList.clear();
 	}
 
 	/**
@@ -247,6 +263,8 @@ public class PacketPlayer extends AbstractNetProcessor<PacketPlayer> {
 	 */
 	@Override
 	public void dispose() {
+		nextArray = null;
+		nextList = new ArrayList<>();
 	}
 
 	/**
@@ -254,6 +272,15 @@ public class PacketPlayer extends AbstractNetProcessor<PacketPlayer> {
 	 */
 	public PacketPlayer emulateRealTime(boolean b) {
 		throw new UnsupportedOperationException("not implemented yet");
+	}
+
+	private OfMemorySegment<Object>[] nextArray;
+	private List<OfMemorySegment<Object>> nextList = new ArrayList<>();
+
+	@Override
+	public void link(NetProcessor<?> next) {
+		throw new UnsupportedOperationException("not implemented yet");
+
 	}
 
 }
