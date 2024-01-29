@@ -5,7 +5,6 @@ import java.lang.foreign.MemorySegment;
 import org.jnetpcap.internal.PcapDispatcher;
 import org.jnetpcap.internal.PcapHeaderABI;
 
-import com.slytechs.jnet.jnetruntime.pipeline.NetPipeline;
 import com.slytechs.jnet.jnetruntime.pipeline.NetProcessorGroup;
 import com.slytechs.jnet.jnetruntime.pipeline.NetProcessorType;
 

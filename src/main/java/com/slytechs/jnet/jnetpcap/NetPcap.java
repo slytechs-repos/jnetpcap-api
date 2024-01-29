@@ -51,6 +51,7 @@ import com.slytechs.jnet.jnetpcap.internal.PacketDissectorReceiver;
 import com.slytechs.jnet.jnetpcap.internal.PacketReceiver;
 import com.slytechs.jnet.jnetpcap.internal.PacketReceiverConfig;
 import com.slytechs.jnet.jnetruntime.pipeline.NetPipeline;
+import com.slytechs.jnet.jnetruntime.pipeline.NetProcessorType;
 import com.slytechs.jnet.jnetruntime.time.TimeSource;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
 import com.slytechs.jnet.jnetruntime.util.MemoryUnit;
@@ -155,11 +156,7 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 		 * @return the pcap
 		 * @throws PcapException the pcap exception
 		 */
-		Pcap newInstance(T device,
-				int snaplen,
-				boolean promisc,
-				long timeout,
-				TimeUnit unit) throws PcapException;
+		Pcap newInstance(T device, int snaplen, boolean promisc, long timeout, TimeUnit unit) throws PcapException;
 	}
 
 	/**
@@ -398,8 +395,7 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 * @since libpcap 1.5.1
 	 */
 	public static NetPcap openDeadWithTstampPrecision(OpenDeadTsPcapFactory factory, PcapDlt linktype, int snaplen,
-			PcapTStampPrecision precision)
-			throws PcapException {
+			PcapTStampPrecision precision) throws PcapException {
 		return new NetPcap(factory.newInstance(linktype, snaplen, precision), PcapType.DEAD_HANDLE);
 	}
 
@@ -462,11 +458,8 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 * @throws PcapException any errors
 	 * @since libpcap 0.4
 	 */
-	public static NetPcap openLive(OpenLivePcapFactory<PcapIf> factory, PcapIf device,
-			int snaplen,
-			boolean promisc,
-			long timeout,
-			TimeUnit unit) throws PcapException {
+	public static NetPcap openLive(OpenLivePcapFactory<PcapIf> factory, PcapIf device, int snaplen, boolean promisc,
+			long timeout, TimeUnit unit) throws PcapException {
 
 		return new NetPcap(factory.newInstance(device, snaplen, promisc, timeout, unit), PcapType.LIVE_CAPTURE);
 	}
@@ -493,11 +486,8 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 * @throws PcapException any errors
 	 * @since libpcap 0.4
 	 */
-	public static NetPcap openLive(OpenLivePcapFactory<String> factory, String device,
-			int snaplen,
-			boolean promisc,
-			long timeout,
-			TimeUnit unit) throws PcapException {
+	public static NetPcap openLive(OpenLivePcapFactory<String> factory, String device, int snaplen, boolean promisc,
+			long timeout, TimeUnit unit) throws PcapException {
 
 		return new NetPcap(factory.newInstance(device, snaplen, promisc, timeout, unit), PcapType.LIVE_CAPTURE);
 	}
@@ -523,11 +513,8 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 * @throws PcapException any errors
 	 * @since libpcap 0.4
 	 */
-	public static NetPcap openLive(PcapIf device,
-			int snaplen,
-			boolean promisc,
-			long timeout,
-			TimeUnit unit) throws PcapException {
+	public static NetPcap openLive(PcapIf device, int snaplen, boolean promisc, long timeout, TimeUnit unit)
+			throws PcapException {
 
 		return openLive(Pcap::openLive, device, snaplen, promisc, timeout, unit);
 	}
@@ -553,11 +540,8 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 * @throws PcapException any errors
 	 * @since libpcap 0.4
 	 */
-	public static NetPcap openLive(String device,
-			int snaplen,
-			boolean promisc,
-			long timeout,
-			TimeUnit unit) throws PcapException {
+	public static NetPcap openLive(String device, int snaplen, boolean promisc, long timeout, TimeUnit unit)
+			throws PcapException {
 
 		return new NetPcap(Pcap.openLive(device, snaplen, promisc, timeout, unit), PcapType.LIVE_CAPTURE);
 	}
@@ -716,20 +700,9 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	public void activate() throws PcapActivatedException, PcapException {
 		if (isActive)
 			throw new PcapActivatedException(PcapCode.PCAP_ERROR_ACTIVATED, "pcap-pro handle already active");
-
-		try {
-			this.postProcessor.activate();
-			super.activate();
-		} catch (PcapActivatedException e) {} // Offline/dead handles are active already
-
-		try {
-
-			installAllPreProcessors();
-			installMainPacketProcessor();
-			installAllPostProcessors();
-		} finally {
-			this.isActive = true;
-		}
+	
+	
+		activatePipeline();
 	}
 
 	/**
@@ -738,8 +711,7 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 * @throws IllegalStateException thrown if handle is not active
 	 */
 	private void checkIfActiveOrElseThrow() throws IllegalStateException {
-		if (!isActive
-				&& (!context.postProcessors.isEmpty() || !context.preProcessors.isEmpty()))
+		if (!isActive && (!context.postProcessors.isEmpty() || !context.preProcessors.isEmpty()))
 			throw new IllegalStateException("inactive - must use Pcap.activate()");
 	}
 
@@ -751,26 +723,6 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	private void checkIfInactiveOrElseThrow() throws IllegalStateException {
 		if (isActive)
 			throw new IllegalStateException("handle already active");
-	}
-
-	/**
-	 * Check if processor not installed or else throw.
-	 *
-	 * @param list         the list
-	 * @param classToCheck the class to check
-	 */
-	private void checkIfProcessorNotInstalledOrElseThrow(List<NetPcapConfigurator<?>> list,
-			Class<?> classToCheck) {
-
-		boolean found = list.stream()
-				.map(Object::getClass)
-				.filter(classToCheck::equals)
-				.findAny()
-				.isPresent();
-
-		if (found)
-			throw new IllegalStateException("processor already installed [%s]"
-					.formatted(classToCheck.getSimpleName()));
 	}
 
 	/**
@@ -791,8 +743,7 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 			}
 		}
 		if (!exceptions.isEmpty())
-			throw new RuntimeMultipleExceptions(
-					"caught pcap-pro '%s' handle close actions errors".formatted(getName()),
+			throw new RuntimeMultipleExceptions("caught '%s' handle close actions errors".formatted(getName()),
 					exceptions);
 
 	}
@@ -900,14 +851,18 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 * @param b   the b
 	 * @return the t
 	 */
-	public <T extends PostRxProcessor> NetPcap enableIpf(boolean b) {
+	public NetPcap enableIpf(boolean b) {
+		if (b == false)
+			return this;
 
-		if (b)
-			installPost(IpfReassembler::new);
-		else
-			uninstall(IpfReassembler.class);
+		NetPipeline pipeline = pipeline();
+		pipeline.install(IpfReassembler::new);
 
 		return this;
+	}
+	
+	private void activatePipeline() {
+		pipeline().close();
 	}
 
 	/**
@@ -917,7 +872,7 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 * @param b   the b
 	 * @return the pcap pro
 	 */
-	public <T extends PostRxProcessor> NetPcap enableIpfIf(BooleanSupplier b) {
+	public NetPcap enableIpf(BooleanSupplier b) {
 		return enableIpf(b.getAsBoolean());
 	}
 
@@ -1029,121 +984,6 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 */
 	public Optional<Throwable> getUncaughtException() {
 		return Optional.ofNullable(preProcessor.getUncaughtException());
-	}
-
-	/**
-	 * Install.
-	 *
-	 * @param <T>           the generic type
-	 * @param postProcessor the post processor
-	 * @return the t
-	 */
-	public <T extends PostRxProcessor> T install(T postProcessor) {
-		checkIfInactiveOrElseThrow();
-		checkIfProcessorNotInstalledOrElseThrow(context.postProcessors, postProcessor.getClass());
-
-		if (!(postProcessor instanceof NetPcapConfigurator<?> processor))
-			throw new IllegalArgumentException("invalid post-processor [%s]"
-					.formatted(postProcessor.getClass()));
-
-		context.postProcessors.push(processor);
-
-		return postProcessor;
-	}
-
-	/**
-	 * Install.
-	 *
-	 * @param <T>          the generic type
-	 * @param preProcessor the pre processor
-	 * @return the t
-	 */
-	public <T extends PreRxProcessor> T install(T preProcessor) {
-		checkIfInactiveOrElseThrow();
-		checkIfProcessorNotInstalledOrElseThrow(context.preProcessors, preProcessor.getClass());
-
-		if (!(preProcessor instanceof NetPcapConfigurator<?> processor))
-			throw new IllegalArgumentException("invalid pre-processor [%s]"
-					.formatted(preProcessor.getClass()));
-
-		context.preProcessors.push(processor);
-
-		return preProcessor;
-	}
-
-	/**
-	 * Install all post processors.
-	 */
-	private void installAllPostProcessors() {
-		context.postProcessors.stream()
-				.filter(c -> c.isEnabled())
-				.forEach(this::installPostProcessor);
-	}
-
-	/**
-	 * Install all pre processors.
-	 */
-	private void installAllPreProcessors() {
-		context.preProcessors.stream()
-				.filter(c -> c.isEnabled())
-				.forEach(this::installPreProcessor);
-	}
-
-	/**
-	 * Install main packet processor.
-	 */
-	private void installMainPacketProcessor() {
-		/*
-		 * Main processor already created, we just need to connect it up the pcap
-		 * dispatchers (ie. PreProcessors) that are already installed and configured.
-		 */
-		postProcessorRoot.setPcapDispatcher(preProcessor);
-	}
-
-	/**
-	 * Install factory.
-	 *
-	 * @param <T>                   the generic type
-	 * @param postProcessorSupplier the post processor supplier
-	 * @return the t
-	 */
-	public <T extends PostRxProcessor> T installPost(PostRxProcessorFactory<T> postProcessorSupplier) {
-		checkIfInactiveOrElseThrow();
-
-		return install(postProcessorSupplier.newInstance());
-	}
-
-	/**
-	 * Install post processor.
-	 *
-	 * @param processor the processor
-	 */
-	private void installPostProcessor(NetPcapConfigurator<?> processor) {
-		this.postProcessor = processor.newDispatcherInstance(preProcessor, postProcessor, context);
-		onClose(this.postProcessor::close);
-	}
-
-	/**
-	 * Install factory.
-	 *
-	 * @param <T>                  the generic type
-	 * @param preProcessorSupplier the pre processor supplier
-	 * @return the t
-	 */
-	public <T extends PreRxProcessor> T installPre(PreRxProcessorFactory<T> preProcessorSupplier) {
-		checkIfInactiveOrElseThrow();
-
-		return install(preProcessorSupplier.newInstance());
-	}
-
-	/**
-	 * Install pre processor.
-	 *
-	 * @param processor the processor
-	 */
-	private void installPreProcessor(NetPcapConfigurator<?> processor) {
-		this.preProcessor = processor.newDispatcherInstance(this.preProcessor, context);
-		onClose(this.preProcessor::close);
 	}
 
 	/**
@@ -1379,13 +1219,15 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 
 	}
 	
+	private final NetPipeline pipeline = new NetPipeline(NetProcessorType.RX_PACKET);
+
 	/**
 	 * Pipeline.
 	 *
 	 * @return the processor config
 	 */
 	public NetPipeline pipeline() {
-		throw new UnsupportedOperationException();
+		return pipeline;
 	}
 
 	/**
@@ -1509,80 +1351,4 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 		return this;
 	}
 
-	/**
-	 * Uninstall a specific processor (either pre or post) by its type.
-	 *
-	 * @param <T>            the generic type
-	 * @param processorClass the processor class
-	 * @return this pcap pro handle
-	 */
-	public <T extends NetPcapConfigurator<?>> NetPcap uninstall(Class<T> processorClass) {
-
-		context.preProcessors.stream()
-				.filter(p -> p.getClass().equals(processorClass))
-				.findAny()
-				.ifPresent(context.preProcessors::remove);
-
-		context.postProcessors.stream()
-				.filter(p -> p.getClass().equals(processorClass))
-				.findAny()
-				.ifPresent(context.postProcessors::remove);
-
-		return this;
-	}
-
-	/**
-	 * Uninstall a specific processor instance (either pre or post), if installed.
-	 *
-	 * @param <T>       the generic type
-	 * @param processor the processor instance
-	 * @return this pcap pro handle
-	 */
-	public <T extends NetPcapConfigurator<T>> NetPcap uninstall(NetPcapConfigurator<T> processor) {
-
-		context.preProcessors.stream()
-				.filter(p -> p.equals(processor))
-				.findAny()
-				.ifPresent(context.preProcessors::remove);
-
-		context.postProcessors.stream()
-				.filter(p -> p.equals(processor))
-				.findAny()
-				.ifPresent(context.postProcessors::remove);
-
-		return this;
-	}
-
-	/**
-	 * Uninstall selectively all pre or post packet processors. The processors are
-	 * removed from the install queues and will not be installed at the time of
-	 * activation.
-	 *
-	 * @param preProcessors  the pre processors
-	 * @param postProcessors the post processors
-	 * @return the pcap pro
-	 */
-	public NetPcap uninstAll(boolean preProcessors, boolean postProcessors) {
-		checkIfInactiveOrElseThrow();
-
-		if (preProcessors)
-			context.preProcessors.clear();
-
-		if (postProcessors)
-			context.postProcessors.clear();
-
-		return this;
-	}
-
-	/**
-	 * Uninstall all pre and post packet processors. The processors are removed from
-	 * the installation queues and will not be installed at the time of activation.
-	 *
-	 * @return reference to this pcap handle
-	 */
-	public NetPcap uninstallAll() {
-		checkIfInactiveOrElseThrow();
-
-		return uninstAll(true, true);
-	}
 }

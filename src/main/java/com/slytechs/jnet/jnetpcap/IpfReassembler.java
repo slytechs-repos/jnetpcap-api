@@ -23,6 +23,10 @@ import java.util.concurrent.TimeUnit;
 
 import com.slytechs.jnet.jnetpcap.NetPcapConfigurator.PostRxProcessor;
 import com.slytechs.jnet.jnetpcap.internal.ipf.IpfDispatcher;
+import com.slytechs.jnet.jnetruntime.pipeline.AbstractNetProcessor;
+import com.slytechs.jnet.jnetruntime.pipeline.NetProcessor;
+import com.slytechs.jnet.jnetruntime.pipeline.NetProcessorGroup;
+import com.slytechs.jnet.jnetruntime.pipeline.NetProcessorType;
 import com.slytechs.jnet.jnetruntime.time.TimestampSource;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
 import com.slytechs.jnet.jnetruntime.time.TimestampSource.AssignableTimestampSource;
@@ -35,7 +39,11 @@ import com.slytechs.jnet.jnetruntime.util.MemoryUnit;
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  */
-public class IpfReassembler extends NetPcapConfigurator<IpfReassembler> implements PostRxProcessor {
+public class IpfReassembler extends AbstractNetProcessor<IpfReassembler> implements NetProcessor<IpfReassembler> {
+
+	protected IpfReassembler(NetProcessorGroup group, int priority) {
+		super(group, priority, NetProcessorType.RX_PACKET);
+	}
 
 	/** The Constant PREFIX. */
 	private static final String PREFIX = "ipf";
@@ -218,15 +226,6 @@ public class IpfReassembler extends NetPcapConfigurator<IpfReassembler> implemen
 	 */
 	public EffectiveConfig computeEffectiveConfig() {
 		return new EffectiveConfig();
-	}
-
-	/**
-	 * Instantiates a new ipf reassembler.
-	 */
-	public IpfReassembler() {
-		super(PREFIX, IpfDispatcher::newInstance);
-
-		useSystemTimesource();
 	}
 
 	/**
@@ -613,5 +612,29 @@ public class IpfReassembler extends NetPcapConfigurator<IpfReassembler> implemen
 		timeSource = TimestampSource.system();
 
 		return this;
+	}
+
+	@Override
+	public Object sink() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void setup() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void dispose() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void link(NetProcessor<?> next) {
+		// TODO Auto-generated method stub
+		
 	}
 }

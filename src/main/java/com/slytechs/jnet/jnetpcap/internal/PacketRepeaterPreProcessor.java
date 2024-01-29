@@ -20,7 +20,6 @@ package com.slytechs.jnet.jnetpcap.internal;
 import java.lang.foreign.MemorySegment;
 import java.util.concurrent.TimeUnit;
 
-import org.jnetpcap.PcapHandler.NativeCallback;
 import org.jnetpcap.internal.PcapDispatcher;
 import org.jnetpcap.internal.PcapHeaderABI;
 

@@ -21,7 +21,6 @@ import java.lang.foreign.MemorySegment;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-import org.jnetpcap.PcapHandler.NativeCallback;
 import org.jnetpcap.internal.PcapDispatcher;
 import org.jnetpcap.internal.PcapHeaderABI;
 

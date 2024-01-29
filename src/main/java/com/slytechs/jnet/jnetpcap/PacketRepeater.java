@@ -24,7 +24,6 @@ import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 
 import com.slytechs.jnet.jnetruntime.pipeline.AbstractNetProcessor;
-import com.slytechs.jnet.jnetruntime.pipeline.NetPipeline;
 import com.slytechs.jnet.jnetruntime.pipeline.NetProcessor;
 import com.slytechs.jnet.jnetruntime.pipeline.NetProcessorGroup;
 import com.slytechs.jnet.jnetruntime.pipeline.NetProcessorType;
