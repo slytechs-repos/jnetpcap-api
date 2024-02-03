@@ -20,7 +20,7 @@ package com.slytechs.jnet.jnetpcap.internal.ipf;
 import org.jnetpcap.internal.PcapDispatcher;
 
 import com.slytechs.jnet.jnetpcap.IpfReassembler;
-import com.slytechs.jnet.jnetpcap.NetPcap.PcapProContext;
+import com.slytechs.jnet.jnetpcap.NetPcap.NetPcapContext;
 import com.slytechs.jnet.jnetpcap.internal.PacketReceiver;
 
 /**
@@ -44,7 +44,7 @@ public interface IpfDispatcher extends PacketReceiver {
 			PcapDispatcher pcap,
 			PacketReceiver packet,
 			IpfReassembler config,
-			PcapProContext context) {
+			NetPcapContext context) {
 
 		if (isNativeSupported())
 			return newNativeInstance(pcap, packet, config, context);
@@ -65,7 +65,7 @@ public interface IpfDispatcher extends PacketReceiver {
 			PcapDispatcher pcap,
 			PacketReceiver packet,
 			IpfReassembler config,
-			PcapProContext context) {
+			NetPcapContext context) {
 		return new JavaIpfDispatcher(pcap, packet, config, context);
 	}
 
@@ -91,9 +91,9 @@ public interface IpfDispatcher extends PacketReceiver {
 			PcapDispatcher pcap,
 			PacketReceiver packet,
 			IpfReassembler config,
-			PcapProContext context) {
+			NetPcapContext context) {
 
-		return new IpfDispatcherNative(pcap, packet, config, context);
+		return new IpfDispatcherNative(pcap, packet, config);
 	}
 
 }

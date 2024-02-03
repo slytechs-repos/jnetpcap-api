@@ -19,8 +19,10 @@ package com.slytechs.jnet.jnetpcap;
 
 import java.util.concurrent.TimeUnit;
 
-import com.slytechs.jnet.jnetpcap.NetPcapConfigurator.PreRxProcessor;
-import com.slytechs.jnet.jnetpcap.internal.PacketDelayPreProcessor;
+import org.jnetpcap.PcapHandler.OfMemorySegment;
+
+import com.slytechs.jnet.jnetruntime.pipeline.NetProcessorContext;
+import com.slytechs.jnet.jnetruntime.pipeline.UnaryProcessor;
 import com.slytechs.jnet.jnetruntime.util.SystemProperties;
 
 /**
@@ -29,14 +31,14 @@ import com.slytechs.jnet.jnetruntime.util.SystemProperties;
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  */
-public final class PacketDelay extends NetPcapConfigurator<PacketDelay> implements PreRxProcessor {
+public final class PacketDelay extends UnaryProcessor<PacketDelay, OfMemorySegment<?>> {
 
 	/** The Constant PREFIX. */
 	private static final String PREFIX = "packet.delay";
-	
+
 	/** The Constant PROPERTY_PACKET_REPEATER_ENABLE. */
 	public static final String PROPERTY_PACKET_REPEATER_ENABLE = PREFIX + ".enable";
-	
+
 	/** The Constant PROPERTY_PACKET_REPEATER_DELAY_NANO. */
 	public static final String PROPERTY_PACKET_REPEATER_DELAY_NANO = PREFIX + ".delayNano";
 
@@ -46,8 +48,8 @@ public final class PacketDelay extends NetPcapConfigurator<PacketDelay> implemen
 	/**
 	 * Instantiates a new packet delay.
 	 */
-	public PacketDelay() {
-		super(PREFIX, PacketDelayPreProcessor::new);
+	public PacketDelay(int priority) {
+		super(priority, PcapDataType.PCAP_RAW);
 	}
 
 	/**
@@ -80,5 +82,13 @@ public final class PacketDelay extends NetPcapConfigurator<PacketDelay> implemen
 	 */
 	public long getDelayNano() {
 		return delayNano;
+	}
+
+	/**
+	 * @see com.slytechs.jnet.jnetruntime.pipeline.NetProcessor#setup(com.slytechs.jnet.jnetruntime.pipeline.NetProcessor.NetProcessorContext)
+	 */
+	@Override
+	public void setup(NetProcessorContext context) {
+		throw new UnsupportedOperationException("not implemented yet");
 	}
 }

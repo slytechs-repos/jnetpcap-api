@@ -24,7 +24,6 @@ import org.jnetpcap.internal.PcapForeignDowncall;
 import org.jnetpcap.internal.PcapForeignInitializer;
 
 import com.slytechs.jnet.jnetpcap.IpfReassembler;
-import com.slytechs.jnet.jnetpcap.NetPcap.PcapProContext;
 import com.slytechs.jnet.jnetpcap.internal.AbstractPacketReceiver;
 import com.slytechs.jnet.jnetpcap.internal.PacketReceiver;
 
@@ -53,8 +52,7 @@ public class IpfDispatcherNative
 	public IpfDispatcherNative(
 			PcapDispatcher pcap,
 			PacketReceiver packet,
-			IpfReassembler config,
-			PcapProContext context) {
+			IpfReassembler config) {
 
 		super(packet, pcap);
 	}

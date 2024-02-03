@@ -27,7 +27,7 @@ import org.jnetpcap.internal.PcapDispatcher;
 import org.jnetpcap.internal.PcapHeaderABI;
 import org.jnetpcap.util.PcapPacketRef;
 
-import com.slytechs.jnet.jnetpcap.NetPcap.PcapProContext;
+import com.slytechs.jnet.jnetpcap.NetPcap.NetPcapContext;
 
 /**
  * The Class AbstractPcapDispatcher.
@@ -50,7 +50,7 @@ public class AbstractPcapDispatcher implements PcapDispatcher {
 		 * @param context the context
 		 * @return the pcap dispatcher
 		 */
-		PcapDispatcher newInstance(PcapDispatcher source, Object config, PcapProContext context);
+		PcapDispatcher newInstance(PcapDispatcher source, Object config, NetPcapContext context);
 	}
 
 	/** The pcap dispatcher. */

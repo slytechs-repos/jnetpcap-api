@@ -1,19 +1,17 @@
 /*
- * Sly Technologies Free License
- * 
- * Copyright 2023 Sly Technologies Inc.
+ * Copyright 2024 Sly Technologies Inc
  *
- * Licensed under the Sly Technologies Free License (the "License"); you may not
- * use this file except in compliance with the License. You may obtain a copy of
- * the License at
- * 
- * http://www.slytechs.com/free-license-text
- * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations under
- * the License.
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package com.slytechs.jnet.jnetpcap;
 
@@ -41,10 +39,10 @@ public interface NetPcapHandler extends PcapHandler {
 	 */
 	@FunctionalInterface
 	public interface OfPacket<U> extends NetPcapHandler {
-		
+
 		/** Empty/No-op callback handler. */
 		OfPacket<?> EMPTY = (u, p) -> {};
-		
+
 		/**
 		 * Empty/No-op callback handler.
 		 *
@@ -57,6 +55,31 @@ public interface NetPcapHandler extends PcapHandler {
 		}
 
 		/**
+		 * Creates a new handler that passes on new user data to the old handler. The
+		 * original user data supplied is ignored.
+		 *
+		 * @param newUserdata the new userdata to supply
+		 * @return new packet handler which overrides the original user data
+		 */
+		default OfPacket<U> wrapUser(U newUserdata) {
+			return (u, p) -> handlePacket(newUserdata, p);
+		}
+
+		/**
+		 * Wrap array.
+		 *
+		 * @param <U>   the generic type
+		 * @param array the array
+		 * @return the of packet
+		 */
+		static <U> OfPacket<U> wrapArray(OfPacket<U>[] array) {
+			return (u, p) -> {
+				for (var a : array)
+					a.handlePacket(u, p);
+			};
+		}
+
+		/**
 		 * Handle a packet.
 		 *
 		 * @param user   user opaque value returned back
@@ -64,12 +87,12 @@ public interface NetPcapHandler extends PcapHandler {
 		 */
 		void handlePacket(U user, Packet packet);
 	}
-	
+
 	/**
 	 * The Interface IpfHandler.
 	 */
 	public interface IpfHandler {
-		
+
 		/**
 		 * Handle ipf.
 		 *

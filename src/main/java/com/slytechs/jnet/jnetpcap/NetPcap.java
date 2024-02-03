@@ -22,7 +22,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Stack;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BooleanSupplier;
@@ -41,24 +40,18 @@ import org.jnetpcap.internal.PcapDispatcher;
 import org.jnetpcap.internal.StandardPcapDispatcher;
 import org.jnetpcap.util.PcapPacketRef;
 
-import com.slytechs.jnet.jnetpcap.NetPcapConfigurator.PostRxProcessor;
-import com.slytechs.jnet.jnetpcap.NetPcapConfigurator.PostRxProcessorFactory;
-import com.slytechs.jnet.jnetpcap.NetPcapConfigurator.PreRxProcessor;
-import com.slytechs.jnet.jnetpcap.NetPcapConfigurator.PreRxProcessorFactory;
+import com.slytechs.jnet.jnetpcap.NetPcapHandler.OfPacket;
 import com.slytechs.jnet.jnetpcap.NetPcapHandler.OfPacketConsumer;
 import com.slytechs.jnet.jnetpcap.internal.CaptureStatisticsImpl;
-import com.slytechs.jnet.jnetpcap.internal.PacketDissectorReceiver;
-import com.slytechs.jnet.jnetpcap.internal.PacketReceiver;
 import com.slytechs.jnet.jnetpcap.internal.PacketReceiverConfig;
 import com.slytechs.jnet.jnetruntime.pipeline.NetPipeline;
-import com.slytechs.jnet.jnetruntime.pipeline.NetProcessorType;
 import com.slytechs.jnet.jnetruntime.time.TimeSource;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
 import com.slytechs.jnet.jnetruntime.util.MemoryUnit;
+import com.slytechs.jnet.jnetruntime.util.Registration;
 import com.slytechs.jnet.jnetruntime.util.RuntimeMultipleExceptions;
 import com.slytechs.jnet.protocol.Frame.FrameNumber;
 import com.slytechs.jnet.protocol.Packet;
-import com.slytechs.jnet.protocol.Registration;
 import com.slytechs.jnet.protocol.core.constants.PacketDescriptorType;
 import com.slytechs.jnet.protocol.descriptor.PacketDissector;
 import com.slytechs.jnet.protocol.meta.PacketFormat;
@@ -103,6 +96,48 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 		 * @throws PcapException the pcap exception
 		 */
 		Pcap newInstance(T device) throws PcapException;
+	}
+
+	/**
+	 * Context structure for the PcapPro class and its numerous processors.
+	 */
+	public final static class NetPcapContext {
+
+		/** The time source. */
+		private TimeSource timeSource = TimeSource.ofRebased();
+
+		/** The pcap type. */
+		public final PcapType pcapType;
+
+		/**
+		 * Instantiates a new pcap pro context.
+		 *
+		 * @param pcapType the pcap type.
+		 */
+		NetPcapContext(PcapType pcapType) {
+			this.pcapType = pcapType;
+		}
+
+		/**
+		 * Gets the time source.
+		 *
+		 * @return the timeSource
+		 */
+		public TimeSource getTimeSource() {
+			return timeSource;
+		}
+
+		/**
+		 * Sets the time source.
+		 *
+		 * @param timeSource the timeSource to set
+		 * @return the pcap pro context
+		 */
+		public NetPcapContext setTimeSource(TimeSource timeSource) {
+			this.timeSource = timeSource;
+
+			return this;
+		}
 	}
 
 	/**
@@ -174,54 +209,6 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 		 * @throws PcapException the pcap exception
 		 */
 		Pcap newInstance(T file) throws PcapException;
-	}
-
-	/**
-	 * Context structure for the PcapPro class and its numerous processors.
-	 */
-	public final static class PcapProContext {
-
-		/** The time source. */
-		private TimeSource timeSource = TimeSource.ofRebased();
-
-		/** The pre processors. */
-		public final Stack<NetPcapConfigurator<?>> preProcessors = new Stack<>();
-
-		/** The post processors. */
-		public final Stack<NetPcapConfigurator<?>> postProcessors = new Stack<>();
-
-		/** The pcap type. */
-		public final PcapType pcapType;
-
-		/**
-		 * Instantiates a new pcap pro context.
-		 *
-		 * @param pcapType the pcap type.
-		 */
-		PcapProContext(PcapType pcapType) {
-			this.pcapType = pcapType;
-		}
-
-		/**
-		 * Gets the time source.
-		 *
-		 * @return the timeSource
-		 */
-		public TimeSource getTimeSource() {
-			return timeSource;
-		}
-
-		/**
-		 * Sets the time source.
-		 *
-		 * @param timeSource the timeSource to set
-		 * @return the pcap pro context
-		 */
-		public PcapProContext setTimeSource(TimeSource timeSource) {
-			this.timeSource = timeSource;
-
-			return this;
-		}
 	}
 
 	/**
@@ -631,19 +618,7 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	private CaptureStatistics stats = new CaptureStatisticsImpl();
 
 	/** The context. */
-	private final PcapProContext context;
-
-	/** The packet dispatcher. */
-	private final PacketDissectorReceiver postProcessorRoot;
-
-	/** The post processor. */
-	private PacketReceiver postProcessor;
-
-	/** The pre processor root. */
-	private final PcapDispatcher preProcessorRoot;
-
-	/** The pre processor. */
-	private PcapDispatcher preProcessor;
+	private final NetPcapContext context;
 
 	/** The is active. */
 	private boolean isActive;
@@ -651,8 +626,29 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	/** The close actions. */
 	private final List<Runnable> closeActions = new LinkedList<>();
 
+	/** The pcap pipeline. */
+	private final PcapPipeline pcapPipeline;
+
+	/** The proto pipeline. */
+	private final ProtocolPipeline protoPipeline;
+
+	/** The dispatcher L 0. */
+	private final PcapDispatcher dispatcherL0;
+
 	/**
 	 * Instantiates a new pcap-pro native handle.
+	 * 
+	 * <pre>
+	 * + NetPcap -> Pcap
+	 *   + NetPipeline::pipelineL0
+	 *     + NetGroup(RX_PCAP_RAW)
+	 *       - PcapDispatcherAdapter::RX_PCAP_RAW(PcapDispatcher::stdPcapDispatcher)
+	 *       - PacketRepeater
+	 *     + NetGroup(RX_PACKET)
+	 *       - PacketDissectorAdapter
+	 *     + NetGroup(RX_IPF)
+	 *       - IpfReassembler
+	 * </pre>
 	 *
 	 * @param pcap     the pcap
 	 * @param pcapType the pcap handle type such as LIVE, OFFLINE or DEAD depending
@@ -663,13 +659,14 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 		config.abi = Objects.requireNonNull(getPcapHeaderABI(), "abi");
 		config.portName = getName();
 
-		this.preProcessorRoot = new StandardPcapDispatcher(getPcapHandle(), getPcapHeaderABI(), this::breakloop);
-		this.preProcessor = this.preProcessorRoot;
-		this.postProcessorRoot = new PacketDissectorReceiver(config);
-		this.postProcessor = postProcessorRoot;
-		this.context = new PcapProContext(Objects.requireNonNull(pcapType, "pcapType"));
+		this.dispatcherL0 = new StandardPcapDispatcher(getPcapHandle(), getPcapHeaderABI(), this::breakloop);
+		this.pcapPipeline = new PcapPipeline(0);
+		this.protoPipeline = this.pcapPipeline.installPipeline(ProtocolPipeline::new);
 
-		postProcessorRoot.setPcapDispatcher(preProcessor);
+		this.context = new NetPcapContext(Objects.requireNonNull(pcapType, "pcapType"));
+
+		this.pcapPipeline.context()
+				.property(getPcapHandle());
 
 		setDescriptorType(PacketDescriptorType.TYPE2);
 		enablePacketFormatter(true);
@@ -700,9 +697,15 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	public void activate() throws PcapActivatedException, PcapException {
 		if (isActive)
 			throw new PcapActivatedException(PcapCode.PCAP_ERROR_ACTIVATED, "pcap-pro handle already active");
-	
-	
+
 		activatePipeline();
+	}
+
+	/**
+	 * Activate pipeline.
+	 */
+	private void activatePipeline() {
+		pipeline().close();
 	}
 
 	/**
@@ -711,7 +714,7 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 * @throws IllegalStateException thrown if handle is not active
 	 */
 	private void checkIfActiveOrElseThrow() throws IllegalStateException {
-		if (!isActive && (!context.postProcessors.isEmpty() || !context.preProcessors.isEmpty()))
+		if (!isActive)
 			throw new IllegalStateException("inactive - must use Pcap.activate()");
 	}
 
@@ -743,9 +746,8 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 			}
 		}
 		if (!exceptions.isEmpty())
-			throw new RuntimeMultipleExceptions("caught '%s' handle close actions errors".formatted(getName()),
-					exceptions);
-
+			throw new RuntimeMultipleExceptions("caught '%s' handle close actions errors"
+					.formatted(getName()), exceptions);
 	}
 
 	/**
@@ -809,10 +811,12 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 *         pcap_breakloop() before any packets were processed
 	 * @since libpcap 0.4
 	 */
-	public <U> int dispatch(int count, NetPcapHandler.OfPacket<U> handler, U user) {
+	public <U> int dispatch(int count, OfPacket<U> handler, U user) {
 		checkIfActiveOrElseThrow();
 
-		return postProcessor.receivePacketWithDispatch(count, handler, user);
+		try (Registration reg = protoPipeline.addOutput(handler.wrapUser(user))) {
+			return dispatcherL0.invokeDispatchNativeCallback(count, pcapPipeline, MemorySegment.NULL);
+		}
 	}
 
 	/**
@@ -847,29 +851,23 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	/**
 	 * Install factory.
 	 *
-	 * @param <T> the generic type
-	 * @param b   the b
+	 * @param b the b
 	 * @return the t
 	 */
 	public NetPcap enableIpf(boolean b) {
 		if (b == false)
 			return this;
 
-		NetPipeline pipeline = pipeline();
+		NetPipeline<?, ?> pipeline = pipeline();
 		pipeline.install(IpfReassembler::new);
 
 		return this;
-	}
-	
-	private void activatePipeline() {
-		pipeline().close();
 	}
 
 	/**
 	 * Enable ipf if.
 	 *
-	 * @param <T> the generic type
-	 * @param b   the b
+	 * @param b the b
 	 * @return the pcap pro
 	 */
 	public NetPcap enableIpf(BooleanSupplier b) {
@@ -898,7 +896,7 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 *
 	 * @return the context
 	 */
-	public PcapProContext getContext() {
+	public NetPcapContext getContext() {
 		return context;
 	}
 
@@ -983,7 +981,7 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 * @return the uncaught exception
 	 */
 	public Optional<Throwable> getUncaughtException() {
-		return Optional.ofNullable(preProcessor.getUncaughtException());
+		return Optional.ofNullable(dispatcherL0.getUncaughtException());
 	}
 
 	/**
@@ -1048,7 +1046,11 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 * @since libpcap 0.4
 	 */
 	public <U> int loop(int count, NetPcapHandler.OfPacket<U> handler, U user) {
-		return postProcessor.receivePacketWithLoop(count, handler, user);
+		checkIfActiveOrElseThrow();
+
+		try (Registration reg = protoPipeline.addOutput(handler.wrapUser(user))) {
+			return dispatcherL0.invokeLoopNativeCallback(count, pcapPipeline, MemorySegment.NULL);
+		}
 	}
 
 	/**
@@ -1085,18 +1087,6 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	}
 
 	/**
-	 * Next.
-	 *
-	 * @return the pcap packet ref
-	 * @throws PcapException the pcap exception
-	 * @see org.jnetpcap.Pcap0_4#next()
-	 */
-	@Override
-	public PcapPacketRef next() throws PcapException {
-		return preProcessor.next();
-	}
-
-	/**
 	 * Next ex.
 	 *
 	 * @return the pcap packet ref
@@ -1106,7 +1096,7 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 */
 	@Override
 	public PcapPacketRef nextEx() throws PcapException, TimeoutException {
-		return preProcessor.nextEx();
+		return next();
 	}
 
 	/**
@@ -1151,7 +1141,7 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 * @since Pcap 0.8
 	 */
 	public Packet nextExPacket() throws PcapException, TimeoutException {
-		return postProcessor.getPacketWithNextExtended();
+		throw new UnsupportedOperationException();
 	}
 
 	/**
@@ -1203,7 +1193,7 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 * @since libpcap 0.4
 	 */
 	public Packet nextPacket() throws PcapException {
-		return postProcessor.getPacketWithNext();
+		throw new UnsupportedOperationException();
 	}
 
 	/**
@@ -1218,16 +1208,14 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 		return () -> closeActions.remove(closeAction);
 
 	}
-	
-	private final NetPipeline pipeline = new NetPipeline(NetProcessorType.RX_PACKET);
 
 	/**
 	 * Pipeline.
 	 *
 	 * @return the processor config
 	 */
-	public NetPipeline pipeline() {
-		return pipeline;
+	public PcapPipeline pipeline() {
+		return pcapPipeline;
 	}
 
 	/**
@@ -1261,8 +1249,6 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	public NetPcap setDescriptorType(PacketDescriptorType type) {
 		config.descriptorType = type;
 		config.dissector = PacketDissector.dissector(type);
-
-		this.stats = postProcessorRoot.getCaptureStatistics();
 
 		return this;
 	}

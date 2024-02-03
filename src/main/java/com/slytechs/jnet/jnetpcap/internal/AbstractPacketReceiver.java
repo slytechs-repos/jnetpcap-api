@@ -28,8 +28,6 @@ import org.jnetpcap.PcapException;
 import org.jnetpcap.internal.PcapDispatcher;
 
 import com.slytechs.jnet.jnetpcap.CaptureStatistics;
-import com.slytechs.jnet.jnetpcap.NetPcapConfigurator;
-import com.slytechs.jnet.jnetpcap.NetPcap.PcapProContext;
 import com.slytechs.jnet.jnetpcap.NetPcapHandler.OfPacket;
 import com.slytechs.jnet.protocol.Packet;
 import com.slytechs.jnet.protocol.core.constants.PacketDescriptorType;
@@ -44,29 +42,6 @@ import com.slytechs.jnet.protocol.descriptor.PacketDissector;
 public abstract class AbstractPacketReceiver
 		extends AbstractPcapDispatcher
 		implements PacketReceiver {
-
-	/**
-	 * A factory for creating PacketDispatcher objects.
-	 *
-	 * @param <T> the generic type
-	 */
-	public interface PacketDispatcherFactory<T extends NetPcapConfigurator<T>> {
-
-		/**
-		 * New instance.
-		 *
-		 * @param source  the source
-		 * @param sink    the sink
-		 * @param config  the config
-		 * @param context the context
-		 * @return the packet receiver
-		 */
-		PacketReceiver newInstance(
-				PcapDispatcher source,
-				PacketReceiver sink,
-				T config,
-				PcapProContext context);
-	}
 
 	/** The packet receiver. */
 	private final PacketReceiver packetReceiver;
@@ -198,7 +173,8 @@ public abstract class AbstractPacketReceiver
 	 * @param user  the user
 	 * @return the int
 	 * @see com.slytechs.jnet.jnetpcap.internal.PacketReceiver#receivePacketWithDispatch(int,
-	 *      com.slytechs.NetPcapHandler.pro.PcapProHandler.OfPacket, java.lang.Object)
+	 *      com.slytechs.NetPcapHandler.pro.PcapProHandler.OfPacket,
+	 *      java.lang.Object)
 	 */
 	@Override
 	public <U> int receivePacketWithDispatch(int count, OfPacket<U> sink, U user) {
@@ -215,8 +191,8 @@ public abstract class AbstractPacketReceiver
 	 * @param packetFactory the packet factory
 	 * @return the int
 	 * @see com.slytechs.jnet.jnetpcap.internal.PacketReceiver#receivePacketWithDispatch(int,
-	 *      com.slytechs.NetPcapHandler.pro.PcapProHandler.OfPacket, java.lang.Object,
-	 *      java.util.function.Supplier)
+	 *      com.slytechs.NetPcapHandler.pro.PcapProHandler.OfPacket,
+	 *      java.lang.Object, java.util.function.Supplier)
 	 */
 	@Override
 	public <U> int receivePacketWithDispatch(int count, OfPacket<U> sink, U user, Supplier<Packet> packetFactory) {
@@ -232,7 +208,8 @@ public abstract class AbstractPacketReceiver
 	 * @param user  the user
 	 * @return the int
 	 * @see com.slytechs.jnet.jnetpcap.internal.PacketReceiver#receivePacketWithLoop(int,
-	 *      com.slytechs.NetPcapHandler.pro.PcapProHandler.OfPacket, java.lang.Object)
+	 *      com.slytechs.NetPcapHandler.pro.PcapProHandler.OfPacket,
+	 *      java.lang.Object)
 	 */
 	@Override
 	public <U> int receivePacketWithLoop(int count, OfPacket<U> sink, U user) {

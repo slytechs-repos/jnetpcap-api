@@ -18,17 +18,13 @@
 package com.slytechs.jnet.jnetpcap;
 
 import java.lang.foreign.MemorySegment;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.jnetpcap.PcapHandler.OfMemorySegment;
 import org.jnetpcap.internal.PcapHeaderABI;
 
-import com.slytechs.jnet.jnetruntime.pipeline.AbstractNetProcessor;
-import com.slytechs.jnet.jnetruntime.pipeline.NetProcessor;
-import com.slytechs.jnet.jnetruntime.pipeline.NetProcessorGroup;
-import com.slytechs.jnet.jnetruntime.pipeline.NetProcessorType;
+import com.slytechs.jnet.jnetruntime.pipeline.NetProcessorContext;
+import com.slytechs.jnet.jnetruntime.pipeline.UnaryProcessor;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
 import com.slytechs.jnet.jnetruntime.util.SystemProperties;
 
@@ -38,7 +34,9 @@ import com.slytechs.jnet.jnetruntime.util.SystemProperties;
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  */
-public class PacketPlayer extends AbstractNetProcessor<PacketPlayer> {
+public class PacketPlayer
+		extends UnaryProcessor<PacketPlayer, OfMemorySegment<Object>>
+		implements OfMemorySegment<Object> {
 
 	/** The Constant PREFIX. */
 	private static final String PREFIX = "packet.player";
@@ -73,8 +71,8 @@ public class PacketPlayer extends AbstractNetProcessor<PacketPlayer> {
 	/** The max ifg nano. */
 	private long maxIfgNano = Long.MAX_VALUE;
 
-	public PacketPlayer(NetProcessorGroup group, int priority) {
-		super(group, priority, NetProcessorType.RX_PCAP_RAW);
+	public PacketPlayer(int priority) {
+		super(priority, PcapDataType.PCAP_RAW);
 	}
 
 	/**
@@ -233,53 +231,27 @@ public class PacketPlayer extends AbstractNetProcessor<PacketPlayer> {
 	}
 
 	/**
-	 * @see com.slytechs.jnet.jnetruntime.pipeline.NetProcessor#sink()
-	 */
-	@Override
-	public Object sink() {
-
-		OfMemorySegment<Object> handler = this::segmentHandler;
-
-		return handler;
-	}
-
-	private void segmentHandler(Object u, MemorySegment hdr, MemorySegment pkt) {
-		for (var next : nextArray)
-			next.handleSegment(u, hdr, pkt);
-	}
-
-	/**
-	 * @see com.slytechs.jnet.jnetruntime.pipeline.NetProcessor#setup()
-	 */
-	@Override
-	public void setup() {
-		this.nextArray = nextList.toArray(OfMemorySegment[]::new);
-		nextList.clear();
-	}
-
-	/**
-	 * @see com.slytechs.jnet.jnetruntime.pipeline.NetProcessor#dispose()
-	 */
-	@Override
-	public void dispose() {
-		nextArray = null;
-		nextList = new ArrayList<>();
-	}
-
-	/**
 	 * @param b
 	 */
 	public PacketPlayer emulateRealTime(boolean b) {
 		throw new UnsupportedOperationException("not implemented yet");
 	}
 
-	private OfMemorySegment<Object>[] nextArray;
-	private List<OfMemorySegment<Object>> nextList = new ArrayList<>();
-
+	/**
+	 * @see com.slytechs.jnet.jnetruntime.pipeline.NetProcessor#setup(com.slytechs.jnet.jnetruntime.pipeline.NetProcessor.NetProcessorContext)
+	 */
 	@Override
-	public void link(NetProcessor<?> next) {
+	public void setup(NetProcessorContext context) {
 		throw new UnsupportedOperationException("not implemented yet");
+	}
 
+	/**
+	 * @see org.jnetpcap.PcapHandler.OfMemorySegment#handleSegment(java.lang.Object,
+	 *      java.lang.foreign.MemorySegment, java.lang.foreign.MemorySegment)
+	 */
+	@Override
+	public void handleSegment(Object user, MemorySegment header, MemorySegment Packet) {
+		throw new UnsupportedOperationException("not implemented yet");
 	}
 
 }

@@ -19,6 +19,7 @@ import org.jnetpcap.PcapException;
 import org.jnetpcap.windows.WinPcap;
 import org.junit.jupiter.api.Test;
 
+import com.slytechs.jnet.jnetpcap.IpfReassembler;
 import com.slytechs.jnet.jnetpcap.NetPcap;
 import com.slytechs.jnet.jnetpcap.PacketPlayer;
 import com.slytechs.jnet.jnetpcap.PacketRepeater;
@@ -39,19 +40,23 @@ class ProcessorTests {
 
 		try (var pcap = NetPcap.openOffline(WinPcap::openOffline, FILE)) {
 
-
 			try (var processors = pcap.pipeline()) {
-//				pipeline.install(PacketDissector::new)
+//				processors.install(PacketDissector::new)
 //						.enable(true)
 //						.descriptor(PacketDescriptorType.TYPE2)
 //						.packetFactory(Packet::new)
 //						.forEach(System.out::println);
 
 				processors.install(PacketPlayer::new)
-						.emulateRealTime(true);
+//						.emulateRealTime(true);
+				;
 
 				processors.install(PacketRepeater::new)
-						.repeatCount(10);
+						.repeatCount(10)
+						.forEach((user, header, packet) -> System.out.println(packet));
+
+				processors.install(IpfReassembler::new)
+						.forEach(System.out::println);;
 			}
 		}
 

@@ -31,7 +31,7 @@ import org.jnetpcap.internal.PcapHeaderABI;
 
 import com.slytechs.jnet.jnetpcap.IpfReassembler;
 import com.slytechs.jnet.jnetpcap.IpfStatistics;
-import com.slytechs.jnet.jnetpcap.NetPcap.PcapProContext;
+import com.slytechs.jnet.jnetpcap.NetPcap.NetPcapContext;
 import com.slytechs.jnet.jnetpcap.NetPcapHandler.OfPacket;
 import com.slytechs.jnet.jnetpcap.internal.AbstractPacketReceiver;
 import com.slytechs.jnet.jnetpcap.internal.CaptureStatisticsImpl;
@@ -158,7 +158,7 @@ public final class JavaIpfDispatcher extends AbstractPacketReceiver implements I
 			PcapDispatcher pcap,
 			PacketReceiver packet,
 			IpfReassembler config,
-			PcapProContext context) {
+			NetPcapContext context) {
 		super(packet, pcap);
 
 		if (config.isEnabled() == false)

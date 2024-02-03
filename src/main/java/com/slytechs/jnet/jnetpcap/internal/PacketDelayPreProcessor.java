@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 import org.jnetpcap.internal.PcapDispatcher;
 
 import com.slytechs.jnet.jnetpcap.PacketDelay;
-import com.slytechs.jnet.jnetpcap.NetPcap.PcapProContext;
+import com.slytechs.jnet.jnetpcap.NetPcap.NetPcapContext;
 
 /**
  * The Class PacketDelayPreProcessor.
@@ -37,7 +37,7 @@ public class PacketDelayPreProcessor extends AbstractPcapDispatcher implements P
 	private final PacketDelay config;
 	
 	/** The context. */
-	private final PcapProContext context;
+	private final NetPcapContext context;
 
 	/**
 	 * Instantiates a new packet delay pre processor.
@@ -46,7 +46,7 @@ public class PacketDelayPreProcessor extends AbstractPcapDispatcher implements P
 	 * @param config         the config
 	 * @param context        the context
 	 */
-	public PacketDelayPreProcessor(PcapDispatcher pcapDispatcher, Object config, PcapProContext context) {
+	public PacketDelayPreProcessor(PcapDispatcher pcapDispatcher, Object config, NetPcapContext context) {
 		super(pcapDispatcher);
 		this.context = context;
 

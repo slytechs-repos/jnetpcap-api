@@ -1,35 +1,34 @@
 /*
- * Sly Technologies Free License
- * 
- * Copyright 2023 Sly Technologies Inc.
+ * Copyright 2024 Sly Technologies Inc
  *
- * Licensed under the Sly Technologies Free License (the "License"); you may not
- * use this file except in compliance with the License. You may obtain a copy of
- * the License at
- * 
- * http://www.slytechs.com/free-license-text
- * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations under
- * the License.
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package com.slytechs.jnet.jnetpcap;
 
 import static com.slytechs.jnet.jnetruntime.util.SystemProperties.*;
 
+import java.lang.foreign.MemorySegment;
 import java.util.concurrent.TimeUnit;
 
-import com.slytechs.jnet.jnetpcap.NetPcapConfigurator.PostRxProcessor;
-import com.slytechs.jnet.jnetpcap.internal.ipf.IpfDispatcher;
-import com.slytechs.jnet.jnetruntime.pipeline.AbstractNetProcessor;
-import com.slytechs.jnet.jnetruntime.pipeline.NetProcessor;
-import com.slytechs.jnet.jnetruntime.pipeline.NetProcessorGroup;
-import com.slytechs.jnet.jnetruntime.pipeline.NetProcessorType;
+import org.jnetpcap.PcapHandler.OfMemorySegment;
+
+import com.slytechs.jnet.jnetpcap.NetPcapHandler.OfPacket;
+import com.slytechs.jnet.jnetpcap.NetPcapHandler.OfPacketConsumer;
+import com.slytechs.jnet.jnetruntime.pipeline.NetProcessorContext;
+import com.slytechs.jnet.jnetruntime.pipeline.ProcessorGroup;
 import com.slytechs.jnet.jnetruntime.time.TimestampSource;
-import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
 import com.slytechs.jnet.jnetruntime.time.TimestampSource.AssignableTimestampSource;
+import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
 import com.slytechs.jnet.jnetruntime.util.CountUnit;
 import com.slytechs.jnet.jnetruntime.util.MemoryUnit;
 
@@ -39,10 +38,69 @@ import com.slytechs.jnet.jnetruntime.util.MemoryUnit;
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  */
-public class IpfReassembler extends AbstractNetProcessor<IpfReassembler> implements NetProcessor<IpfReassembler> {
+public class IpfReassembler
+		extends ProcessorGroup<IpfReassembler, OfMemorySegment<Object>, OfPacket<Object>>
+		implements OfMemorySegment<Object> {
 
-	protected IpfReassembler(NetProcessorGroup group, int priority) {
-		super(group, priority, NetProcessorType.RX_PACKET);
+	/**
+	 * Effective or the result of combining of all the main properties and modes.
+	 */
+	public class EffectiveConfig {
+
+		/** The pass. */
+		public final boolean pass;
+
+		/** The dgrams complete. */
+		public final boolean dgramsComplete;
+
+		/** The dgrams incomplete. */
+		public final boolean dgramsIncomplete; // On timeout-duration or timeout-last
+
+		/** The tracking. */
+		public final boolean tracking;
+
+		/** The pass complete. */
+		public final boolean passComplete;
+
+		/** The pass incomplete. */
+		public final boolean passIncomplete; // On timeout-last
+
+		/** The time source. */
+		public final AssignableTimestampSource timeSource;
+
+		/**
+		 * Compute an effective configuration. Based on all of the configuration
+		 * options, compute which modes and options are actu
+		 */
+		EffectiveConfig() {
+			this.pass = passthrough;
+			this.passComplete = reassemblyEnabled && attachComplete;
+			this.passIncomplete = reassemblyEnabled && attachIncomplete && timeoutOnLast;
+
+			this.dgramsComplete = send && reassemblyEnabled && sendComplete;
+			this.dgramsIncomplete = send && reassemblyEnabled && sendIncomplete;
+
+			this.tracking = trackingEnabled && passthrough;
+			this.timeSource = IpfReassembler.this.timeSource;
+		}
+
+		/**
+		 * Gets the time source.
+		 *
+		 * @return the time source
+		 */
+		public AssignableTimestampSource getTimeSource() {
+			return timeSource;
+		}
+
+		/**
+		 * Gets the timestamp unit.
+		 *
+		 * @return the timestamp unit
+		 */
+		public TimestampUnit getTimestampUnit() {
+			return TimestampUnit.PCAP_MICRO;
+		}
 	}
 
 	/** The Constant PREFIX. */
@@ -159,64 +217,12 @@ public class IpfReassembler extends AbstractNetProcessor<IpfReassembler> impleme
 	private AssignableTimestampSource timeSource;
 
 	/**
-	 * Effective or the result of combining of all the main properties and modes.
+	 * Instantiates a new ipf reassembler.
+	 *
+	 * @param priority the priority
 	 */
-	public class EffectiveConfig {
-
-		/** The pass. */
-		public final boolean pass;
-		
-		/** The dgrams complete. */
-		public final boolean dgramsComplete;
-		
-		/** The dgrams incomplete. */
-		public final boolean dgramsIncomplete; // On timeout-duration or timeout-last
-		
-		/** The tracking. */
-		public final boolean tracking;
-		
-		/** The pass complete. */
-		public final boolean passComplete;
-		
-		/** The pass incomplete. */
-		public final boolean passIncomplete; // On timeout-last
-		
-		/** The time source. */
-		public final AssignableTimestampSource timeSource;
-
-		/**
-		 * Compute an effective configuration. Based on all of the configuration
-		 * options, compute which modes and options are actu
-		 */
-		EffectiveConfig() {
-			this.pass = passthrough;
-			this.passComplete = reassemblyEnabled && attachComplete;
-			this.passIncomplete = reassemblyEnabled && attachIncomplete && timeoutOnLast;
-
-			this.dgramsComplete = send && reassemblyEnabled && sendComplete;
-			this.dgramsIncomplete = send && reassemblyEnabled && sendIncomplete;
-
-			this.tracking = trackingEnabled && passthrough;
-			this.timeSource = IpfReassembler.this.timeSource;
-		}
-
-		/**
-		 * Gets the time source.
-		 *
-		 * @return the time source
-		 */
-		public AssignableTimestampSource getTimeSource() {
-			return timeSource;
-		}
-
-		/**
-		 * Gets the timestamp unit.
-		 *
-		 * @return the timestamp unit
-		 */
-		public TimestampUnit getTimestampUnit() {
-			return TimestampUnit.PCAP_MICRO;
-		}
+	public IpfReassembler(int priority) {
+		super(priority, PcapDataType.PCAP_RAW, CoreDataType.PACKET);
 	}
 
 	/**
@@ -317,6 +323,26 @@ public class IpfReassembler extends AbstractNetProcessor<IpfReassembler> impleme
 	}
 
 	/**
+	 * For each.
+	 *
+	 * @param <U>               the generic type
+	 * @param reassembledPacket the reassembled packet
+	 * @param user              the user
+	 */
+	public <U> void forEach(OfPacket<U> reassembledPacket, U user) {
+		peek(reassembledPacket, null);
+	}
+
+	/**
+	 * For each.
+	 *
+	 * @param reassembledPacket the reassembled packet
+	 */
+	public void forEach(OfPacketConsumer reassembledPacket) {
+		peek(reassembledPacket);
+	}
+
+	/**
 	 * Gets the buffer size.
 	 *
 	 * @return the buffer size
@@ -377,6 +403,19 @@ public class IpfReassembler extends AbstractNetProcessor<IpfReassembler> impleme
 	 */
 	public TimestampSource getTimeSource() {
 		return timeSource;
+	}
+
+	/**
+	 * Handle segment.
+	 *
+	 * @param user   the user
+	 * @param header the header
+	 * @param Packet the packet
+	 * @see org.jnetpcap.PcapHandler.OfMemorySegment#handleSegment(java.lang.Object,
+	 *      java.lang.foreign.MemorySegment, java.lang.foreign.MemorySegment)
+	 */
+	@Override
+	public void handleSegment(Object user, MemorySegment header, MemorySegment Packet) {
 	}
 
 	/**
@@ -458,6 +497,33 @@ public class IpfReassembler extends AbstractNetProcessor<IpfReassembler> impleme
 	 */
 	public boolean isTrackingEnabled() {
 		return trackingEnabled;
+	}
+
+	/**
+	 * Peek.
+	 *
+	 * @param <U>               the generic type
+	 * @param reassembledPacket the reassembled packet
+	 * @param user              the user
+	 * @return the ipf reassembler
+	 */
+	@SuppressWarnings("unchecked")
+	public <U> IpfReassembler peek(OfPacket<U> reassembledPacket, U user) {
+		addOutput((OfPacket<Object>) reassembledPacket.wrapUser(user));
+
+		return this;
+	}
+
+	/**
+	 * Peek.
+	 *
+	 * @param reassembledPacket the reassembled packet
+	 * @return the ipf reassembler
+	 */
+	public IpfReassembler peek(OfPacketConsumer reassembledPacket) {
+		addOutput((u, p) -> reassembledPacket.accept(p));
+
+		return this;
 	}
 
 	/**
@@ -593,6 +659,16 @@ public class IpfReassembler extends AbstractNetProcessor<IpfReassembler> impleme
 	}
 
 	/**
+	 * Sets the up.
+	 *
+	 * @param context the new up
+	 * @see com.slytechs.jnet.jnetruntime.pipeline.NetProcessor#setup(com.slytechs.jnet.jnetruntime.pipeline.NetProcessor.NetProcessorContext)
+	 */
+	@Override
+	public void setup(NetProcessorContext context) {
+	}
+
+	/**
 	 * Use packet timesource.
 	 *
 	 * @return the ipf reassembler
@@ -612,29 +688,5 @@ public class IpfReassembler extends AbstractNetProcessor<IpfReassembler> impleme
 		timeSource = TimestampSource.system();
 
 		return this;
-	}
-
-	@Override
-	public Object sink() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public void setup() {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void dispose() {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void link(NetProcessor<?> next) {
-		// TODO Auto-generated method stub
-		
 	}
 }

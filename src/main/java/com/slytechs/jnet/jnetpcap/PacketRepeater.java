@@ -17,16 +17,17 @@
  */
 package com.slytechs.jnet.jnetpcap;
 
+import java.lang.foreign.MemorySegment;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 
-import com.slytechs.jnet.jnetruntime.pipeline.AbstractNetProcessor;
-import com.slytechs.jnet.jnetruntime.pipeline.NetProcessor;
-import com.slytechs.jnet.jnetruntime.pipeline.NetProcessorGroup;
-import com.slytechs.jnet.jnetruntime.pipeline.NetProcessorType;
+import org.jnetpcap.PcapHandler.OfMemorySegment;
+
+import com.slytechs.jnet.jnetruntime.pipeline.NetProcessorContext;
+import com.slytechs.jnet.jnetruntime.pipeline.UnaryProcessor;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
 import com.slytechs.jnet.jnetruntime.util.SystemProperties;
 
@@ -44,7 +45,9 @@ import com.slytechs.jnet.jnetruntime.util.SystemProperties;
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  */
-public final class PacketRepeater extends AbstractNetProcessor<PacketRepeater> {
+public final class PacketRepeater
+		extends UnaryProcessor<PacketRepeater, OfMemorySegment<Object>>
+		implements OfMemorySegment<Object> {
 
 	/** The Constant PREFIX. */
 	private static final String PREFIX = "packet.repeater";
@@ -76,8 +79,10 @@ public final class PacketRepeater extends AbstractNetProcessor<PacketRepeater> {
 	/**
 	 * Instantiates a new packet repeater.
 	 */
-	public PacketRepeater(NetProcessorGroup group, int priority) {
-		super(group, priority, NetProcessorType.RX_PCAP_RAW);
+	public PacketRepeater(int priority) {
+		super(priority, PcapDataType.PCAP_RAW);
+
+		name(PREFIX);
 	}
 
 	/**
@@ -289,32 +294,79 @@ public final class PacketRepeater extends AbstractNetProcessor<PacketRepeater> {
 	}
 
 	/**
-	 * @see com.slytechs.jnet.jnetruntime.pipeline.NetProcessor#sink()
+	 * @see org.jnetpcap.PcapHandler.OfMemorySegment#handleSegment(java.lang.Object,
+	 *      java.lang.foreign.MemorySegment, java.lang.foreign.MemorySegment)
 	 */
 	@Override
-	public Object sink() {
-		throw new UnsupportedOperationException("not implemented yet");
+	public void handleSegment(Object user, MemorySegment header, MemorySegment packet) {
+		for (long c = 0; c < repeatCount; c++)
+			delay();
+
+		super.output.handleSegment(user, header, packet);
+	}
+
+	public <U> PacketRepeater peek(OfMemorySegment<U> output, U user) {
+		addOutput((u, h, p) -> output.handleSegment(user, h, p));
+
+		return this;
+	}
+
+	public <U> void forEach(OfMemorySegment<U> output, U user) {
+		peek(output, user);
+	}
+
+	@SuppressWarnings("unchecked")
+	public PacketRepeater peek(OfMemorySegment<?> output) {
+		addOutput((OfMemorySegment<Object>) output);
+
+		return this;
+	}
+
+	public void forEach(OfMemorySegment<?> output) {
+		peek(output);
+	}
+
+	private void delay() {
+		final long MIN_BLOCK = 150_000_000;
+		long start = System.nanoTime();
+		long end = start + minIfgNano;
+
+		long remaining = end - start;
+		do {
+			remaining = end - start;
+
+			if (remaining > MIN_BLOCK)
+				try {
+					delayBlock(end);
+				} catch (InterruptedException e) {
+					throw new RuntimeException(e);
+				}
+			else
+				delaySpin(end);
+
+		} while (remaining > 0);
+	}
+
+	private void delaySpin(long endNanoTime) {
+		while (System.nanoTime() < endNanoTime);
+	}
+
+	private void delayBlock(long endNanoTime) throws InterruptedException {
+		TimeUnit.NANOSECONDS.sleep(endNanoTime - System.nanoTime());
 	}
 
 	/**
-	 * @see com.slytechs.jnet.jnetruntime.pipeline.NetProcessor#setup()
+	 * @see com.slytechs.jnet.jnetruntime.pipeline.NetProcessor#setup(com.slytechs.jnet.jnetruntime.pipeline.NetProcessor.NetProcessorContext)
 	 */
 	@Override
-	public void setup() {
-		throw new UnsupportedOperationException("not implemented yet");
+	public void setup(NetProcessorContext context) {
 	}
 
 	/**
-	 * @see com.slytechs.jnet.jnetruntime.pipeline.NetProcessor#dispose()
+	 * @see com.slytechs.jnet.jnetruntime.pipeline.NetProcessor#destroy()
 	 */
 	@Override
-	public void dispose() {
-		throw new UnsupportedOperationException("not implemented yet");
+	public void destroy() {
 	}
 
-	@Override
-	public void link(NetProcessor<?> next) {
-		// TODO Auto-generated method stub
-		
-	}
 }

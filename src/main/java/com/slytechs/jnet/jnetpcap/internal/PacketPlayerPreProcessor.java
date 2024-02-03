@@ -25,7 +25,7 @@ import org.jnetpcap.internal.PcapDispatcher;
 import org.jnetpcap.internal.PcapHeaderABI;
 
 import com.slytechs.jnet.jnetpcap.PacketPlayer;
-import com.slytechs.jnet.jnetpcap.NetPcap.PcapProContext;
+import com.slytechs.jnet.jnetpcap.NetPcap.NetPcapContext;
 import com.slytechs.jnet.jnetruntime.time.TimeSource;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
 
@@ -38,7 +38,7 @@ import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
 public class PacketPlayerPreProcessor extends AbstractPcapDispatcher implements PcapDispatcher {
 
 	/** The context. */
-	private final PcapProContext context;
+	private final NetPcapContext context;
 	
 	/** The config. */
 	private final PacketPlayer config;
@@ -68,7 +68,7 @@ public class PacketPlayerPreProcessor extends AbstractPcapDispatcher implements 
 	 * @param config         the config
 	 * @param context        the context
 	 */
-	public PacketPlayerPreProcessor(PcapDispatcher pcapDispatcher, Object config, PcapProContext context) {
+	public PacketPlayerPreProcessor(PcapDispatcher pcapDispatcher, Object config, NetPcapContext context) {
 		super(pcapDispatcher);
 
 		if (!(config instanceof PacketPlayer cfg))

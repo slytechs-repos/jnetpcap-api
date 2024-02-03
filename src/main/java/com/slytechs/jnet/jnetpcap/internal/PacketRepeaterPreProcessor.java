@@ -24,7 +24,7 @@ import org.jnetpcap.internal.PcapDispatcher;
 import org.jnetpcap.internal.PcapHeaderABI;
 
 import com.slytechs.jnet.jnetpcap.PacketRepeater;
-import com.slytechs.jnet.jnetpcap.NetPcap.PcapProContext;
+import com.slytechs.jnet.jnetpcap.NetPcap.NetPcapContext;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
 
 /**
@@ -39,7 +39,7 @@ public class PacketRepeaterPreProcessor extends AbstractPcapDispatcher implement
 	private final PacketRepeater config;
 	
 	/** The context. */
-	private final PcapProContext context;
+	private final NetPcapContext context;
 	
 	/** The abi. */
 	private final PcapHeaderABI abi;
@@ -57,7 +57,7 @@ public class PacketRepeaterPreProcessor extends AbstractPcapDispatcher implement
 	 * @param config         the config
 	 * @param context        the context
 	 */
-	public PacketRepeaterPreProcessor(PcapDispatcher pcapDispatcher, Object config, PcapProContext context) {
+	public PacketRepeaterPreProcessor(PcapDispatcher pcapDispatcher, Object config, NetPcapContext context) {
 		super(pcapDispatcher);
 		this.context = context;
 
