@@ -27,19 +27,16 @@ import com.slytechs.jnet.jnetruntime.pipeline.ProcessorGroup;
 /**
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
- *
- * (p + a*(n*n)/(v*v))(V -nb) = nRT
- * T = (p + a*(n*n)/(v*v))*(V -n*b) / (n*R)
  */
 public class PacketProcessorGroup
-		extends ProcessorGroup<PacketProcessorGroup, OfMemorySegment<Object>, OfPacket<Object>>
+		extends ProcessorGroup<OfMemorySegment<?>, OfPacket<?>>
 		implements OfMemorySegment<Object> {
 
 	/**
 	 * @param priority
 	 */
 	public PacketProcessorGroup(int priority) {
-		super(priority, PcapDataType.PCAP_RAW, CoreDataType.PACKET);
+		super(priority, CoreDataType.PACKET, PcapDataType.PCAP_RAW);
 	}
 
 	/**

@@ -23,6 +23,7 @@ import com.slytechs.jnet.jnetpcap.IpfReassembler;
 import com.slytechs.jnet.jnetpcap.NetPcap;
 import com.slytechs.jnet.jnetpcap.PacketPlayer;
 import com.slytechs.jnet.jnetpcap.PacketRepeater;
+import com.slytechs.jnet.protocol.core.TcpIpProtocolFamily;
 
 /**
  * @author Sly Technologies Inc
@@ -40,24 +41,32 @@ class ProcessorTests {
 
 		try (var pcap = NetPcap.openOffline(WinPcap::openOffline, FILE)) {
 
-			try (var processors = pcap.pipeline()) {
-//				processors.install(PacketDissector::new)
-//						.enable(true)
-//						.descriptor(PacketDescriptorType.TYPE2)
-//						.packetFactory(Packet::new)
-//						.forEach(System.out::println);
+			/**
+			 * <pre>
+			 * + PcapPipeline
+			 * 	 + ProtocolPipeline
+			 * 		+ TcpIpProtocolFamily
+			 * 		+ QuicProtocolFamily
+			 * 		+ HttpProtocolFamily
+			 * </pre>
+			 */
+			try (var stack = pcap.protocolStack()) {
+				
+				TcpIpProtocolFamily tcpIp = stack.installPipeline(TcpIpProtocolFamily::new);
+				
+				tcpIp.install(IpfReassembler::new)
+					.forEach(p -> {});
+				
+				stack.install(PacketPlayer::new);
 
-				processors.install(PacketPlayer::new)
-//						.emulateRealTime(true);
-				;
-
-				processors.install(PacketRepeater::new)
+				stack.install(PacketRepeater::new)
 						.repeatCount(10)
 						.forEach((user, header, packet) -> System.out.println(packet));
 
-				processors.install(IpfReassembler::new)
-						.forEach(System.out::println);;
+				stack.install(IpfReassembler::new)
+						.forEach(System.out::println);
 			}
+
 		}
 
 	}

@@ -21,7 +21,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.jnetpcap.PcapHandler.OfMemorySegment;
 
-import com.slytechs.jnet.jnetruntime.pipeline.NetProcessorContext;
 import com.slytechs.jnet.jnetruntime.pipeline.UnaryProcessor;
 import com.slytechs.jnet.jnetruntime.util.SystemProperties;
 
@@ -31,7 +30,7 @@ import com.slytechs.jnet.jnetruntime.util.SystemProperties;
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  */
-public final class PacketDelay extends UnaryProcessor<PacketDelay, OfMemorySegment<?>> {
+public final class PacketDelay extends UnaryProcessor<OfMemorySegment<?>> {
 
 	/** The Constant PREFIX. */
 	private static final String PREFIX = "packet.delay";
@@ -84,11 +83,4 @@ public final class PacketDelay extends UnaryProcessor<PacketDelay, OfMemorySegme
 		return delayNano;
 	}
 
-	/**
-	 * @see com.slytechs.jnet.jnetruntime.pipeline.NetProcessor#setup(com.slytechs.jnet.jnetruntime.pipeline.NetProcessor.NetProcessorContext)
-	 */
-	@Override
-	public void setup(NetProcessorContext context) {
-		throw new UnsupportedOperationException("not implemented yet");
-	}
 }

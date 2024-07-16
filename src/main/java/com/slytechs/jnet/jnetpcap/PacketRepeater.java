@@ -26,7 +26,7 @@ import java.util.function.LongSupplier;
 
 import org.jnetpcap.PcapHandler.OfMemorySegment;
 
-import com.slytechs.jnet.jnetruntime.pipeline.NetProcessorContext;
+import com.slytechs.jnet.jnetruntime.pipeline.ProcessorContext;
 import com.slytechs.jnet.jnetruntime.pipeline.UnaryProcessor;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
 import com.slytechs.jnet.jnetruntime.util.SystemProperties;
@@ -46,7 +46,7 @@ import com.slytechs.jnet.jnetruntime.util.SystemProperties;
  * @author repos@slytechs.com
  */
 public final class PacketRepeater
-		extends UnaryProcessor<PacketRepeater, OfMemorySegment<Object>>
+		extends UnaryProcessor<OfMemorySegment<Object>>
 		implements OfMemorySegment<Object> {
 
 	/** The Constant PREFIX. */
@@ -356,17 +356,10 @@ public final class PacketRepeater
 	}
 
 	/**
-	 * @see com.slytechs.jnet.jnetruntime.pipeline.NetProcessor#setup(com.slytechs.jnet.jnetruntime.pipeline.NetProcessor.NetProcessorContext)
+	 * @see com.slytechs.jnet.jnetruntime.pipeline.Processor#setup(com.slytechs.jnet.jnetruntime.pipeline.Processor.ProcessorContext)
 	 */
 	@Override
-	public void setup(NetProcessorContext context) {
-	}
-
-	/**
-	 * @see com.slytechs.jnet.jnetruntime.pipeline.NetProcessor#destroy()
-	 */
-	@Override
-	public void destroy() {
+	protected void setup(ProcessorContext context) {
 	}
 
 }

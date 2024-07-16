@@ -23,7 +23,6 @@ import java.util.concurrent.TimeUnit;
 import org.jnetpcap.PcapHandler.OfMemorySegment;
 import org.jnetpcap.internal.PcapHeaderABI;
 
-import com.slytechs.jnet.jnetruntime.pipeline.NetProcessorContext;
 import com.slytechs.jnet.jnetruntime.pipeline.UnaryProcessor;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
 import com.slytechs.jnet.jnetruntime.util.SystemProperties;
@@ -35,7 +34,7 @@ import com.slytechs.jnet.jnetruntime.util.SystemProperties;
  * @author repos@slytechs.com
  */
 public class PacketPlayer
-		extends UnaryProcessor<PacketPlayer, OfMemorySegment<Object>>
+		extends UnaryProcessor<OfMemorySegment<Object>>
 		implements OfMemorySegment<Object> {
 
 	/** The Constant PREFIX. */
@@ -234,14 +233,6 @@ public class PacketPlayer
 	 * @param b
 	 */
 	public PacketPlayer emulateRealTime(boolean b) {
-		throw new UnsupportedOperationException("not implemented yet");
-	}
-
-	/**
-	 * @see com.slytechs.jnet.jnetruntime.pipeline.NetProcessor#setup(com.slytechs.jnet.jnetruntime.pipeline.NetProcessor.NetProcessorContext)
-	 */
-	@Override
-	public void setup(NetProcessorContext context) {
 		throw new UnsupportedOperationException("not implemented yet");
 	}
 

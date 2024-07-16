@@ -19,39 +19,36 @@ package com.slytechs.jnet.jnetpcap;
 
 import java.lang.foreign.MemorySegment;
 
-import org.jnetpcap.PcapHandler.OfMemorySegment;
+import org.jnetpcap.PcapHandler.NativeCallback;
+import org.jnetpcap.PcapHandler.OfByteBuffer;
 
-import com.slytechs.jnet.jnetpcap.NetPcapHandler.OfPacket;
-import com.slytechs.jnet.jnetruntime.pipeline.Pipeline;
+import com.slytechs.jnet.jnetruntime.pipeline.ProcessorGroup;
 
 /**
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
+ *
  */
-public final class ProtocolPipeline
-		extends Pipeline<OfMemorySegment<?>, OfPacket<?>>
-		implements OfMemorySegment<Object> {
-
-	private final PacketProcessorGroup packetDissector;
+public class PcapGroup
+		extends ProcessorGroup<NativeCallback, OfByteBuffer<?>>
+		implements NativeCallback {
 
 	/**
 	 * @param priority
 	 * @param inputType
 	 * @param outputType
 	 */
-	public ProtocolPipeline(int priority) {
-		super(priority, new PacketProcessorGroup(0), PcapDataType.PCAP_RAW, CoreDataType.PACKET);
-
-		this.packetDissector = super.mainProcessor();
+	PcapGroup(int priority) {
+		super(priority, PcapDataType.PCAP_NATIVE, PcapDataType.PCAP_RAW);
 	}
 
 	/**
-	 * @see org.jnetpcap.PcapHandler.OfMemorySegment#handleSegment(java.lang.Object,
+	 * @see org.jnetpcap.PcapHandler.NativeCallback#nativeCallback(java.lang.foreign.MemorySegment,
 	 *      java.lang.foreign.MemorySegment, java.lang.foreign.MemorySegment)
 	 */
 	@Override
-	public void handleSegment(Object user, MemorySegment header, MemorySegment Packet) {
-		packetDissector.handleSegment(user, header, Packet);
+	public void nativeCallback(MemorySegment user, MemorySegment header, MemorySegment packet) {
+		throw new UnsupportedOperationException("not implemented yet");
 	}
 
 }

@@ -19,7 +19,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.jnetpcap.PcapHandler.NativeCallback;
-import org.jnetpcap.PcapHandler.OfMemorySegment;
+import org.jnetpcap.PcapHandler.OfByteBuffer;
 
 import com.slytechs.jnet.jnetruntime.pipeline.DataType;
 
@@ -36,7 +36,7 @@ public enum PcapDataType implements DataType {
 	PCAP_NATIVE(NativeCallback.class, NativeCallback::wrapUser, NativeCallback::wrapArray),
 
 	/** Raw PCAP packet in form of memory segments. */
-	PCAP_RAW(OfMemorySegment.class, OfMemorySegment::wrapUser, OfMemorySegment::wrapArray),
+	PCAP_RAW(OfByteBuffer.class, OfByteBuffer::wrapUser, OfByteBuffer::wrapArray),
 
 	;
 

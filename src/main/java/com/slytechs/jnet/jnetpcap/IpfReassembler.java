@@ -24,7 +24,6 @@ import org.jnetpcap.PcapHandler.OfMemorySegment;
 
 import com.slytechs.jnet.jnetpcap.NetPcapHandler.OfPacket;
 import com.slytechs.jnet.jnetpcap.NetPcapHandler.OfPacketConsumer;
-import com.slytechs.jnet.jnetruntime.pipeline.NetProcessorContext;
 import com.slytechs.jnet.jnetruntime.pipeline.ProcessorGroup;
 import com.slytechs.jnet.jnetruntime.time.TimestampSource;
 import com.slytechs.jnet.jnetruntime.time.TimestampSource.AssignableTimestampSource;
@@ -39,7 +38,7 @@ import com.slytechs.jnet.jnetruntime.util.MemoryUnit;
  * @author repos@slytechs.com
  */
 public class IpfReassembler
-		extends ProcessorGroup<IpfReassembler, OfMemorySegment<Object>, OfPacket<Object>>
+		extends ProcessorGroup<OfMemorySegment<Object>, OfPacket<Object>>
 		implements OfMemorySegment<Object> {
 
 	/**
@@ -222,7 +221,7 @@ public class IpfReassembler
 	 * @param priority the priority
 	 */
 	public IpfReassembler(int priority) {
-		super(priority, PcapDataType.PCAP_RAW, CoreDataType.PACKET);
+		super(priority, CoreDataType.PACKET, PcapDataType.PCAP_RAW);
 	}
 
 	/**
@@ -656,16 +655,6 @@ public class IpfReassembler
 	public IpfReassembler setTimeoutQueueSize(int timeoutQueueSize, CountUnit unit) {
 		this.timeoutQueueSize = unit.toCountAsInt(timeoutQueueSize);
 		return this;
-	}
-
-	/**
-	 * Sets the up.
-	 *
-	 * @param context the new up
-	 * @see com.slytechs.jnet.jnetruntime.pipeline.NetProcessor#setup(com.slytechs.jnet.jnetruntime.pipeline.NetProcessor.NetProcessorContext)
-	 */
-	@Override
-	public void setup(NetProcessorContext context) {
 	}
 
 	/**

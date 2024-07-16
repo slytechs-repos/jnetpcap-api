@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
@@ -31,27 +30,29 @@ import org.jnetpcap.Pcap;
 import org.jnetpcap.PcapActivatedException;
 import org.jnetpcap.PcapDumper;
 import org.jnetpcap.PcapException;
+import org.jnetpcap.PcapHandler.NativeCallback;
+import org.jnetpcap.PcapHandler.OfMemorySegment;
 import org.jnetpcap.PcapIf;
 import org.jnetpcap.constant.PcapCode;
 import org.jnetpcap.constant.PcapDlt;
 import org.jnetpcap.constant.PcapTStampPrecision;
-import org.jnetpcap.internal.DelegatePcap;
+import org.jnetpcap.internal.DeputyPcap;
 import org.jnetpcap.internal.PcapDispatcher;
 import org.jnetpcap.internal.StandardPcapDispatcher;
-import org.jnetpcap.util.PcapPacketRef;
 
 import com.slytechs.jnet.jnetpcap.NetPcapHandler.OfPacket;
 import com.slytechs.jnet.jnetpcap.NetPcapHandler.OfPacketConsumer;
 import com.slytechs.jnet.jnetpcap.internal.CaptureStatisticsImpl;
 import com.slytechs.jnet.jnetpcap.internal.PacketReceiverConfig;
-import com.slytechs.jnet.jnetruntime.pipeline.NetPipeline;
+import com.slytechs.jnet.jnetruntime.pipeline.Pipeline;
+import com.slytechs.jnet.jnetruntime.pipeline.Processor;
+import com.slytechs.jnet.jnetruntime.pipeline.ProcessorFactory;
 import com.slytechs.jnet.jnetruntime.time.TimeSource;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
 import com.slytechs.jnet.jnetruntime.util.MemoryUnit;
 import com.slytechs.jnet.jnetruntime.util.Registration;
 import com.slytechs.jnet.jnetruntime.util.RuntimeMultipleExceptions;
 import com.slytechs.jnet.protocol.Frame.FrameNumber;
-import com.slytechs.jnet.protocol.Packet;
 import com.slytechs.jnet.protocol.core.constants.PacketDescriptorType;
 import com.slytechs.jnet.protocol.descriptor.PacketDissector;
 import com.slytechs.jnet.protocol.meta.PacketFormat;
@@ -79,7 +80,7 @@ import com.slytechs.jnet.protocol.meta.PacketFormat;
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  */
-public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStatistics {
+public final class NetPcap extends DeputyPcap<NetPcap> implements CaptureStatistics {
 
 	/**
 	 * A factory for creating Pcap::create handles.
@@ -858,7 +859,7 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 		if (b == false)
 			return this;
 
-		NetPipeline<?, ?> pipeline = pipeline();
+		Pipeline<?, ?> pipeline = pipeline();
 		pipeline.install(IpfReassembler::new);
 
 		return this;
@@ -1087,116 +1088,6 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	}
 
 	/**
-	 * Next ex.
-	 *
-	 * @return the pcap packet ref
-	 * @throws PcapException    the pcap exception
-	 * @throws TimeoutException the timeout exception
-	 * @see org.jnetpcap.Pcap0_8#nextEx()
-	 */
-	@Override
-	public PcapPacketRef nextEx() throws PcapException, TimeoutException {
-		return next();
-	}
-
-	/**
-	 * Read the next packet from a pcap handle.
-	 * <p>
-	 * reads the next packet and returns a success/failure indication. If the packet
-	 * was read without problems, the pointer pointed to by the pktHeader argument
-	 * is set to point to the pcap_pkthdr struct for the packet, and the pointer
-	 * pointed to by the pktData argument is set to point to the data in the packet.
-	 * The struct pcap_pkthdr and the packet data are not to be freed by the caller,
-	 * and are not guaranteed to be valid after the next call to {@link #nextEx},
-	 * {@link #next}, {@link #loop}, or {@link #dispatch}; if the full needs them to
-	 * remain valid, it must make a copy of them. *
-	 * </p>
-	 * <p>
-	 * The bytes of data from the packet begin with a link-layer header. The format
-	 * of the link-layer header is indicated by the return value of the
-	 * {@code datalink} routine when handed the pcap_t value also passed to
-	 * {@code loop} or {@code dispatch}. https://www.tcpdump.org/linktypes.html
-	 * lists the values {@code datalink} can return and describes the packet formats
-	 * that correspond to those values. The value it returns will be valid for all
-	 * packets received unless and until {@code setDatalink} is called; after a
-	 * successful call to {@code setDatalink}, all subsequent packets will have a
-	 * link-layer header of the type specified by the link-layer header type value
-	 * passed to {@code setDatalink}.
-	 * </p>
-	 * <p>
-	 * Do NOT assume that the packets for a given capture or ``savefile`` will have
-	 * any given link-layer header type, such as DLT_EN10MB for Ethernet. For
-	 * example, the "any" device on Linux will have a link-layer header type of
-	 * DLT_LINUX_SLL or DLT_LINUX_SLL2 even if all devices on the system at the time
-	 * the "any" device is opened have some other data link type, such as DLT_EN10MB
-	 * for Ethernet.
-	 * </p>
-	 *
-	 * @return a native pcap packet reference or null if packets are being read from
-	 *         a ``savefile'' and there are no more packets to read from the
-	 *         savefile.
-	 * @throws PcapException    any pcap errors such as not activated, etc.
-	 * @throws TimeoutException if packets are being read from a live capture and
-	 *                          the packet buffer timeout expired
-	 * @since Pcap 0.8
-	 */
-	public Packet nextExPacket() throws PcapException, TimeoutException {
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * read the next packet from a handle.
-	 * 
-	 * <p>
-	 * reads the next packet (by calling dispatch with a cnt of 1) and returns a
-	 * u_char pointer to the data in that packet. The packet data is not to be freed
-	 * by the caller, and is not guaranteed to be valid after the next call to
-	 * nextEx, next, loop, or dispatch; if the full needs it to remain valid, it
-	 * must make a copy of it. The pcap_pkthdr structure pointed to by h is filled
-	 * in with the appropriate values for the packet.
-	 * </p>
-	 * 
-	 * <p>
-	 * The bytes of data from the packet begin with a link-layer header. The format
-	 * of the link-layer header is indicated by the return value of the
-	 * {@code datalink} routine when handed the pcap_t value also passed to
-	 * {@code loop} or {@code dispatch}. https://www.tcpdump.org/linktypes.html
-	 * lists the values {@code datalink} can return and describes the packet formats
-	 * that correspond to those values. The value it returns will be valid for all
-	 * packets received unless and until {@code setDatalink} is called; after a
-	 * successful call to {@code setDatalink}, all subsequent packets will have a
-	 * link-layer header of the type specified by the link-layer header type value
-	 * passed to {@code setDatalink}.
-	 * </p>
-	 * 
-	 * <p>
-	 * Do NOT assume that the packets for a given capture or ``savefile`` will have
-	 * any given link-layer header type, such as DLT_EN10MB for Ethernet. For
-	 * example, the "any" device on Linux will have a link-layer header type of
-	 * DLT_LINUX_SLL or DLT_LINUX_SLL2 even if all devices on the system at the time
-	 * the "any" device is opened have some other data link type, such as DLT_EN10MB
-	 * for Ethernet.
-	 * </p>
-	 *
-	 * @return a pointer to the packet data on success, and returns NULL if no
-	 *         packets were read from a live capture (if, for example, they were
-	 *         discarded because they didn't pass the packet filter, or if, on
-	 *         platforms that support a packet buffer timeout that starts before any
-	 *         packets arrive, the timeout expires before any packets arrive, or if
-	 *         the file descriptor for the capture device is in non-blocking mode
-	 *         and no packets were available to be read), or if no more packets are
-	 *         available in a ``savefile.'' Unfortunately, there is no way to
-	 *         determine whether an error occurred or not.
-	 * @throws PcapException Unfortunately, there is no way to determine whether an
-	 *                       error occurred or not so exception may be due to no
-	 *                       packets being captured and not an actual error.
-	 * @since libpcap 0.4
-	 */
-	public Packet nextPacket() throws PcapException {
-		throw new UnsupportedOperationException();
-	}
-
-	/**
 	 * On close.
 	 *
 	 * @param closeAction the close action
@@ -1238,6 +1129,10 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 		super.setBufferSize(unit.toBytesAsInt(size));
 
 		return this;
+	}
+	
+	public PcapPipeline protocolStack() {
+		return pcapPipeline;
 	}
 
 	/**
