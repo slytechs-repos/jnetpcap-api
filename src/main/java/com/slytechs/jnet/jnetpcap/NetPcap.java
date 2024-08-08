@@ -36,7 +36,7 @@ import org.jnetpcap.PcapIf;
 import org.jnetpcap.constant.PcapCode;
 import org.jnetpcap.constant.PcapDlt;
 import org.jnetpcap.constant.PcapTStampPrecision;
-import org.jnetpcap.internal.DeputyPcap;
+import org.jnetpcap.internal.DelegatePcap;
 import org.jnetpcap.internal.PcapDispatcher;
 import org.jnetpcap.internal.StandardPcapDispatcher;
 
@@ -80,7 +80,7 @@ import com.slytechs.jnet.protocol.meta.PacketFormat;
  * @author Sly Technologies Inc
  * @author repos@slytechs.com
  */
-public final class NetPcap extends DeputyPcap<NetPcap> implements CaptureStatistics {
+public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStatistics {
 
 	/**
 	 * A factory for creating Pcap::create handles.
