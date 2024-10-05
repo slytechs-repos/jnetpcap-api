@@ -1,7 +1,7 @@
 /*
  * Sly Technologies Free License
  * 
- * Copyright 2023 Sly Technologies Inc.
+ * Copyright 2024 Sly Technologies Inc.
  *
  * Licensed under the Sly Technologies Free License (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -26,8 +26,8 @@ import java.util.function.LongSupplier;
 
 import org.jnetpcap.PcapHandler.OfMemorySegment;
 
-import com.slytechs.jnet.jnetruntime.pipeline.ProcessorContext;
-import com.slytechs.jnet.jnetruntime.pipeline.UnaryProcessor;
+import com.slytechs.jnet.jnetruntime.pipeline.AbstractProcessor;
+import com.slytechs.jnet.jnetruntime.pipeline.Pipeline;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
 import com.slytechs.jnet.jnetruntime.util.SystemProperties;
 
@@ -42,11 +42,10 @@ import com.slytechs.jnet.jnetruntime.util.SystemProperties;
  * packet has an updated timestamp that is different from the original packet.
  * </p>
  *
- * @author Sly Technologies Inc
- * @author repos@slytechs.com
+ * @author Mark Bednarczyk
  */
 public final class PacketRepeater
-		extends UnaryProcessor<OfMemorySegment<Object>>
+		extends AbstractProcessor<OfMemorySegment<Object>, PacketRepeater>
 		implements OfMemorySegment<Object> {
 
 	/** The Constant PREFIX. */
@@ -75,12 +74,18 @@ public final class PacketRepeater
 
 	/** The timestamp unit. */
 	private TimestampUnit timestampUnit = TimestampUnit.PCAP_MICRO;
+	
+	/** The Constant NAME. */
+	public static final String NAME = "packet-repeater";
 
 	/**
 	 * Instantiates a new packet repeater.
+	 *
+	 * @param pipeline the pipeline
+	 * @param priority the priority
 	 */
-	public PacketRepeater(int priority) {
-		super(priority, PcapDataType.PCAP_RAW);
+	public PacketRepeater(Pipeline<OfMemorySegment<Object>, ?> pipeline, int priority) {
+		super(pipeline, priority, NAME, PcapDataType.PCAP_RAW_PACKET);
 
 		name(PREFIX);
 	}
@@ -294,6 +299,11 @@ public final class PacketRepeater
 	}
 
 	/**
+	 * Handle segment.
+	 *
+	 * @param user   the user
+	 * @param header the header
+	 * @param packet the packet
 	 * @see org.jnetpcap.PcapHandler.OfMemorySegment#handleSegment(java.lang.Object,
 	 *      java.lang.foreign.MemorySegment, java.lang.foreign.MemorySegment)
 	 */
@@ -302,30 +312,12 @@ public final class PacketRepeater
 		for (long c = 0; c < repeatCount; c++)
 			delay();
 
-		super.output.handleSegment(user, header, packet);
+		outputData().handleSegment(user, header, packet);
 	}
 
-	public <U> PacketRepeater peek(OfMemorySegment<U> output, U user) {
-		addOutput((u, h, p) -> output.handleSegment(user, h, p));
-
-		return this;
-	}
-
-	public <U> void forEach(OfMemorySegment<U> output, U user) {
-		peek(output, user);
-	}
-
-	@SuppressWarnings("unchecked")
-	public PacketRepeater peek(OfMemorySegment<?> output) {
-		addOutput((OfMemorySegment<Object>) output);
-
-		return this;
-	}
-
-	public void forEach(OfMemorySegment<?> output) {
-		peek(output);
-	}
-
+	/**
+	 * Delay.
+	 */
 	private void delay() {
 		final long MIN_BLOCK = 150_000_000;
 		long start = System.nanoTime();
@@ -347,19 +339,23 @@ public final class PacketRepeater
 		} while (remaining > 0);
 	}
 
+	/**
+	 * Delay spin.
+	 *
+	 * @param endNanoTime the end nano time
+	 */
 	private void delaySpin(long endNanoTime) {
 		while (System.nanoTime() < endNanoTime);
 	}
 
+	/**
+	 * Delay block.
+	 *
+	 * @param endNanoTime the end nano time
+	 * @throws InterruptedException the interrupted exception
+	 */
 	private void delayBlock(long endNanoTime) throws InterruptedException {
 		TimeUnit.NANOSECONDS.sleep(endNanoTime - System.nanoTime());
-	}
-
-	/**
-	 * @see com.slytechs.jnet.jnetruntime.pipeline.Processor#setup(com.slytechs.jnet.jnetruntime.pipeline.Processor.ProcessorContext)
-	 */
-	@Override
-	protected void setup(ProcessorContext context) {
 	}
 
 }

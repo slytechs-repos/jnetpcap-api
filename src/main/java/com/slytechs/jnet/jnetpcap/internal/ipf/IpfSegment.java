@@ -1,7 +1,7 @@
 /*
  * Sly Technologies Free License
  * 
- * Copyright 2023 Sly Technologies Inc.
+ * Copyright 2024 Sly Technologies Inc.
  *
  * Licensed under the Sly Technologies Free License (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -22,6 +22,8 @@ import com.slytechs.jnet.jnetruntime.util.IntSegment;
 
 /**
  * The Class IpfSegment.
+ *
+ * @author Mark Bednarczyk
  */
 class IpfSegment implements Comparable<IpfSegment>, IntSegment {
 
@@ -53,6 +55,9 @@ class IpfSegment implements Comparable<IpfSegment>, IntSegment {
 	}
 
 	/**
+	 * Start.
+	 *
+	 * @return the int
 	 * @see com.slytechs.jnet.jnetruntime.util.IntSegment#start()
 	 */
 	@Override
@@ -61,6 +66,9 @@ class IpfSegment implements Comparable<IpfSegment>, IntSegment {
 	}
 
 	/**
+	 * End.
+	 *
+	 * @return the int
 	 * @see com.slytechs.jnet.jnetruntime.util.IntSegment#end()
 	 */
 	@Override
@@ -69,6 +77,9 @@ class IpfSegment implements Comparable<IpfSegment>, IntSegment {
 	}
 
 	/**
+	 * End exclusive.
+	 *
+	 * @return the int
 	 * @see com.slytechs.jnet.jnetruntime.util.IntSegment#endExclusive()
 	 */
 	@Override
@@ -77,6 +88,9 @@ class IpfSegment implements Comparable<IpfSegment>, IntSegment {
 	}
 
 	/**
+	 * Length.
+	 *
+	 * @return the int
 	 * @see com.slytechs.jnet.jnetruntime.util.IntSegment#length()
 	 */
 	@Override

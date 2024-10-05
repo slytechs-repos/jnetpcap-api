@@ -1,7 +1,7 @@
 /*
  * Sly Technologies Free License
  * 
- * Copyright 2023 Sly Technologies Inc.
+ * Copyright 2024 Sly Technologies Inc.
  *
  * Licensed under the Sly Technologies Free License (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -34,8 +34,7 @@ import com.slytechs.jnet.jnetruntime.util.MemoryUnit;
 /**
  * (Private API) IPF configuration implementation.
  * 
- * @author Sly Technologies Inc
- * @author repos@slytechs.com
+ * @author Mark Bednarczyk
  *
  */
 public class IpfConfig extends PacketReceiverConfig implements IpfConfiguration {
@@ -101,6 +100,8 @@ public class IpfConfig extends PacketReceiverConfig implements IpfConfiguration 
 
 	/**
 	 * Effective or the result of combining of all the main properties and modes.
+	 *
+	 * @author Mark Bednarczyk
 	 */
 	public class EffectiveConfig {
 
@@ -418,6 +419,9 @@ public class IpfConfig extends PacketReceiverConfig implements IpfConfiguration 
 	}
 
 	/**
+	 * Checks if is passthrough.
+	 *
+	 * @return true, if is passthrough
 	 * @see com.slytechs.jnet.jnetpcap.IpfConfiguration#isPassthrough()
 	 */
 	@Override

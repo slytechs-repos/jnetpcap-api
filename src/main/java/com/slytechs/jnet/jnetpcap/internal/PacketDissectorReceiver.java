@@ -1,7 +1,7 @@
 /*
  * Sly Technologies Free License
  * 
- * Copyright 2023 Sly Technologies Inc.
+ * Copyright 2024 Sly Technologies Inc.
  *
  * Licensed under the Sly Technologies Free License (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -42,8 +42,7 @@ import com.slytechs.jnet.protocol.descriptor.PacketDissector;
 /**
  * A packet dissector and dispatcher.
  * 
- * @author Sly Technologies Inc
- * @author repos@slytechs.com
+ * @author Mark Bednarczyk
  * @author Mark Bednarczyk
  *
  */
@@ -371,6 +370,11 @@ public class PacketDissectorReceiver
 	}
 
 	/**
+	 * On native callback exception.
+	 *
+	 * @param e       the e
+	 * @param caplen  the caplen
+	 * @param wirelen the wirelen
 	 * @see com.slytechs.jnet.jnetpcap.internal.PacketReceiver#onNativeCallbackException(java.lang.Throwable,
 	 *      int, int)
 	 */
@@ -383,6 +387,15 @@ public class PacketDissectorReceiver
 	}
 
 	/**
+	 * Process packet.
+	 *
+	 * @param <U>       the generic type
+	 * @param buffer    the buffer
+	 * @param mpacket   the mpacket
+	 * @param caplen    the caplen
+	 * @param wirelen   the wirelen
+	 * @param timestamp the timestamp
+	 * @return the packet
 	 * @see com.slytechs.jnet.jnetpcap.internal.PacketReceiver#processPacket(java.nio.ByteBuffer,
 	 *      java.lang.foreign.MemorySegment, int, int, long)
 	 */

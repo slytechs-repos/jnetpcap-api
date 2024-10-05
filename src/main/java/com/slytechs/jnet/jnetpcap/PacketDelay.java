@@ -1,7 +1,7 @@
 /*
  * Sly Technologies Free License
  * 
- * Copyright 2023 Sly Technologies Inc.
+ * Copyright 2024 Sly Technologies Inc.
  *
  * Licensed under the Sly Technologies Free License (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -17,20 +17,23 @@
  */
 package com.slytechs.jnet.jnetpcap;
 
+import java.lang.foreign.MemorySegment;
 import java.util.concurrent.TimeUnit;
 
 import org.jnetpcap.PcapHandler.OfMemorySegment;
 
-import com.slytechs.jnet.jnetruntime.pipeline.UnaryProcessor;
+import com.slytechs.jnet.jnetruntime.pipeline.AbstractProcessor;
+import com.slytechs.jnet.jnetruntime.pipeline.Pipeline;
 import com.slytechs.jnet.jnetruntime.util.SystemProperties;
 
 /**
  * The Class PacketDelay.
  *
- * @author Sly Technologies Inc
- * @author repos@slytechs.com
+ * @author Mark Bednarczyk
  */
-public final class PacketDelay extends UnaryProcessor<OfMemorySegment<?>> {
+public final class PacketDelay
+		extends AbstractProcessor<OfMemorySegment<Object>, PacketDelay>
+		implements OfMemorySegment<Object> {
 
 	/** The Constant PREFIX. */
 	private static final String PREFIX = "packet.delay";
@@ -44,11 +47,17 @@ public final class PacketDelay extends UnaryProcessor<OfMemorySegment<?>> {
 	/** The delay nano. */
 	private long delayNano = SystemProperties.longValue(PROPERTY_PACKET_REPEATER_DELAY_NANO, 1);
 
+	/** The Constant NAME. */
+	public static final String NAME = "packet-delay";
+
 	/**
 	 * Instantiates a new packet delay.
+	 *
+	 * @param pipeline the pipeline
+	 * @param priority the priority
 	 */
-	public PacketDelay(int priority) {
-		super(priority, PcapDataType.PCAP_RAW);
+	public PacketDelay(Pipeline<OfMemorySegment<Object>, ?> pipeline, int priority) {
+		super(pipeline, priority, NAME, PcapDataType.PCAP_RAW_PACKET);
 	}
 
 	/**
@@ -81,6 +90,20 @@ public final class PacketDelay extends UnaryProcessor<OfMemorySegment<?>> {
 	 */
 	public long getDelayNano() {
 		return delayNano;
+	}
+
+	/**
+	 * Handle segment.
+	 *
+	 * @param user   the user
+	 * @param header the header
+	 * @param packet the packet
+	 * @see org.jnetpcap.PcapHandler.OfMemorySegment#handleSegment(java.lang.Object,
+	 *      java.lang.foreign.MemorySegment, java.lang.foreign.MemorySegment)
+	 */
+	@Override
+	public void handleSegment(Object user, MemorySegment header, MemorySegment packet) {
+		outputData().handleSegment(user, header, packet);
 	}
 
 }

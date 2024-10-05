@@ -19,8 +19,7 @@
 /**
  * Provides packet dissection and IP fragment reassembly services.
  * 
- * @author Sly Technologies Inc.
- * @author repos@slytechs.com
+ * @author Mark Bednarczyk.
  *
  */
 module com.slytechs.jnet.jnetpcap {

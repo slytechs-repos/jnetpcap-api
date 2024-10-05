@@ -1,17 +1,19 @@
 /*
- * Copyright 2024 Sly Technologies Inc
+ * Sly Technologies Free License
+ * 
+ * Copyright 2024 Sly Technologies Inc.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
+ * Licensed under the Sly Technologies Free License (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ * 
+ * http://www.slytechs.com/free-license-text
+ * 
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
  */
 package com.slytechs.jnet.jnetpcap;
 
@@ -24,7 +26,8 @@ import org.jnetpcap.PcapHandler.OfMemorySegment;
 
 import com.slytechs.jnet.jnetpcap.NetPcapHandler.OfPacket;
 import com.slytechs.jnet.jnetpcap.NetPcapHandler.OfPacketConsumer;
-import com.slytechs.jnet.jnetruntime.pipeline.ProcessorGroup;
+import com.slytechs.jnet.jnetruntime.pipeline.AbstractProcessor;
+import com.slytechs.jnet.jnetruntime.pipeline.Pipeline;
 import com.slytechs.jnet.jnetruntime.time.TimestampSource;
 import com.slytechs.jnet.jnetruntime.time.TimestampSource.AssignableTimestampSource;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
@@ -34,15 +37,16 @@ import com.slytechs.jnet.jnetruntime.util.MemoryUnit;
 /**
  * The Class IpfReassembler.
  *
- * @author Sly Technologies Inc
- * @author repos@slytechs.com
+ * @author Mark Bednarczyk
  */
 public class IpfReassembler
-		extends ProcessorGroup<OfMemorySegment<Object>, OfPacket<Object>>
+		extends AbstractProcessor<OfMemorySegment<Object>, IpfReassembler>
 		implements OfMemorySegment<Object> {
 
 	/**
 	 * Effective or the result of combining of all the main properties and modes.
+	 *
+	 * @author Mark Bednarczyk
 	 */
 	public class EffectiveConfig {
 
@@ -212,16 +216,16 @@ public class IpfReassembler
 	private boolean sendComplete          = boolValue(PROPERTY_IPF_DGRAMS_SEND_COMPLETE,   true);
 	// @formatter:on
 
+	/** The Constant NAME. */
+	public static final String NAME = "ipf-reassembler";
 	/** The time source. */
 	private AssignableTimestampSource timeSource;
 
 	/**
 	 * Instantiates a new ipf reassembler.
-	 *
-	 * @param priority the priority
 	 */
-	public IpfReassembler(int priority) {
-		super(priority, CoreDataType.PACKET, PcapDataType.PCAP_RAW);
+	public IpfReassembler(Pipeline<, ?> pipeline, int priority) {
+		super(priority, NAME, CoreDataType.PACKET, PcapDataType.PCAP_RAW);
 	}
 
 	/**
@@ -508,7 +512,7 @@ public class IpfReassembler
 	 */
 	@SuppressWarnings("unchecked")
 	public <U> IpfReassembler peek(OfPacket<U> reassembledPacket, U user) {
-		addOutput((OfPacket<Object>) reassembledPacket.wrapUser(user));
+		registerOutput((OfPacket<Object>) reassembledPacket.wrapUser(user));
 
 		return this;
 	}
@@ -520,7 +524,7 @@ public class IpfReassembler
 	 * @return the ipf reassembler
 	 */
 	public IpfReassembler peek(OfPacketConsumer reassembledPacket) {
-		addOutput((u, p) -> reassembledPacket.accept(p));
+		registerOutput((u, p) -> reassembledPacket.accept(p));
 
 		return this;
 	}

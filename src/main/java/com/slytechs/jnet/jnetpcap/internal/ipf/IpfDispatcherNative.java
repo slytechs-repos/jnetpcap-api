@@ -1,7 +1,7 @@
 /*
  * Sly Technologies Free License
  * 
- * Copyright 2023 Sly Technologies Inc.
+ * Copyright 2024 Sly Technologies Inc.
  *
  * Licensed under the Sly Technologies Free License (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -30,8 +30,7 @@ import com.slytechs.jnet.jnetpcap.internal.PacketReceiver;
 /**
  * The Class IpfDispatcherNative.
  *
- * @author Sly Technologies Inc
- * @author repos@slytechs.com
+ * @author Mark Bednarczyk
  * @author Mark Bednarczyk
  */
 public class IpfDispatcherNative
@@ -44,10 +43,9 @@ public class IpfDispatcherNative
 	/**
 	 * Instantiates a new ipf dispatcher native.
 	 *
-	 * @param pcap    the pcap
-	 * @param packet  the packet
-	 * @param config  the config
-	 * @param context the context
+	 * @param pcap   the pcap
+	 * @param packet the packet
+	 * @param config the config
 	 */
 	public IpfDispatcherNative(
 			PcapDispatcher pcap,

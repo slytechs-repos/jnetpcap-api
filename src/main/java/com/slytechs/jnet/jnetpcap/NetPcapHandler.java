@@ -1,17 +1,19 @@
 /*
- * Copyright 2024 Sly Technologies Inc
+ * Sly Technologies Free License
+ * 
+ * Copyright 2024 Sly Technologies Inc.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
+ * Licensed under the Sly Technologies Free License (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ * 
+ * http://www.slytechs.com/free-license-text
+ * 
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
  */
 package com.slytechs.jnet.jnetpcap;
 
@@ -26,8 +28,7 @@ import com.slytechs.jnet.protocol.descriptor.IpfFragment;
 /**
  * Marker interface for all Pcap pro packet handlers.
  * 
- * @author Sly Technologies Inc
- * @author repos@slytechs.com
+ * @author Mark Bednarczyk
  */
 public interface NetPcapHandler extends PcapHandler {
 
@@ -36,6 +37,7 @@ public interface NetPcapHandler extends PcapHandler {
 	 * information.
 	 *
 	 * @param <U> the generic type
+	 * @author Mark Bednarczyk
 	 */
 	@FunctionalInterface
 	public interface OfPacket<U> extends NetPcapHandler {
@@ -66,20 +68,6 @@ public interface NetPcapHandler extends PcapHandler {
 		}
 
 		/**
-		 * Wrap array.
-		 *
-		 * @param <U>   the generic type
-		 * @param array the array
-		 * @return the of packet
-		 */
-		static <U> OfPacket<U> wrapArray(OfPacket<U>[] array) {
-			return (u, p) -> {
-				for (var a : array)
-					a.handlePacket(u, p);
-			};
-		}
-
-		/**
 		 * Handle a packet.
 		 *
 		 * @param user   user opaque value returned back
@@ -90,6 +78,8 @@ public interface NetPcapHandler extends PcapHandler {
 
 	/**
 	 * The Interface IpfHandler.
+	 *
+	 * @author Mark Bednarczyk
 	 */
 	public interface IpfHandler {
 
@@ -106,6 +96,8 @@ public interface NetPcapHandler extends PcapHandler {
 	/**
 	 * A dispatcher which dispatches high level packets with protocol header
 	 * information.
+	 *
+	 * @author Mark Bednarczyk
 	 */
 	@FunctionalInterface
 	public interface OfPacketConsumer extends NetPcapHandler, Consumer<Packet> {

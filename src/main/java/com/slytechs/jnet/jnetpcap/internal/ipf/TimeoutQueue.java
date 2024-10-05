@@ -1,7 +1,7 @@
 /*
  * Sly Technologies Free License
  * 
- * Copyright 2023 Sly Technologies Inc.
+ * Copyright 2024 Sly Technologies Inc.
  *
  * Licensed under the Sly Technologies Free License (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -28,14 +28,15 @@ import com.slytechs.jnet.protocol.Registration;
 /**
  * The Class TimeoutQueue.
  *
- * @author Sly Technologies Inc
- * @author repos@slytechs.com
  * @param <E> the element type
+ * @author Mark Bednarczyk
  */
 public class TimeoutQueue<E extends Expirable> {
 
 	/**
 	 * The Interface Expirable.
+	 *
+	 * @author Mark Bednarczyk
 	 */
 	public interface Expirable {
 		
@@ -49,6 +50,8 @@ public class TimeoutQueue<E extends Expirable> {
 
 	/**
 	 * The Class Entry.
+	 *
+	 * @author Mark Bednarczyk
 	 */
 	private class Entry implements Expirable {
 

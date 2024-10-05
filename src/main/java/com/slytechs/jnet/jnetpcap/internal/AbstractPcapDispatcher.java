@@ -1,7 +1,7 @@
 /*
  * Sly Technologies Free License
  * 
- * Copyright 2023 Sly Technologies Inc.
+ * Copyright 2024 Sly Technologies Inc.
  *
  * Licensed under the Sly Technologies Free License (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -32,8 +32,7 @@ import com.slytechs.jnet.jnetpcap.NetPcap.NetPcapContext;
 /**
  * The Class AbstractPcapDispatcher.
  *
- * @author Sly Technologies Inc
- * @author repos@slytechs.com
+ * @author Mark Bednarczyk
  */
 public class AbstractPcapDispatcher implements PcapDispatcher {
 
@@ -73,6 +72,9 @@ public class AbstractPcapDispatcher implements PcapDispatcher {
 	}
 
 	/**
+	 * Pcap header ABI.
+	 *
+	 * @return the pcap header ABI
 	 * @see org.jnetpcap.internal.PcapDispatcher#pcapHeaderABI()
 	 */
 	@Override
@@ -207,6 +209,10 @@ public class AbstractPcapDispatcher implements PcapDispatcher {
 	}
 
 	/**
+	 * Next.
+	 *
+	 * @return the pcap packet ref
+	 * @throws PcapException the pcap exception
 	 * @see org.jnetpcap.internal.PcapDispatcher#next()
 	 */
 	@Override
@@ -215,6 +221,11 @@ public class AbstractPcapDispatcher implements PcapDispatcher {
 	}
 
 	/**
+	 * Next ex.
+	 *
+	 * @return the pcap packet ref
+	 * @throws PcapException    the pcap exception
+	 * @throws TimeoutException the timeout exception
 	 * @see org.jnetpcap.internal.PcapDispatcher#nextEx()
 	 */
 	@Override
@@ -245,7 +256,13 @@ public class AbstractPcapDispatcher implements PcapDispatcher {
 	}
 
 	/**
-	 * @see org.jnetpcap.PcapHandler.NativeCallback#nativeCallback(java.lang.foreign.MemorySegment, java.lang.foreign.MemorySegment, java.lang.foreign.MemorySegment)
+	 * Native callback.
+	 *
+	 * @param user   the user
+	 * @param header the header
+	 * @param packet the packet
+	 * @see org.jnetpcap.PcapHandler.NativeCallback#nativeCallback(java.lang.foreign.MemorySegment,
+	 *      java.lang.foreign.MemorySegment, java.lang.foreign.MemorySegment)
 	 */
 	@Override
 	public void nativeCallback(MemorySegment user, MemorySegment header, MemorySegment packet) {

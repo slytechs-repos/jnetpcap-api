@@ -1,7 +1,7 @@
 /*
  * Sly Technologies Free License
  * 
- * Copyright 2023 Sly Technologies Inc.
+ * Copyright 2024 Sly Technologies Inc.
  *
  * Licensed under the Sly Technologies Free License (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -18,12 +18,19 @@
 package com.slytechs.jnet.jnetpcap.processor;
 
 /**
- * @author Sly Technologies Inc
- * @author repos@slytechs.com
+ * A factory for creating Processor objects.
  *
+ * @param <T> the generic type
+ * @author Mark Bednarczyk
  */
 public interface ProcessorFactory<T extends Processor> {
 
+	/**
+	 * New instance.
+	 *
+	 * @param priority the priority
+	 * @return the t
+	 */
 	T newInstance(int priority);
 
 }

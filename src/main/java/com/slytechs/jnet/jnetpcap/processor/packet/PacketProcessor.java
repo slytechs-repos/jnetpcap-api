@@ -1,7 +1,7 @@
 /*
  * Sly Technologies Free License
  * 
- * Copyright 2023 Sly Technologies Inc.
+ * Copyright 2024 Sly Technologies Inc.
  *
  * Licensed under the Sly Technologies Free License (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -21,6 +21,18 @@ import java.lang.foreign.MemorySegment;
 
 import com.slytechs.jnet.jnetpcap.processor.Processor;
 
+/**
+ * The Interface PacketProcessor.
+ *
+ * @author Mark Bednarczyk
+ */
 public interface PacketProcessor extends Processor {
+	
+	/**
+	 * Process packet.
+	 *
+	 * @param desc the desc
+	 * @param data the data
+	 */
 	void processPacket(MemorySegment desc, MemorySegment data);
 }

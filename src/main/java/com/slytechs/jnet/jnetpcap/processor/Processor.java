@@ -1,7 +1,7 @@
 /*
  * Sly Technologies Free License
  * 
- * Copyright 2023 Sly Technologies Inc.
+ * Copyright 2024 Sly Technologies Inc.
  *
  * Licensed under the Sly Technologies Free License (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -20,12 +20,17 @@ package com.slytechs.jnet.jnetpcap.processor;
 import java.util.function.BooleanSupplier;
 
 /**
- * @author Sly Technologies Inc
- * @author repos@slytechs.com
+ * The Interface Processor.
+ *
+ * @author Mark Bednarczyk
  */
 public interface Processor extends Comparable<Processor> {
 
 	/**
+	 * Compare to.
+	 *
+	 * @param o the o
+	 * @return the int
 	 * @see java.lang.Comparable#compareTo(java.lang.Object)
 	 */
 	@Override
@@ -33,17 +38,55 @@ public interface Processor extends Comparable<Processor> {
 		return priority() - o.priority();
 	}
 
+	/**
+	 * Name.
+	 *
+	 * @return the string
+	 */
 	String name();
 
+	/**
+	 * Name.
+	 *
+	 * @param newName the new name
+	 * @return the processor
+	 */
 	Processor name(String newName);
 
+	/**
+	 * Priority.
+	 *
+	 * @return the int
+	 */
 	int priority();
 
+	/**
+	 * Type.
+	 *
+	 * @return the processor type
+	 */
 	ProcessorType type();
 
+	/**
+	 * Checks if is enabled.
+	 *
+	 * @return true, if is enabled
+	 */
 	boolean isEnabled();
 
+	/**
+	 * Enable.
+	 *
+	 * @param b the b
+	 * @return the processor
+	 */
 	Processor enable(BooleanSupplier b);
 
+	/**
+	 * Enable.
+	 *
+	 * @param b the b
+	 * @return the processor
+	 */
 	Processor enable(boolean b);
 }

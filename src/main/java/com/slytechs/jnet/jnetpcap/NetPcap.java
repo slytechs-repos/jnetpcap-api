@@ -1,17 +1,19 @@
 /*
- * Copyright 2024 Sly Technologies Inc
+ * Sly Technologies Free License
+ * 
+ * Copyright 2024 Sly Technologies Inc.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
+ * Licensed under the Sly Technologies Free License (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ * 
+ * http://www.slytechs.com/free-license-text
+ * 
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
  */
 package com.slytechs.jnet.jnetpcap;
 
@@ -30,8 +32,6 @@ import org.jnetpcap.Pcap;
 import org.jnetpcap.PcapActivatedException;
 import org.jnetpcap.PcapDumper;
 import org.jnetpcap.PcapException;
-import org.jnetpcap.PcapHandler.NativeCallback;
-import org.jnetpcap.PcapHandler.OfMemorySegment;
 import org.jnetpcap.PcapIf;
 import org.jnetpcap.constant.PcapCode;
 import org.jnetpcap.constant.PcapDlt;
@@ -45,8 +45,6 @@ import com.slytechs.jnet.jnetpcap.NetPcapHandler.OfPacketConsumer;
 import com.slytechs.jnet.jnetpcap.internal.CaptureStatisticsImpl;
 import com.slytechs.jnet.jnetpcap.internal.PacketReceiverConfig;
 import com.slytechs.jnet.jnetruntime.pipeline.Pipeline;
-import com.slytechs.jnet.jnetruntime.pipeline.Processor;
-import com.slytechs.jnet.jnetruntime.pipeline.ProcessorFactory;
 import com.slytechs.jnet.jnetruntime.time.TimeSource;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
 import com.slytechs.jnet.jnetruntime.util.MemoryUnit;
@@ -77,8 +75,7 @@ import com.slytechs.jnet.protocol.meta.PacketFormat;
  * data combined.
  * </p>
  * 
- * @author Sly Technologies Inc
- * @author repos@slytechs.com
+ * @author Mark Bednarczyk
  */
 public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStatistics {
 
@@ -100,7 +97,9 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	}
 
 	/**
-	 * Context structure for the PcapPro class and its numerous processors.
+	 * Context structure for the NetPcap class and its numerous processors.
+	 *
+	 * @author Mark Bednarczyk
 	 */
 	public final static class NetPcapContext {
 
@@ -815,7 +814,7 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	public <U> int dispatch(int count, OfPacket<U> handler, U user) {
 		checkIfActiveOrElseThrow();
 
-		try (Registration reg = protoPipeline.addOutput(handler.wrapUser(user))) {
+		try (Registration reg = protoPipeline.registerOutput(handler.wrapUser(user))) {
 			return dispatcherL0.invokeDispatchNativeCallback(count, pcapPipeline, MemorySegment.NULL);
 		}
 	}
@@ -1049,7 +1048,7 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	public <U> int loop(int count, NetPcapHandler.OfPacket<U> handler, U user) {
 		checkIfActiveOrElseThrow();
 
-		try (Registration reg = protoPipeline.addOutput(handler.wrapUser(user))) {
+		try (Registration reg = protoPipeline.registerOutput(handler.wrapUser(user))) {
 			return dispatcherL0.invokeLoopNativeCallback(count, pcapPipeline, MemorySegment.NULL);
 		}
 	}
@@ -1131,6 +1130,11 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 		return this;
 	}
 	
+	/**
+	 * Protocol stack.
+	 *
+	 * @return the pcap pipeline
+	 */
 	public PcapPipeline protocolStack() {
 		return pcapPipeline;
 	}

@@ -1,7 +1,7 @@
 /*
  * Sly Technologies Free License
  * 
- * Copyright 2023 Sly Technologies Inc.
+ * Copyright 2024 Sly Technologies Inc.
  *
  * Licensed under the Sly Technologies Free License (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -23,18 +23,18 @@ import java.util.concurrent.TimeUnit;
 import org.jnetpcap.PcapHandler.OfMemorySegment;
 import org.jnetpcap.internal.PcapHeaderABI;
 
-import com.slytechs.jnet.jnetruntime.pipeline.UnaryProcessor;
+import com.slytechs.jnet.jnetruntime.pipeline.AbstractProcessor;
+import com.slytechs.jnet.jnetruntime.pipeline.Pipeline;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
 import com.slytechs.jnet.jnetruntime.util.SystemProperties;
 
 /**
  * The Class PacketPlayer.
  *
- * @author Sly Technologies Inc
- * @author repos@slytechs.com
+ * @author Mark Bednarczyk
  */
 public class PacketPlayer
-		extends UnaryProcessor<OfMemorySegment<Object>>
+		extends AbstractProcessor<OfMemorySegment<Object>, PacketPlayer>
 		implements OfMemorySegment<Object> {
 
 	/** The Constant PREFIX. */
@@ -70,8 +70,17 @@ public class PacketPlayer
 	/** The max ifg nano. */
 	private long maxIfgNano = Long.MAX_VALUE;
 
-	public PacketPlayer(int priority) {
-		super(priority, PcapDataType.PCAP_RAW);
+	/** The Constant NAME. */
+	public static final String NAME = "packet-player";
+
+	/**
+	 * Instantiates a new packet player.
+	 *
+	 * @param pipeline the pipeline
+	 * @param priority the priority
+	 */
+	public PacketPlayer(Pipeline<OfMemorySegment<Object>, ?> pipeline, int priority) {
+		super(pipeline, priority, NAME, PcapDataType.PCAP_RAW_PACKET);
 	}
 
 	/**
@@ -230,19 +239,27 @@ public class PacketPlayer
 	}
 
 	/**
-	 * @param b
+	 * Emulate real time.
+	 *
+	 * @param b the b
+	 * @return the packet player
 	 */
 	public PacketPlayer emulateRealTime(boolean b) {
 		throw new UnsupportedOperationException("not implemented yet");
 	}
 
 	/**
+	 * Handle segment.
+	 *
+	 * @param user   the user
+	 * @param header the header
+	 * @param Packet the packet
 	 * @see org.jnetpcap.PcapHandler.OfMemorySegment#handleSegment(java.lang.Object,
 	 *      java.lang.foreign.MemorySegment, java.lang.foreign.MemorySegment)
 	 */
 	@Override
 	public void handleSegment(Object user, MemorySegment header, MemorySegment Packet) {
-		throw new UnsupportedOperationException("not implemented yet");
+		outputData().handleSegment(user, header, Packet);
 	}
 
 }

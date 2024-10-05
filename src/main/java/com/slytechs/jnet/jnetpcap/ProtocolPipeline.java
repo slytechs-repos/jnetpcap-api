@@ -1,7 +1,7 @@
 /*
  * Sly Technologies Free License
  * 
- * Copyright 2023 Sly Technologies Inc.
+ * Copyright 2024 Sly Technologies Inc.
  *
  * Licensed under the Sly Technologies Free License (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -25,27 +25,34 @@ import com.slytechs.jnet.jnetpcap.NetPcapHandler.OfPacket;
 import com.slytechs.jnet.jnetruntime.pipeline.Pipeline;
 
 /**
- * @author Sly Technologies Inc
- * @author repos@slytechs.com
+ * The Class ProtocolPipeline.
+ *
+ * @author Mark Bednarczyk
  */
 public final class ProtocolPipeline
 		extends Pipeline<OfMemorySegment<?>, OfPacket<?>>
 		implements OfMemorySegment<Object> {
 
+	/** The packet dissector. */
 	private final PacketProcessorGroup packetDissector;
 
 	/**
-	 * @param priority
-	 * @param inputType
-	 * @param outputType
+	 * Instantiates a new protocol pipeline.
+	 *
+	 * @param priority the priority
 	 */
 	public ProtocolPipeline(int priority) {
-		super(priority, new PacketProcessorGroup(0), PcapDataType.PCAP_RAW, CoreDataType.PACKET);
+		super(priority, new PacketProcessorGroup(0), PcapDataType.PCAP_RAW_PACKET, CoreDataType.PACKET);
 
 		this.packetDissector = super.mainProcessor();
 	}
 
 	/**
+	 * Handle segment.
+	 *
+	 * @param user   the user
+	 * @param header the header
+	 * @param Packet the packet
 	 * @see org.jnetpcap.PcapHandler.OfMemorySegment#handleSegment(java.lang.Object,
 	 *      java.lang.foreign.MemorySegment, java.lang.foreign.MemorySegment)
 	 */

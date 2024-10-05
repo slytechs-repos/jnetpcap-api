@@ -1,7 +1,7 @@
 /*
  * Sly Technologies Free License
  * 
- * Copyright 2023 Sly Technologies Inc.
+ * Copyright 2024 Sly Technologies Inc.
  *
  * Licensed under the Sly Technologies Free License (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -21,14 +21,49 @@ import com.slytechs.jnet.jnetpcap.NetPcapHandler.OfPacket;
 import com.slytechs.jnet.jnetpcap.NetPcapHandler.OfPacketConsumer;
 import com.slytechs.jnet.jnetpcap.processor.Processor;
 
+/**
+ * The Interface ProtocolProcessor.
+ *
+ * @author Mark Bednarczyk
+ */
 public interface ProtocolProcessor extends Processor {
 
+	/**
+	 * Peek.
+	 *
+	 * @param <U>      the generic type
+	 * @param packet   the packet
+	 * @param userData the user data
+	 * @return the protocol processor
+	 */
 	<U> ProtocolProcessor peek(OfPacket<U> packet, U userData);
 
+	/**
+	 * For each.
+	 *
+	 * @param <U>      the generic type
+	 * @param packet   the packet
+	 * @param userData the user data
+	 * @return the protocol processor
+	 */
 	<U> ProtocolProcessor forEach(OfPacket<U> packet, U userData);
 
+	/**
+	 * Peek.
+	 *
+	 * @param <U>    the generic type
+	 * @param packet the packet
+	 * @return the protocol processor
+	 */
 	<U> ProtocolProcessor peek(OfPacketConsumer packet);
 
+	/**
+	 * For each.
+	 *
+	 * @param <U>    the generic type
+	 * @param packet the packet
+	 * @return the protocol processor
+	 */
 	<U> ProtocolProcessor forEach(OfPacketConsumer packet);
 
 }

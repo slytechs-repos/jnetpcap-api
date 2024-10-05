@@ -1,7 +1,7 @@
 /*
  * Sly Technologies Free License
  * 
- * Copyright 2023 Sly Technologies Inc.
+ * Copyright 2024 Sly Technologies Inc.
  *
  * Licensed under the Sly Technologies Free License (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -89,8 +89,7 @@ import com.slytechs.jnet.protocol.descriptor.IpfTrackingLayout;
  * <li>timeoutOnLast</li>
  * </ol>
  * 
- * @author Sly Technologies Inc
- * @author repos@slytechs.com
+ * @author Mark Bednarczyk
  */
 public class IpfDgramReassembler implements Expirable {
 
@@ -621,6 +620,9 @@ public class IpfDgramReassembler implements Expirable {
 	}
 
 	/**
+	 * To string.
+	 *
+	 * @return the string
 	 * @see java.lang.Object#toString()
 	 */
 	@Override

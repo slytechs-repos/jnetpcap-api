@@ -17,40 +17,40 @@
  */
 package com.slytechs.jnet.jnetpcap;
 
+import java.lang.foreign.MemorySegment;
+
+import org.jnetpcap.PcapException;
+
+import com.slytechs.jnet.jnetruntime.NotFound;
+
 /**
- * The Class IpfStatistics.
- *
  * @author Mark Bednarczyk
+ *
  */
-public final class IpfStatistics {
+public class TestPcapSyntax {
 
-	/** The table insertion failure. */
-	private long tableInsertionFailure;
-	
-	/** The ipfprocessing failure. */
-	private long ipfprocessingFailure;
-
-	/**
-	 * Instantiates a new ipf statistics.
-	 */
-	public IpfStatistics() {
+	public TestPcapSyntax() {
+		// TODO Auto-generated constructor stub
 	}
 
 	/**
-	 * Inc table insertion failure.
-	 *
-	 * @param delta the delta
+	 * @param args
 	 */
-	public void incTableInsertionFailure(int delta) {
-		tableInsertionFailure += delta;
+	public static void main(String[] args) {
+
+		try (var pcap = new NetPcap2()) {
+
+			System.out.println("TestPcapSyntax:: name=" + pcap.name());
+
+			pcap.activate();
+
+			pcap.dispatch(5, (MemorySegment u, MemorySegment h, MemorySegment d) -> {
+				System.out.printf("u=%s, h=%s, d=%s%n", u, h, d);
+			}, MemorySegment.NULL);
+
+		} catch (PcapException | NotFound e) {
+			e.printStackTrace();
+		}
 	}
 
-	/**
-	 * Inc ipf processing failure.
-	 *
-	 * @param delta the delta
-	 */
-	public void incIpfProcessingFailure(int delta) {
-		ipfprocessingFailure += delta;
-	}
 }
