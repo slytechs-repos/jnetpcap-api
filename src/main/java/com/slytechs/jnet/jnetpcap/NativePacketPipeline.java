@@ -28,6 +28,7 @@ import com.slytechs.jnet.jnetruntime.pipeline.AbstractPipeline;
 import com.slytechs.jnet.jnetruntime.pipeline.DataTransformer.InputTransformer.EntryPoint;
 import com.slytechs.jnet.jnetruntime.pipeline.DataTransformer.OutputTransformer.EndPoint;
 import com.slytechs.jnet.jnetruntime.pipeline.HeadNode;
+import com.slytechs.jnet.jnetruntime.pipeline.PeekProcessor;
 import com.slytechs.jnet.jnetruntime.pipeline.TailNode;
 
 /**
@@ -46,8 +47,8 @@ public class NativePacketPipeline
 		void processNativePacket(MemorySegment header, MemorySegment packet, NativeProcessorContext context);
 	}
 
-	public static class Input
-			extends AbstractInput<NativeCallback, NativePacketPipe, Input>
+	public static class PcapCallback
+			extends AbstractInput<NativeCallback, NativePacketPipe, PcapCallback>
 			implements NativeCallback {
 
 		private NativeProcessorContext context;
@@ -58,7 +59,7 @@ public class NativePacketPipeline
 		 * @param inputType
 		 * @param outputType
 		 */
-		public Input(
+		public PcapCallback(
 				HeadNode<NativePacketPipe> headNode) {
 			super(headNode, "input", PcapDataType.PCAP_NATIVE_PACKET, NetDataTypes.NATIVE_PACKET_PIPE);
 
@@ -84,8 +85,8 @@ public class NativePacketPipeline
 
 	}
 
-	public static class Output
-			extends AbstractOutput<NativePacketPipe, NativeCallback, Output>
+	public static class NativeOutput
+			extends AbstractOutput<NativePacketPipe, NativeCallback, NativeOutput>
 			implements NativePacketPipe {
 
 		/**
@@ -94,7 +95,7 @@ public class NativePacketPipeline
 		 * @param inputType
 		 * @param outputType
 		 */
-		public Output(TailNode<NativePacketPipe> tailNode) {
+		public NativeOutput(TailNode<NativePacketPipe> tailNode) {
 			super(tailNode, "output", NetDataTypes.NATIVE_PACKET_PIPE, PcapDataType.PCAP_NATIVE_PACKET);
 		}
 
@@ -116,13 +117,13 @@ public class NativePacketPipeline
 	public NativePacketPipeline(String name) {
 		super(name, NetDataTypes.NATIVE_PACKET_PIPE);
 
-		this.endPoint = this.addOutput(NativePacketPipeline.Output::new)
+		this.endPoint = this.addOutput(NativePacketPipeline.NativeOutput::new)
 				.createMutableEndPoint(name());
-		this.entryPoint = this.addInput(NativePacketPipeline.Input::new)
+		this.entryPoint = this.addInput(NativePacketPipeline.PcapCallback::new)
 				.createEntryPoint(name());
 
-//		addProcessor(10, PeekProcessor::new)
-//				.peek((h, d, ctx) -> System.out.printf("h=%s, d=%s%n", h, d));
+		addProcessor(10, PeekProcessor::new)
+				.peek((h, d, ctx) -> System.out.printf("h=%s, d=%s%n", h, d));
 	}
 
 	public NativeCallback entryPoint() {

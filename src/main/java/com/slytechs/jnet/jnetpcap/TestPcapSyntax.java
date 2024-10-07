@@ -17,11 +17,10 @@
  */
 package com.slytechs.jnet.jnetpcap;
 
+import java.io.File;
 import java.lang.foreign.MemorySegment;
 
 import org.jnetpcap.PcapException;
-
-import com.slytechs.jnet.jnetruntime.NotFound;
 
 /**
  * @author Mark Bednarczyk
@@ -37,18 +36,20 @@ public class TestPcapSyntax {
 	 * @param args
 	 */
 	public static void main(String[] args) {
+		final File FILE = new File( "/tmp/capture_output.pcap");
 
-		try (var pcap = new NetPcap2()) {
+		try (var pcap = new NetPcap2(FILE)) {
 
 			System.out.println("TestPcapSyntax:: name=" + pcap.name());
 
-			pcap.activate();
+//			pcap.setPromisc(true);
+//			pcap.activate();
 
 			pcap.dispatch(5, (MemorySegment u, MemorySegment h, MemorySegment d) -> {
 				System.out.printf("u=%s, h=%s, d=%s%n", u, h, d);
 			}, MemorySegment.NULL);
 
-		} catch (PcapException | NotFound e) {
+		} catch (PcapException e) {
 			e.printStackTrace();
 		}
 	}

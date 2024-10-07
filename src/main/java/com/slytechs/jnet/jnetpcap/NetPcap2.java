@@ -86,7 +86,7 @@ public class NetPcap2 extends DelegatePcap<NetPcap2> implements HasName {
 		nativePipeline.enable(false);
 		nativePipeline.enable(true);
 
-		System.out.println("NetPcap2::init native=" + nativePipeline);
+//		System.out.println("NetPcap2::init native=" + nativePipeline);
 	}
 
 	public NetPcap2(PcapDlt dlt) throws PcapException {
@@ -137,8 +137,8 @@ public class NetPcap2 extends DelegatePcap<NetPcap2> implements HasName {
 
 		nativePipeline.endPoint(handler);
 
-//		int pktCount = super.dispatch(count, nativePipeline.entryPoint(), user);
-		int pktCount = super.dispatch(count, handler, user);
+		int pktCount = super.dispatch(count, nativePipeline.entryPoint(), user);
+//		int pktCount = super.dispatch(count, handler, user);
 
 		nativePipeline.endPoint(null);
 
