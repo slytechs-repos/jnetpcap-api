@@ -21,17 +21,18 @@ import java.util.function.Function;
 
 import com.slytechs.jnet.jnetpcap.NativePacketPipeline.NativePacketPipe;
 import com.slytechs.jnet.jnetruntime.pipeline.DataType;
-import com.slytechs.jnet.jnetruntime.pipeline.DataType.DataSupport;
 
 public enum NetDataTypes implements DataType {
 	NATIVE_PACKET_PIPE(NativePacketPipe.class, NetDataTypes::arrayWrapper),
+//	ABC(NativePacketPipe.class, NetDataTypes::arrayWrapper),
 
 	;
 
 	static NativePacketPipe arrayWrapper(NativePacketPipe[] array) {
 		return (u, h, p) -> {
-			for (var a : array)
+			for (var a : array) {
 				a.processNativePacket(u, h, p);
+			}
 		};
 	}
 

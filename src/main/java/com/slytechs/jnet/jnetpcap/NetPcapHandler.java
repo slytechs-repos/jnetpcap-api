@@ -46,17 +46,6 @@ public interface NetPcapHandler extends PcapHandler {
 		OfPacket<?> EMPTY = (u, p) -> {};
 
 		/**
-		 * Empty/No-op callback handler.
-		 *
-		 * @param <U> the generic type
-		 * @return the of packet
-		 */
-		@SuppressWarnings("unchecked")
-		static <U> OfPacket<U> empty() {
-			return (OfPacket<U>) EMPTY;
-		}
-
-		/**
 		 * Creates a new handler that passes on new user data to the old handler. The
 		 * original user data supplied is ignored.
 		 *

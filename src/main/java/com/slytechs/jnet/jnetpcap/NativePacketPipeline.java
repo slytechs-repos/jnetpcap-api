@@ -28,7 +28,6 @@ import com.slytechs.jnet.jnetruntime.pipeline.AbstractPipeline;
 import com.slytechs.jnet.jnetruntime.pipeline.DataTransformer.InputTransformer.EntryPoint;
 import com.slytechs.jnet.jnetruntime.pipeline.DataTransformer.OutputTransformer.EndPoint;
 import com.slytechs.jnet.jnetruntime.pipeline.HeadNode;
-import com.slytechs.jnet.jnetruntime.pipeline.PeekProcessor;
 import com.slytechs.jnet.jnetruntime.pipeline.TailNode;
 
 /**
@@ -121,9 +120,6 @@ public class NativePacketPipeline
 				.createMutableEndPoint(name());
 		this.entryPoint = this.addInput(NativePacketPipeline.PcapCallback::new)
 				.createEntryPoint(name());
-
-		addProcessor(10, PeekProcessor::new)
-				.peek((h, d, ctx) -> System.out.printf("h=%s, d=%s%n", h, d));
 	}
 
 	public NativeCallback entryPoint() {
