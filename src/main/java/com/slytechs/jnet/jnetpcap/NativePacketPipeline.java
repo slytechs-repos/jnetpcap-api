@@ -29,6 +29,7 @@ import com.slytechs.jnet.jnetruntime.pipeline.DataTransformer.InputTransformer.E
 import com.slytechs.jnet.jnetruntime.pipeline.DataTransformer.OutputTransformer.EndPoint;
 import com.slytechs.jnet.jnetruntime.pipeline.HeadNode;
 import com.slytechs.jnet.jnetruntime.pipeline.TailNode;
+import com.slytechs.jnet.jnetruntime.util.Registration;
 
 /**
  * @author Mark Bednarczyk
@@ -81,7 +82,6 @@ public class NativePacketPipeline
 				readLock.unlock();
 			}
 		}
-
 	}
 
 	public static class NativeOutput
@@ -110,23 +110,33 @@ public class NativePacketPipeline
 
 	}
 
-	private EntryPoint<NativeCallback> entryPoint;
-	private EndPoint<NativeCallback> endPoint;
+	private final EntryPoint<NativeCallback> entryPoint;
+	private final EndPoint<NativeCallback> endPoint;
 
 	public NativePacketPipeline(String name) {
 		super(name, NetDataTypes.NATIVE_PACKET_PIPE);
 
-		this.endPoint = this.addOutput(NativePacketPipeline.NativeOutput::new)
-				.createMutableEndPoint(name());
-		this.entryPoint = this.addInput(NativePacketPipeline.PcapCallback::new)
-				.createEntryPoint(name());
+		var output = this.addOutput(NativePacketPipeline.NativeOutput::new);
+		this.endPoint = output.createMutableEndPoint(name());
+
+		var input = this.addInput(NativePacketPipeline.PcapCallback::new);
+		this.entryPoint = input.createEntryPoint(name());
 	}
 
-	public NativeCallback entryPoint() {
-		return entryPoint.inputData();
+	public EntryPoint<NativeCallback> entryPoint() {
+		return entryPoint;
 	}
 
-	public void endPoint(NativeCallback out) {
-		endPoint.endPointData(out);
+	public EndPoint<NativeCallback> endPoint() {
+		return endPoint;
+	}
+
+	public Registration link(EntryPoint<NativeCallback> entryPoint) {
+		assert entryPoint.dataType() == endPoint.dataType();
+
+		final NativeCallback data = entryPoint.data();
+		endPoint.data(data);
+
+		return endPoint::clear;
 	}
 }

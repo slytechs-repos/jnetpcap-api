@@ -19,19 +19,47 @@ package com.slytechs.jnet.jnetpcap;
 
 import java.util.function.Function;
 
+import org.jnetpcap.PcapHandler;
+
 import com.slytechs.jnet.jnetpcap.NativePacketPipeline.NativePacketPipe;
+import com.slytechs.jnet.jnetpcap.RawPacketPipeline.RawPacketPipe;
 import com.slytechs.jnet.jnetruntime.pipeline.DataType;
 
 public enum NetDataTypes implements DataType {
 	NATIVE_PACKET_PIPE(NativePacketPipe.class, NetDataTypes::arrayWrapper),
-//	ABC(NativePacketPipe.class, NetDataTypes::arrayWrapper),
-
+	RAW_PACKET_PIPE(RawPacketPipe.class, NetDataTypes::arrayWrapper),
+	PCAP_PACKET_OF_ARRAY(PcapHandler.OfArray.class, NetDataTypes::arrayWrapper),
+	PCAP_PACKET_OF_BUFFER(PcapHandler.OfByteBuffer.class, NetDataTypes::arrayWrapper),
 	;
 
-	static NativePacketPipe arrayWrapper(NativePacketPipe[] array) {
+	private static NativePacketPipe arrayWrapper(NativePacketPipe[] array) {
 		return (u, h, p) -> {
 			for (var a : array) {
 				a.processNativePacket(u, h, p);
+			}
+		};
+	}
+
+	private static RawPacketPipe arrayWrapper(RawPacketPipe[] array) {
+		return (u, h, p) -> {
+			for (var a : array) {
+				a.processRawPacket(u, h, p);
+			}
+		};
+	}
+
+	private static <U> PcapHandler.OfArray<U> arrayWrapper(PcapHandler.OfArray<U>[] array) {
+		return (u, h, p) -> {
+			for (var a : array) {
+				a.handleArray(u, h, p);
+			}
+		};
+	}
+
+	private static <U> PcapHandler.OfByteBuffer<U> arrayWrapper(PcapHandler.OfByteBuffer<U>[] array) {
+		return (u, h, p) -> {
+			for (var a : array) {
+				a.handleByteBuffer(u, h, p);
 			}
 		};
 	}

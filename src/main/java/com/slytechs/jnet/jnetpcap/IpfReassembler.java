@@ -224,8 +224,8 @@ public class IpfReassembler
 	/**
 	 * Instantiates a new ipf reassembler.
 	 */
-	public IpfReassembler(Pipeline<, ?> pipeline, int priority) {
-		super(priority, NAME, CoreDataType.PACKET, PcapDataType.PCAP_RAW);
+	public IpfReassembler(Pipeline<?, ?> pipeline, int priority) {
+		super(priority, NAME, CoreDataType.PACKET, PcapDataType.PCAP_RAW_PACKET);
 	}
 
 	/**

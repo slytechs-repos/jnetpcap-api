@@ -49,6 +49,17 @@ import com.slytechs.jnet.jnetruntime.util.HasName;
  */
 public class NetPcap2 extends DelegatePcap<NetPcap2> implements HasName {
 
+	private static final MemorySegment DEFAULT_USER_ARG = MemorySegment.NULL;
+
+	/**
+	 * Open a specific network device
+	 * 
+	 * @throws PcapException
+	 */
+	public static NetPcap2 create(PcapIf networkDevice) throws PcapException {
+		return new NetPcap2(Pcap.create(networkDevice));
+	}
+
 	public static Optional<PcapIf> findDefaultDevice() throws PcapException {
 		var list = listPcapDevices();
 		var def = list.stream()
@@ -78,117 +89,59 @@ public class NetPcap2 extends DelegatePcap<NetPcap2> implements HasName {
 		return Pcap.findAllDevs();
 	}
 
-	private final NativePacketPipeline nativePipeline = new NativePacketPipeline(name());
-	private final List<Pipeline<?, ?>> pipelineList = new ArrayList<>();
-	
-	public NetPcap2() throws PcapException, NotFound {
-		this(getDefaultDevice());
+	public static NetPcap2 openDead(PcapDlt dlt) throws PcapException {
+		return new NetPcap2(Pcap.openDead(dlt, PcapConstants.MAX_SNAPLEN));
 	}
 
-	public NetPcap2(File offlineFile) throws PcapException {
-		this(Pcap.openOffline(offlineFile));
+	public static NetPcap2 openDead(PcapDlt dlt, int maxSnaplen) throws PcapException {
+		return new NetPcap2(Pcap.openDead(dlt, maxSnaplen));
 	}
+
+	public static NetPcap2 openOffline(File offlineFile) throws PcapException {
+		return new NetPcap2(Pcap.openOffline(offlineFile));
+	}
+
+	private static final String shortName(String name) {
+		if (name.contains("/")) {
+			String[] c = name.split("\\/");
+			name = c[c.length - 1];
+		}
+
+		return name;
+	}
+
+	private final NativePacketPipeline nativePipeline;
+
+	private final RawPacketPipeline rawPipeline;
+
+	private final List<Pipeline<?, ?>> pipelineList = new ArrayList<>();
 
 	private NetPcap2(Pcap pcapHandle) {
 		super(pcapHandle);
 
+		nativePipeline = new NativePacketPipeline(shortName(name()));
+		rawPipeline = new RawPacketPipeline(shortName(name()));
+
 		pipelineList.add(nativePipeline);
-		
-		nativePipeline.enable(false);
-		nativePipeline.enable(true);
+		pipelineList.add(rawPipeline);
+
+		nativePipeline.link(rawPipeline.entryPoint());
 
 		System.out.println("NetPcap2::init native=" + nativePipeline);
+		System.out.println();
+		System.out.println("NetPcap2::init raw=" + rawPipeline);
 	}
 
-	public NetPcap2(PcapDlt dlt) throws PcapException {
-		this(Pcap.openDead(dlt, PcapConstants.MAX_SNAPLEN));
-	}
-
-	public NetPcap2(PcapDlt dlt, int maxSnaplen) throws PcapException {
-		this(Pcap.openDead(dlt, maxSnaplen));
-	}
-
-	/**
-	 * Open a specific network device
-	 * 
-	 * @throws PcapException
-	 */
-	public NetPcap2(PcapIf networkDevice) throws PcapException {
-		this(Pcap.create(networkDevice));
-	}
-
-	/**
-	 * Open a live named network device
-	 * 
-	 * @throws PcapException
-	 */
-	public NetPcap2(String deviceName) throws NotFound, PcapException {
-		this(Pcap.create(getDevice(deviceName)));
-	}
-
-	/**
-	 * @see org.jnetpcap.internal.DelegatePcap#dispatchNative(int,
-	 *      org.jnetpcap.PcapHandler.NativeCallback,
-	 *      java.lang.foreign.MemorySegment)
-	 */
-	@Override
-	public int dispatchNative(int count, NativeCallback handler, MemorySegment user) {
-
-		nativePipeline.endPoint(handler);
-
-		int pktCount = super.dispatchNative(count, nativePipeline.entryPoint(), user);
-//		int pktCount = super.dispatch(count, handler, user);
-
-		nativePipeline.endPoint(null);
-
-		return pktCount;
-	}
-
-	public <U> int dispatchPacket(int count, OfPacket<U> handler, U user) {
-		throw new UnsupportedOperationException();
-	}
-	
-	public <U> int dispatchArray(int count, OfArray<U> arrayHandler, U user) {
-		throw new UnsupportedOperationException();
-	}
-	
-	public <U> int dispatchBuffer(int count, OfByteBuffer<U> byteBufferHandler, U user) {
-		throw new UnsupportedOperationException();
-	}
-	
-	public <U> int dispatchSegment(int count, OfMemorySegment<U> memorySegmentHandler, U user) {
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * @see com.slytechs.jnet.jnetruntime.util.HasName#name()
-	 */
-	@Override
-	public String name() {
-		return getName();
-	}
-	
-	@SuppressWarnings("unchecked")
-	private <T> Pipeline<T, ?> getPipeline(DataType dataType) throws NotFound {
-		return pipelineList.stream()
-				.filter(p -> p.dataType().equals(dataType))
-				.map(p -> (Pipeline<T, ?>)p)
-				.findAny()
-				.orElseThrow(() -> new NotFound("pipeline for data type [%s.%s]"
-						.formatted(dataType.getClass().getSimpleName(), dataType)));
-	}
-	
 	public <T, T1, T_PROC extends DataProcessor<T, T_PROC>> T_PROC addProcessor(
 			int priority,
 			ProcessorFactory.Builder1Arg<T, T1, T_PROC> builder,
 			T1 arg1) throws NotFound {
-		
+
 		var f = builder.newFactory(arg1);
-	
+
 		return addProcessor(priority, f);
 	}
 
-	
 	/**
 	 * Adds a processor to the pipeline with a specified priority.
 	 *
@@ -196,17 +149,17 @@ public class NetPcap2 extends DelegatePcap<NetPcap2> implements HasName {
 	 * @param priority         The priority of the processor in the pipeline
 	 * @param processorFactory The factory to create the processor
 	 * @return The created processor
-	 * @throws NotFound 
+	 * @throws NotFound
 	 */
 	public <T, T_PROC extends DataProcessor<T, T_PROC>> T_PROC addProcessor(
 			int priority,
 			ProcessorFactory<T, T_PROC> processorFactory) throws NotFound {
 		DataType type = processorFactory.dataType();
 		Pipeline<T, ?> pipeline = getPipeline(type);
-		
+
 		var p = pipeline.addProcessor(priority, processorFactory);
-	
-		System.out.println("addProcessor:: pipeline=" + pipeline);
+
+		System.out.printf("NetPcap2::addProcessor(%s:%s) pipeline=%s%n", p.name(), type, pipeline);
 		return p;
 	}
 
@@ -222,6 +175,73 @@ public class NetPcap2 extends DelegatePcap<NetPcap2> implements HasName {
 	public <T, T_PROC extends DataProcessor<T, T_PROC>> T_PROC addProcessor(int priority, String name,
 			ProcessorFactory.Named<T, T_PROC> processorFactory) {
 		return null;
+	}
+
+	public <U> int dispatchArray(int count, OfArray<U> arrayHandler, U user) {
+
+		rawPipeline
+				.endPointOfArray()
+				.data(arrayHandler);
+
+		int pktCount = dispatchNative0(count, DEFAULT_USER_ARG);
+
+		rawPipeline.endPointOfArray().empty();
+
+		return pktCount;
+	}
+
+	public <U> int dispatchBuffer(int count, OfByteBuffer<U> byteBufferHandler, U user) {
+
+		rawPipeline
+				.endPointOfByteBuffer()
+				.data(byteBufferHandler);
+
+		int pktCount = dispatchNative0(count, DEFAULT_USER_ARG);
+
+		rawPipeline.endPointOfByteBuffer().empty();
+
+		return pktCount;
+	}
+
+	public int dispatchNative(int count, NativeCallback handler, MemorySegment user) {
+
+		nativePipeline.endPoint().data(handler);
+
+		int pktCount = dispatchNative0(count, user);
+
+		nativePipeline.endPoint().clear();
+
+		return pktCount;
+	}
+
+	private int dispatchNative0(int count, MemorySegment user) {
+		return super.dispatch(count, nativePipeline.entryPoint().data(), user);
+	}
+
+	public <U> int dispatchPacket(int count, OfPacket<U> handler, U user) {
+		throw new UnsupportedOperationException();
+	}
+
+	public <U> int dispatchSegment(int count, OfMemorySegment<U> memorySegmentHandler, U user) {
+		throw new UnsupportedOperationException();
+	}
+
+	@SuppressWarnings("unchecked")
+	private <T> Pipeline<T, ?> getPipeline(DataType dataType) throws NotFound {
+		return pipelineList.stream()
+				.filter(p -> p.dataType().equals(dataType))
+				.map(p -> (Pipeline<T, ?>) p)
+				.findAny()
+				.orElseThrow(() -> new NotFound("pipeline for data type [%s.%s]"
+						.formatted(dataType.getClass().getSimpleName(), dataType)));
+	}
+
+	/**
+	 * @see com.slytechs.jnet.jnetruntime.util.HasName#name()
+	 */
+	@Override
+	public String name() {
+		return getName();
 	}
 
 }

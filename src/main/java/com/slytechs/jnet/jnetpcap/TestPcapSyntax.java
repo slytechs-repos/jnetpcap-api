@@ -18,16 +18,22 @@
 package com.slytechs.jnet.jnetpcap;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.foreign.MemorySegment;
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jnetpcap.PcapException;
 import org.jnetpcap.PcapHeader;
 
 import com.slytechs.jnet.jnetpcap.NativePacketPipeline.NativePacketPipe;
+import com.slytechs.jnet.jnetpcap.NativePacketPipeline.NativeProcessorContext;
+import com.slytechs.jnet.jnetpcap.RawPacketPipeline.RawPacketPipe;
+import com.slytechs.jnet.jnetpcap.RawPacketPipeline.RawProcessorContext;
 import com.slytechs.jnet.jnetruntime.NotFound;
 import com.slytechs.jnet.jnetruntime.pipeline.PeekProcessor;
-import com.slytechs.jnet.protocol.Packet;
+import com.slytechs.jnet.jnetruntime.time.Timestamp;
+import com.slytechs.jnet.jnetruntime.util.HexStrings;
 
 /**
  * @author Mark Bednarczyk
@@ -42,39 +48,67 @@ public class TestPcapSyntax {
 	/**
 	 * @param args
 	 * @throws NotFound
+	 * @throws IOException
 	 */
-	public static void main(String[] args) throws NotFound {
-		final File FILE = new File("/Users/mark/pcaps/200722_tcp_anon.pcapng");
+	public static void main(String[] args) throws NotFound, IOException {
+		final File FILE = new File("pcaps/HTTP.cap");
+		final AtomicInteger pktCount = new AtomicInteger(1);
+		
+		final int COUNT = 1;
 
-		try (var pcap = new NetPcap2(FILE)) {
+		try (var pcap = NetPcap2.openOffline(FILE)) {
+
+//			if (true)
+//				return;
 
 			pcap.addProcessor(0, PeekProcessor::new, NativePacketPipe.class)
-					.peek((h, d, ctx) -> System.out.printf("peek:: h=%s, d=%s%n", h, d));
+					.peek((MemorySegment h, MemorySegment d, NativeProcessorContext ctx) -> {
+						System.out.printf("#%03d: peek::NativePacketPipe(h=%s bytes, data=%s bytes)%n",
+								pktCount.getAndIncrement(),
+								h.byteSize(),
+								d.byteSize());
+					});
 
-			System.out.println("TestPcapSyntax:: name=" + pcap.name());
+			pcap.addProcessor(0, PeekProcessor::new, RawPacketPipe.class)
+					.peek((PcapHeader h, MemorySegment d, RawProcessorContext ctx) -> {
+						System.out.printf("#%03d: peek::RawPacketPipe(hdr=%s, data=%s)%n",
+								pktCount.getAndIncrement(),
+								h.toString(),
+								d.byteSize());
+					});
+
+//			System.out.println("TestPcapSyntax:: pcap.name=" + pcap.name());
 
 //			pcap.setPromisc(true);
 //			pcap.activate();
 
-			pcap.dispatchNative(5, (MemorySegment u, MemorySegment h, MemorySegment d) -> {
-				System.out.printf("dispatch:: h=%s, d=%s%n", h, d);
-			}, MemorySegment.NULL);
-			
-			pcap.dispatchPacket(5, (String user, Packet packet) -> {
-				System.out.println(packet);
+//			pcap.dispatchNative(2, (MemorySegment u, MemorySegment h, MemorySegment d) -> {
+//				System.out.printf("dispatch::#%d h=%s, d=%s%n", pktCount.getAndIncrement(), h.byteSize(), d.byteSize());
+//			}, MemorySegment.NULL);
+
+//			pcap.dispatchPacket(5, (String user, Packet packet) -> {
+//				System.out.println(packet);
+//			}, "");
+
+			pcap.dispatchArray(COUNT, (String user, PcapHeader hdr, byte[] packet) -> {
+				System.out.printf("#%03d ::dispatchArray caplen=%s bytes, ts=%s, dump:%n%s",
+						pktCount.getAndIncrement(),
+						hdr.captureLength(),
+						new Timestamp(hdr.toEpochMilli()),
+						HexStrings.toHexDump(packet, 0, hdr.captureLength()));
 			}, "");
-			
-			pcap.dispatchArray(5, (String user, PcapHeader hdr, byte[] packet) -> {
-				System.out.println(hdr);
+
+			pcap.dispatchBuffer(COUNT, (String user, PcapHeader hdr, ByteBuffer packet) -> {
+				System.out.printf("#%03d ::dispatchBuffer caplen=%s bytes, ts=%s, dump:%n%s",
+						pktCount.getAndIncrement(),
+						hdr.captureLength(),
+						new Timestamp(hdr.toEpochMilli()),
+						HexStrings.toHexDump(packet));
 			}, "");
-			
-			pcap.dispatchBuffer(5, (String user, PcapHeader hdr, ByteBuffer packet) -> {
-				System.out.println(hdr);
-			}, "");
-			
-			pcap.dispatchSegment(5, (String user, MemorySegment hdr, MemorySegment data) -> {
-				System.out.printf("dispatch:: h=%s, d=%s%n", hdr, data);
-			}, "");
+
+//			pcap.dispatchSegment(5, (String user, MemorySegment hdr, MemorySegment data) -> {
+//				System.out.printf("dispatch:: h=%s, d=%s%n", hdr, data);
+//			}, "");
 
 		} catch (PcapException e) {
 			e.printStackTrace();
