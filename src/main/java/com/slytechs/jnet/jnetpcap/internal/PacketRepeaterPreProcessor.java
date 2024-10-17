@@ -24,7 +24,7 @@ import org.jnetpcap.internal.PcapDispatcher;
 import org.jnetpcap.internal.PcapHeaderABI;
 
 import com.slytechs.jnet.jnetpcap.PacketRepeater;
-import com.slytechs.jnet.jnetpcap.NetPcap.NetPcapContext;
+import com.slytechs.jnet.jnetpcap.NetPcapDeprecated.NetPcapContext;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
 
 /**

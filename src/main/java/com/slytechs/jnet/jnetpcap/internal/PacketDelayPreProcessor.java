@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 import org.jnetpcap.internal.PcapDispatcher;
 
 import com.slytechs.jnet.jnetpcap.PacketDelay;
-import com.slytechs.jnet.jnetpcap.NetPcap.NetPcapContext;
+import com.slytechs.jnet.jnetpcap.NetPcapDeprecated.NetPcapContext;
 
 /**
  * The Class PacketDelayPreProcessor.

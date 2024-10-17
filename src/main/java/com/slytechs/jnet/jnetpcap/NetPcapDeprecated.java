@@ -77,7 +77,7 @@ import com.slytechs.jnet.protocol.meta.PacketFormat;
  * 
  * @author Mark Bednarczyk
  */
-public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStatistics {
+public final class NetPcapDeprecated extends DelegatePcap<NetPcapDeprecated> implements CaptureStatistics {
 
 	/**
 	 * A factory for creating Pcap::create handles.
@@ -230,8 +230,8 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 * @throws PcapException the pcap exception
 	 * @since libpcap 1.0
 	 */
-	public static NetPcap create(CreatePcapFactory<PcapIf> factory, PcapIf device) throws PcapException {
-		return new NetPcap(factory.newInstance(device), PcapType.LIVE_CAPTURE);
+	public static NetPcapDeprecated create(CreatePcapFactory<PcapIf> factory, PcapIf device) throws PcapException {
+		return new NetPcapDeprecated(factory.newInstance(device), PcapType.LIVE_CAPTURE);
 	}
 
 	/**
@@ -254,8 +254,8 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 * @throws PcapException the pcap exception
 	 * @since libpcap 1.0
 	 */
-	public static NetPcap create(CreatePcapFactory<String> factory, String device) throws PcapException {
-		return new NetPcap(factory.newInstance(device), PcapType.LIVE_CAPTURE);
+	public static NetPcapDeprecated create(CreatePcapFactory<String> factory, String device) throws PcapException {
+		return new NetPcapDeprecated(factory.newInstance(device), PcapType.LIVE_CAPTURE);
 	}
 
 	/**
@@ -276,7 +276,7 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 * @throws PcapException the pcap exception
 	 * @since libpcap 1.0
 	 */
-	public static NetPcap create(PcapIf device) throws PcapException {
+	public static NetPcapDeprecated create(PcapIf device) throws PcapException {
 		return create(Pcap::create, device);
 	}
 
@@ -299,7 +299,7 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 * @throws PcapException the pcap exception
 	 * @since libpcap 1.0
 	 */
-	public static NetPcap create(String device) throws PcapException {
+	public static NetPcapDeprecated create(String device) throws PcapException {
 		return create(Pcap::create, device);
 	}
 
@@ -312,8 +312,8 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 * @return the net pcap
 	 * @throws PcapException the pcap exception
 	 */
-	public static NetPcap openDead(OpenDeadPcapFactory factory, PcapDlt linktype, int snaplen) throws PcapException {
-		return new NetPcap(factory.newInstance(linktype, snaplen), PcapType.DEAD_HANDLE);
+	public static NetPcapDeprecated openDead(OpenDeadPcapFactory factory, PcapDlt linktype, int snaplen) throws PcapException {
+		return new NetPcapDeprecated(factory.newInstance(linktype, snaplen), PcapType.DEAD_HANDLE);
 	}
 
 	/**
@@ -344,7 +344,7 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 * @throws PcapException any errors
 	 * @since libpcap 0.6
 	 */
-	public static NetPcap openDead(PcapDlt linktype, int snaplen) throws PcapException {
+	public static NetPcapDeprecated openDead(PcapDlt linktype, int snaplen) throws PcapException {
 		return openDead(Pcap::openDead, linktype, snaplen);
 	}
 
@@ -381,9 +381,9 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 * @throws PcapException any errors
 	 * @since libpcap 1.5.1
 	 */
-	public static NetPcap openDeadWithTstampPrecision(OpenDeadTsPcapFactory factory, PcapDlt linktype, int snaplen,
+	public static NetPcapDeprecated openDeadWithTstampPrecision(OpenDeadTsPcapFactory factory, PcapDlt linktype, int snaplen,
 			PcapTStampPrecision precision) throws PcapException {
-		return new NetPcap(factory.newInstance(linktype, snaplen, precision), PcapType.DEAD_HANDLE);
+		return new NetPcapDeprecated(factory.newInstance(linktype, snaplen, precision), PcapType.DEAD_HANDLE);
 	}
 
 	/**
@@ -418,7 +418,7 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 * @throws PcapException any errors
 	 * @since libpcap 1.5.1
 	 */
-	public static NetPcap openDeadWithTstampPrecision(PcapDlt linktype, int snaplen, PcapTStampPrecision precision)
+	public static NetPcapDeprecated openDeadWithTstampPrecision(PcapDlt linktype, int snaplen, PcapTStampPrecision precision)
 			throws PcapException {
 		return openDeadWithTstampPrecision(Pcap::openDeadWithTstampPrecision, linktype, snaplen, precision);
 	}
@@ -445,10 +445,10 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 * @throws PcapException any errors
 	 * @since libpcap 0.4
 	 */
-	public static NetPcap openLive(OpenLivePcapFactory<PcapIf> factory, PcapIf device, int snaplen, boolean promisc,
+	public static NetPcapDeprecated openLive(OpenLivePcapFactory<PcapIf> factory, PcapIf device, int snaplen, boolean promisc,
 			long timeout, TimeUnit unit) throws PcapException {
 
-		return new NetPcap(factory.newInstance(device, snaplen, promisc, timeout, unit), PcapType.LIVE_CAPTURE);
+		return new NetPcapDeprecated(factory.newInstance(device, snaplen, promisc, timeout, unit), PcapType.LIVE_CAPTURE);
 	}
 
 	/**
@@ -473,10 +473,10 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 * @throws PcapException any errors
 	 * @since libpcap 0.4
 	 */
-	public static NetPcap openLive(OpenLivePcapFactory<String> factory, String device, int snaplen, boolean promisc,
+	public static NetPcapDeprecated openLive(OpenLivePcapFactory<String> factory, String device, int snaplen, boolean promisc,
 			long timeout, TimeUnit unit) throws PcapException {
 
-		return new NetPcap(factory.newInstance(device, snaplen, promisc, timeout, unit), PcapType.LIVE_CAPTURE);
+		return new NetPcapDeprecated(factory.newInstance(device, snaplen, promisc, timeout, unit), PcapType.LIVE_CAPTURE);
 	}
 
 	/**
@@ -500,7 +500,7 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 * @throws PcapException any errors
 	 * @since libpcap 0.4
 	 */
-	public static NetPcap openLive(PcapIf device, int snaplen, boolean promisc, long timeout, TimeUnit unit)
+	public static NetPcapDeprecated openLive(PcapIf device, int snaplen, boolean promisc, long timeout, TimeUnit unit)
 			throws PcapException {
 
 		return openLive(Pcap::openLive, device, snaplen, promisc, timeout, unit);
@@ -527,10 +527,10 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 * @throws PcapException any errors
 	 * @since libpcap 0.4
 	 */
-	public static NetPcap openLive(String device, int snaplen, boolean promisc, long timeout, TimeUnit unit)
+	public static NetPcapDeprecated openLive(String device, int snaplen, boolean promisc, long timeout, TimeUnit unit)
 			throws PcapException {
 
-		return new NetPcap(Pcap.openLive(device, snaplen, promisc, timeout, unit), PcapType.LIVE_CAPTURE);
+		return new NetPcapDeprecated(Pcap.openLive(device, snaplen, promisc, timeout, unit), PcapType.LIVE_CAPTURE);
 	}
 
 	/**
@@ -546,7 +546,7 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 * @throws PcapException any errors
 	 * @since libpcap 0.4
 	 */
-	public static NetPcap openOffline(File file) throws PcapException {
+	public static NetPcapDeprecated openOffline(File file) throws PcapException {
 		return openOffline(Pcap::openOffline, file);
 	}
 
@@ -564,8 +564,8 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 * @throws PcapException any errors
 	 * @since libpcap 0.4
 	 */
-	public static NetPcap openOffline(OpenOfflinePcapFactory<File> factory, File file) throws PcapException {
-		return new NetPcap(factory.newInstance(file), PcapType.OFFLINE_READER);
+	public static NetPcapDeprecated openOffline(OpenOfflinePcapFactory<File> factory, File file) throws PcapException {
+		return new NetPcapDeprecated(factory.newInstance(file), PcapType.OFFLINE_READER);
 	}
 
 	/**
@@ -586,8 +586,8 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 * @throws PcapException any errors
 	 * @since libpcap 0.4
 	 */
-	public static NetPcap openOffline(OpenOfflinePcapFactory<String> factory, String fname) throws PcapException {
-		return new NetPcap(factory.newInstance(fname), PcapType.OFFLINE_READER);
+	public static NetPcapDeprecated openOffline(OpenOfflinePcapFactory<String> factory, String fname) throws PcapException {
+		return new NetPcapDeprecated(factory.newInstance(fname), PcapType.OFFLINE_READER);
 	}
 
 	/**
@@ -607,7 +607,7 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 * @throws PcapException any errors
 	 * @since libpcap 0.4
 	 */
-	public static NetPcap openOffline(String fname) throws PcapException {
+	public static NetPcapDeprecated openOffline(String fname) throws PcapException {
 		return openOffline(Pcap::openOffline, fname);
 	}
 
@@ -654,7 +654,7 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 * @param pcapType the pcap handle type such as LIVE, OFFLINE or DEAD depending
 	 *                 how the pcap-pro handle was opened
 	 */
-	NetPcap(Pcap pcap, PcapType pcapType) {
+	NetPcapDeprecated(Pcap pcap, PcapType pcapType) {
 		super(pcap);
 		config.abi = Objects.requireNonNull(getPcapHeaderABI(), "abi");
 		config.portName = getName();
@@ -854,7 +854,7 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 * @param b the b
 	 * @return the t
 	 */
-	public NetPcap enableIpf(boolean b) {
+	public NetPcapDeprecated enableIpf(boolean b) {
 		if (b == false)
 			return this;
 
@@ -870,7 +870,7 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 * @param b the b
 	 * @return the pcap pro
 	 */
-	public NetPcap enableIpf(BooleanSupplier b) {
+	public NetPcapDeprecated enableIpf(BooleanSupplier b) {
 		return enableIpf(b.getAsBoolean());
 	}
 
@@ -881,7 +881,7 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 *          to builtin "terse" packet format
 	 * @return this pcap pro instance
 	 */
-	public NetPcap enablePacketFormatter(boolean b) {
+	public NetPcapDeprecated enablePacketFormatter(boolean b) {
 
 		if (b)
 			setPacketFormatter(new PacketFormat());
@@ -1123,7 +1123,7 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 * @since libpcap 1.0
 	 * @since jNetPcap Pro 1.0
 	 */
-	public NetPcap setBufferSize(long size, MemoryUnit unit) throws PcapException {
+	public NetPcapDeprecated setBufferSize(long size, MemoryUnit unit) throws PcapException {
 
 		super.setBufferSize(unit.toBytesAsInt(size));
 
@@ -1145,7 +1145,7 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 * @param type the type
 	 * @return the pcap pro
 	 */
-	public NetPcap setDescriptorType(PacketDescriptorType type) {
+	public NetPcapDeprecated setDescriptorType(PacketDescriptorType type) {
 		config.descriptorType = type;
 		config.dissector = PacketDissector.dissector(type);
 
@@ -1158,7 +1158,7 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 * @param frameNumberAssigner the frame number assigner
 	 * @return the pcap pro
 	 */
-	public NetPcap setFrameNumber(FrameNumber frameNumberAssigner) {
+	public NetPcapDeprecated setFrameNumber(FrameNumber frameNumberAssigner) {
 		config.frameNo = frameNumberAssigner;
 
 		return this;
@@ -1170,7 +1170,7 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 * @param startingNo the starting no
 	 * @return the pcap pro
 	 */
-	public NetPcap setFrameStartingNumber(long startingNo) {
+	public NetPcapDeprecated setFrameStartingNumber(long startingNo) {
 		return setFrameNumber(FrameNumber.starting(startingNo));
 	}
 
@@ -1180,7 +1180,7 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 * @param formatter the formatter
 	 * @return the pcap pro
 	 */
-	public NetPcap setPacketFormatter(PacketFormat formatter) {
+	public NetPcapDeprecated setPacketFormatter(PacketFormat formatter) {
 		config.formatter = formatter;
 
 		return this;
@@ -1192,7 +1192,7 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 * @param portNo the port no
 	 * @return the pcap pro
 	 */
-	public NetPcap setPortNumber(int portNo) {
+	public NetPcapDeprecated setPortNumber(int portNo) {
 		config.portNo = portNo;
 
 		return this;
@@ -1205,7 +1205,7 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 * @param unit the new timestamp unit
 	 * @return this pcap
 	 */
-	public NetPcap setTimestampUnit(TimestampUnit unit) {
+	public NetPcapDeprecated setTimestampUnit(TimestampUnit unit) {
 		config.timestampUnit = unit;
 
 		return this;
@@ -1218,7 +1218,7 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 * @return the pcap
 	 */
 	@Override
-	public final NetPcap setUncaughtExceptionHandler(Consumer<? super Throwable> exceptionHandler) {
+	public final NetPcapDeprecated setUncaughtExceptionHandler(Consumer<? super Throwable> exceptionHandler) {
 		return setUncaughtExceptionHandler((t, e) -> exceptionHandler.accept(e));
 	}
 
@@ -1230,7 +1230,7 @@ public final class NetPcap extends DelegatePcap<NetPcap> implements CaptureStati
 	 * @see org.jnetpcap.Pcap#setUncaughtExceptionHandler(java.lang.Thread.UncaughtExceptionHandler)
 	 */
 	@Override
-	public final NetPcap setUncaughtExceptionHandler(UncaughtExceptionHandler exceptionHandler) {
+	public final NetPcapDeprecated setUncaughtExceptionHandler(UncaughtExceptionHandler exceptionHandler) {
 		super.setUncaughtExceptionHandler(exceptionHandler);
 
 		return this;

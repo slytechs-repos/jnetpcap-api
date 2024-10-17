@@ -20,7 +20,7 @@ package com.slytechs.jnet.jnetpcap.internal.ipf;
 import org.jnetpcap.internal.PcapDispatcher;
 
 import com.slytechs.jnet.jnetpcap.IpfReassembler;
-import com.slytechs.jnet.jnetpcap.NetPcap.NetPcapContext;
+import com.slytechs.jnet.jnetpcap.NetPcapDeprecated.NetPcapContext;
 import com.slytechs.jnet.jnetpcap.internal.PacketReceiver;
 
 /**

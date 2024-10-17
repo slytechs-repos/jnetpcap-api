@@ -27,7 +27,7 @@ import org.jnetpcap.PcapHandler.OfArray;
 import org.jnetpcap.PcapHandler.OfByteBuffer;
 import org.jnetpcap.PcapHeader;
 
-import com.slytechs.jnet.jnetpcap.RawPacketPipeline.RawPacketPipe;
+import com.slytechs.jnet.jnetpcap.RawPacketPipeline.StatefulRawPacket;
 import com.slytechs.jnet.jnetruntime.pipeline.AbstractInput;
 import com.slytechs.jnet.jnetruntime.pipeline.AbstractOutput;
 import com.slytechs.jnet.jnetruntime.pipeline.AbstractPipeline;
@@ -40,7 +40,7 @@ import com.slytechs.jnet.jnetruntime.pipeline.TailNode;
  * @author Mark Bednarczyk
  */
 public class RawPacketPipeline
-		extends AbstractPipeline<RawPacketPipe, RawPacketPipeline> {
+		extends AbstractPipeline<StatefulRawPacket, RawPacketPipeline> {
 
 	public static class RawProcessorContext {
 
@@ -48,12 +48,12 @@ public class RawPacketPipeline
 
 	}
 
-	public interface RawPacketPipe {
+	public interface StatefulRawPacket {
 		void processRawPacket(PcapHeader header, MemorySegment packet, RawProcessorContext context);
 	}
 
 	public static class RawPacketInput
-			extends AbstractInput<NativeCallback, RawPacketPipe, RawPacketInput>
+			extends AbstractInput<NativeCallback, StatefulRawPacket, RawPacketInput>
 			implements NativeCallback {
 
 		private RawProcessorContext context;
@@ -65,8 +65,8 @@ public class RawPacketPipeline
 		 * @param outputType
 		 */
 		public RawPacketInput(
-				HeadNode<RawPacketPipe> headNode) {
-			super(headNode, "input", PcapDataType.PCAP_NATIVE_PACKET, NetDataTypes.RAW_PACKET_PIPE);
+				HeadNode<StatefulRawPacket> headNode) {
+			super(headNode, "input", PcapDataType.PCAP_NATIVE_PACKET, NetDataTypes.STATEFUL_RAW_PACKET);
 
 			this.context = new RawProcessorContext();
 		}
@@ -92,11 +92,11 @@ public class RawPacketPipeline
 	}
 
 	public static class OfArrayOutput
-			extends AbstractOutput<RawPacketPipe, PcapHandler.OfArray<?>, OfArrayOutput>
-			implements RawPacketPipe {
+			extends AbstractOutput<StatefulRawPacket, PcapHandler.OfArray<?>, OfArrayOutput>
+			implements StatefulRawPacket {
 
-		public OfArrayOutput(TailNode<RawPacketPipe> tailNode) {
-			super(tailNode, "ofArray", NetDataTypes.RAW_PACKET_PIPE, NetDataTypes.PCAP_PACKET_OF_ARRAY);
+		public OfArrayOutput(TailNode<StatefulRawPacket> tailNode) {
+			super(tailNode, "ofArray", NetDataTypes.STATEFUL_RAW_PACKET, NetDataTypes.PCAP_PACKET_OF_ARRAY);
 		}
 
 		@Override
@@ -109,11 +109,11 @@ public class RawPacketPipeline
 	}
 
 	public static class OfBufferOutput
-			extends AbstractOutput<RawPacketPipe, PcapHandler.OfByteBuffer<?>, OfBufferOutput>
-			implements RawPacketPipe {
+			extends AbstractOutput<StatefulRawPacket, PcapHandler.OfByteBuffer<?>, OfBufferOutput>
+			implements StatefulRawPacket {
 
-		public OfBufferOutput(TailNode<RawPacketPipe> tailNode) {
-			super(tailNode, "ofBuffer", NetDataTypes.RAW_PACKET_PIPE, NetDataTypes.PCAP_PACKET_OF_BUFFER);
+		public OfBufferOutput(TailNode<StatefulRawPacket> tailNode) {
+			super(tailNode, "ofBuffer", NetDataTypes.STATEFUL_RAW_PACKET, NetDataTypes.PCAP_PACKET_OF_BUFFER);
 		}
 
 		@Override
@@ -126,19 +126,11 @@ public class RawPacketPipeline
 	}
 
 	private final EntryPoint<NativeCallback> entryPoint;
-	private final EndPoint<PcapHandler.OfArray<?>> endPointOfArray;
-	private final EndPoint<PcapHandler.OfByteBuffer<?>> endPointOfBuffer;
+	private EndPoint<PcapHandler.OfArray<?>> endPointOfArray;
+	private EndPoint<PcapHandler.OfByteBuffer<?>> endPointOfBuffer;
 
 	public RawPacketPipeline(String name) {
-		super(name, NetDataTypes.RAW_PACKET_PIPE);
-
-		this.endPointOfArray = this.addOutput(RawPacketPipeline.OfArrayOutput::new)
-				.createMutableEndPoint("ofArray-end")
-				.empty();
-
-		this.endPointOfBuffer = this.addOutput(RawPacketPipeline.OfBufferOutput::new)
-				.createMutableEndPoint("ofBuffer-end")
-				.empty();
+		super(name, NetDataTypes.STATEFUL_RAW_PACKET);
 
 		this.entryPoint = this.addInput(RawPacketPipeline.RawPacketInput::new)
 				.createEntryPoint(name());
@@ -149,10 +141,20 @@ public class RawPacketPipeline
 	}
 
 	public EndPoint<OfArray<?>> endPointOfArray() {
+		if (endPointOfArray == null)
+			this.endPointOfArray = this.addOutput(RawPacketPipeline.OfArrayOutput::new)
+					.createMutableEndPoint("ofArray-endpoint")
+					.resetAsEmpty();
+
 		return endPointOfArray;
 	}
 
 	public EndPoint<OfByteBuffer<?>> endPointOfByteBuffer() {
+		if (endPointOfBuffer == null)
+			this.endPointOfBuffer = this.addOutput(RawPacketPipeline.OfBufferOutput::new)
+					.createMutableEndPoint("ofBuffer-endpoint")
+					.resetAsEmpty();
+
 		return endPointOfBuffer;
 	}
 

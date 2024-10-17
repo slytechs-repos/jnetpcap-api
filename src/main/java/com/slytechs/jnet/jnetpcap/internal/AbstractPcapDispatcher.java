@@ -27,7 +27,7 @@ import org.jnetpcap.internal.PcapDispatcher;
 import org.jnetpcap.internal.PcapHeaderABI;
 import org.jnetpcap.util.PcapPacketRef;
 
-import com.slytechs.jnet.jnetpcap.NetPcap.NetPcapContext;
+import com.slytechs.jnet.jnetpcap.NetPcapDeprecated.NetPcapContext;
 
 /**
  * The Class AbstractPcapDispatcher.

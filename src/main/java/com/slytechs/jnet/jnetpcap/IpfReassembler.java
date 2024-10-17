@@ -332,8 +332,8 @@ public class IpfReassembler
 	 * @param reassembledPacket the reassembled packet
 	 * @param user              the user
 	 */
-	public <U> void forEach(OfPacket<U> reassembledPacket, U user) {
-		peek(reassembledPacket, null);
+	public <U> void forEach(OfPacket<U> reassembledPacket) {
+		peek(reassembledPacket);
 	}
 
 	/**
@@ -512,7 +512,7 @@ public class IpfReassembler
 	 */
 	@SuppressWarnings("unchecked")
 	public <U> IpfReassembler peek(OfPacket<U> reassembledPacket, U user) {
-		registerOutput((OfPacket<Object>) reassembledPacket.wrapUser(user));
+		addToOutputList((p, u) -> reassembledPacket.handlePacket(p, user));
 
 		return this;
 	}
@@ -524,7 +524,8 @@ public class IpfReassembler
 	 * @return the ipf reassembler
 	 */
 	public IpfReassembler peek(OfPacketConsumer reassembledPacket) {
-		registerOutput((u, p) -> reassembledPacket.accept(p));
+//		registerOutput((u, p) -> reassembledPacket.accept(p));
+		super.<Object>addToOutputList((u, p) -> reassembledPacket.accept(p));
 
 		return this;
 	}

@@ -21,6 +21,7 @@ import java.io.File;
 import java.lang.foreign.MemorySegment;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import org.jnetpcap.Pcap;
@@ -38,6 +39,7 @@ import com.slytechs.jnet.jnetpcap.NetPcapHandler.OfPacket;
 import com.slytechs.jnet.jnetruntime.NotFound;
 import com.slytechs.jnet.jnetruntime.pipeline.DataProcessor;
 import com.slytechs.jnet.jnetruntime.pipeline.DataProcessor.ProcessorFactory;
+import com.slytechs.jnet.jnetruntime.pipeline.DataTransformer.OutputTransformer.EndPoint;
 import com.slytechs.jnet.jnetruntime.pipeline.DataType;
 import com.slytechs.jnet.jnetruntime.pipeline.Pipeline;
 import com.slytechs.jnet.jnetruntime.util.Flags;
@@ -47,7 +49,7 @@ import com.slytechs.jnet.jnetruntime.util.HasName;
  * @author Mark Bednarczyk
  *
  */
-public class NetPcap2 extends DelegatePcap<NetPcap2> implements HasName {
+public class NetPcap extends DelegatePcap<NetPcap> implements HasName {
 
 	private static final MemorySegment DEFAULT_USER_ARG = MemorySegment.NULL;
 
@@ -56,8 +58,8 @@ public class NetPcap2 extends DelegatePcap<NetPcap2> implements HasName {
 	 * 
 	 * @throws PcapException
 	 */
-	public static NetPcap2 create(PcapIf networkDevice) throws PcapException {
-		return new NetPcap2(Pcap.create(networkDevice));
+	public static NetPcap create(PcapIf networkDevice) throws PcapException {
+		return new NetPcap(Pcap.create(networkDevice));
 	}
 
 	public static Optional<PcapIf> findDefaultDevice() throws PcapException {
@@ -89,16 +91,16 @@ public class NetPcap2 extends DelegatePcap<NetPcap2> implements HasName {
 		return Pcap.findAllDevs();
 	}
 
-	public static NetPcap2 openDead(PcapDlt dlt) throws PcapException {
-		return new NetPcap2(Pcap.openDead(dlt, PcapConstants.MAX_SNAPLEN));
+	public static NetPcap openDead(PcapDlt dlt) throws PcapException {
+		return new NetPcap(Pcap.openDead(dlt, PcapConstants.MAX_SNAPLEN));
 	}
 
-	public static NetPcap2 openDead(PcapDlt dlt, int maxSnaplen) throws PcapException {
-		return new NetPcap2(Pcap.openDead(dlt, maxSnaplen));
+	public static NetPcap openDead(PcapDlt dlt, int maxSnaplen) throws PcapException {
+		return new NetPcap(Pcap.openDead(dlt, maxSnaplen));
 	}
 
-	public static NetPcap2 openOffline(File offlineFile) throws PcapException {
-		return new NetPcap2(Pcap.openOffline(offlineFile));
+	public static NetPcap openOffline(File offlineFile) throws PcapException {
+		return new NetPcap(Pcap.openOffline(offlineFile));
 	}
 
 	private static final String shortName(String name) {
@@ -111,25 +113,36 @@ public class NetPcap2 extends DelegatePcap<NetPcap2> implements HasName {
 	}
 
 	private final NativePacketPipeline nativePipeline;
-
 	private final RawPacketPipeline rawPipeline;
+	private final PacketPipeline packetPipeline;
 
 	private final List<Pipeline<?, ?>> pipelineList = new ArrayList<>();
 
-	private NetPcap2(Pcap pcapHandle) {
+	private NetPcap(Pcap pcapHandle) {
 		super(pcapHandle);
+
+		var abi = Objects.requireNonNull(getPcapHeaderABI(), "abi");
+//		abi = PcapHeaderABI.COMPACT_BE;
+		System.out.println("NetPcap2::init abi=" + abi);
 
 		nativePipeline = new NativePacketPipeline(shortName(name()));
 		rawPipeline = new RawPacketPipeline(shortName(name()));
+		packetPipeline = new PacketPipeline(shortName(name()), abi);
 
 		pipelineList.add(nativePipeline);
 		pipelineList.add(rawPipeline);
 
 		nativePipeline.link(rawPipeline.entryPoint());
+		nativePipeline.link(packetPipeline.entryPoint());
 
-		System.out.println("NetPcap2::init native=" + nativePipeline);
+		packetPipeline.endPointOfPacket();
+		System.out.println();
+		System.out.println("NetPcap2::init packet=" + packetPipeline);
+
 		System.out.println();
 		System.out.println("NetPcap2::init raw=" + rawPipeline);
+
+		System.out.println("NetPcap2::init native=" + nativePipeline);
 	}
 
 	public <T, T1, T_PROC extends DataProcessor<T, T_PROC>> T_PROC addProcessor(
@@ -179,51 +192,73 @@ public class NetPcap2 extends DelegatePcap<NetPcap2> implements HasName {
 
 	public <U> int dispatchArray(int count, OfArray<U> arrayHandler, U user) {
 
-		rawPipeline
+		var endPoint = rawPipeline
 				.endPointOfArray()
+				.userOpaque(user)
 				.data(arrayHandler);
 
-		int pktCount = dispatchNative0(count, DEFAULT_USER_ARG);
-
-		rawPipeline.endPointOfArray().empty();
+		int pktCount = dispatchNative0(count, DEFAULT_USER_ARG, endPoint);
 
 		return pktCount;
 	}
 
 	public <U> int dispatchBuffer(int count, OfByteBuffer<U> byteBufferHandler, U user) {
 
-		rawPipeline
+		var endPoint = rawPipeline
 				.endPointOfByteBuffer()
+				.userOpaque(user)
 				.data(byteBufferHandler);
 
-		int pktCount = dispatchNative0(count, DEFAULT_USER_ARG);
-
-		rawPipeline.endPointOfByteBuffer().empty();
+		int pktCount = dispatchNative0(count, DEFAULT_USER_ARG, endPoint);
 
 		return pktCount;
 	}
 
 	public int dispatchNative(int count, NativeCallback handler, MemorySegment user) {
 
-		nativePipeline.endPoint().data(handler);
+		var endPoint = nativePipeline
+				.endPointOfNative()
+				.userOpaque(user)
+				.data(handler);
 
-		int pktCount = dispatchNative0(count, user);
-
-		nativePipeline.endPoint().clear();
+		int pktCount = dispatchNative0(count, user, endPoint);
 
 		return pktCount;
 	}
 
-	private int dispatchNative0(int count, MemorySegment user) {
-		return super.dispatch(count, nativePipeline.entryPoint().data(), user);
+	private int dispatchNative0(int count, MemorySegment user, EndPoint<?> endPoint) {
+		try {
+			int actualCount = super.dispatch(count, nativePipeline.entryPoint().data(), user);
+
+			return actualCount;
+
+		} finally {
+			endPoint.resetAsEmpty();
+		}
 	}
 
 	public <U> int dispatchPacket(int count, OfPacket<U> handler, U user) {
-		throw new UnsupportedOperationException();
+
+		var endPoint = packetPipeline
+				.endPointOfPacket()
+				.userOpaque(user)
+				.data(handler);
+
+		int pktCount = dispatchNative0(count, DEFAULT_USER_ARG, endPoint);
+
+		return pktCount;
 	}
 
 	public <U> int dispatchSegment(int count, OfMemorySegment<U> memorySegmentHandler, U user) {
-		throw new UnsupportedOperationException();
+
+		var endPoint = nativePipeline
+				.endPointOfSegment()
+				.userOpaque(user)
+				.data(memorySegmentHandler);
+
+		int pktCount = dispatchNative0(count, DEFAULT_USER_ARG, endPoint);
+
+		return pktCount;
 	}
 
 	@SuppressWarnings("unchecked")

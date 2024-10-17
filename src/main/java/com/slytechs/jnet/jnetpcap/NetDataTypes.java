@@ -21,18 +21,23 @@ import java.util.function.Function;
 
 import org.jnetpcap.PcapHandler;
 
-import com.slytechs.jnet.jnetpcap.NativePacketPipeline.NativePacketPipe;
-import com.slytechs.jnet.jnetpcap.RawPacketPipeline.RawPacketPipe;
+import com.slytechs.jnet.jnetpcap.NativePacketPipeline.StatefulNativePacket;
+import com.slytechs.jnet.jnetpcap.PacketPipeline.StatefulPacket;
+import com.slytechs.jnet.jnetpcap.RawPacketPipeline.StatefulRawPacket;
 import com.slytechs.jnet.jnetruntime.pipeline.DataType;
 
 public enum NetDataTypes implements DataType {
-	NATIVE_PACKET_PIPE(NativePacketPipe.class, NetDataTypes::arrayWrapper),
-	RAW_PACKET_PIPE(RawPacketPipe.class, NetDataTypes::arrayWrapper),
+	STATEFUL_NATIVE_PACKET(StatefulNativePacket.class, NetDataTypes::arrayWrapper),
+	STATEFUL_RAW_PACKET(StatefulRawPacket.class, NetDataTypes::arrayWrapper),
+	STATEFUL_PACKET(StatefulPacket.class, NetDataTypes::arrayWrapper),
 	PCAP_PACKET_OF_ARRAY(PcapHandler.OfArray.class, NetDataTypes::arrayWrapper),
 	PCAP_PACKET_OF_BUFFER(PcapHandler.OfByteBuffer.class, NetDataTypes::arrayWrapper),
+	PCAP_PACKET_OF_SEGMENT(PcapHandler.OfMemorySegment.class, NetDataTypes::arrayWrapper),
+	OF_PACKET(NetPcapHandler.OfPacket.class, NetDataTypes::arrayWrapper),
+
 	;
 
-	private static NativePacketPipe arrayWrapper(NativePacketPipe[] array) {
+	private static StatefulNativePacket arrayWrapper(StatefulNativePacket[] array) {
 		return (u, h, p) -> {
 			for (var a : array) {
 				a.processNativePacket(u, h, p);
@@ -40,7 +45,7 @@ public enum NetDataTypes implements DataType {
 		};
 	}
 
-	private static RawPacketPipe arrayWrapper(RawPacketPipe[] array) {
+	private static StatefulRawPacket arrayWrapper(StatefulRawPacket[] array) {
 		return (u, h, p) -> {
 			for (var a : array) {
 				a.processRawPacket(u, h, p);
@@ -60,6 +65,30 @@ public enum NetDataTypes implements DataType {
 		return (u, h, p) -> {
 			for (var a : array) {
 				a.handleByteBuffer(u, h, p);
+			}
+		};
+	}
+
+	private static <U> PcapHandler.OfMemorySegment<U> arrayWrapper(PcapHandler.OfMemorySegment<U>[] array) {
+		return (u, h, p) -> {
+			for (var a : array) {
+				a.handleSegment(u, h, p);
+			}
+		};
+	}
+
+	private static StatefulPacket arrayWrapper(StatefulPacket[] array) {
+		return (pkt, ctx) -> {
+			for (var a : array) {
+				a.handlePacket(pkt, ctx);
+			}
+		};
+	}
+
+	private static <U> NetPcapHandler.OfPacket<U> arrayWrapper(NetPcapHandler.OfPacket<U>[] array) {
+		return (user, packet) -> {
+			for (var a : array) {
+				a.handlePacket(user, packet);
 			}
 		};
 	}

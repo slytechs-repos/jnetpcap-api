@@ -21,7 +21,7 @@ import org.jnetpcap.PcapException;
 import org.jnetpcap.windows.WinPcap;
 import org.junit.jupiter.api.Test;
 
-import com.slytechs.jnet.jnetpcap.NetPcap;
+import com.slytechs.jnet.jnetpcap.NetPcapDeprecated;
 
 /**
  * The Class ProcessorTests.
@@ -42,7 +42,7 @@ class ProcessorTests {
 	void testBaseProcessorSetup() throws PcapException {
 		final String FILE = RESOURCES_DIR + "/HTTP.cap";
 
-		try (var pcap = NetPcap.openOffline(WinPcap::openOffline, FILE)) {
+		try (var pcap = NetPcapDeprecated.openOffline(WinPcap::openOffline, FILE)) {
 
 			/**
 			 * <pre>

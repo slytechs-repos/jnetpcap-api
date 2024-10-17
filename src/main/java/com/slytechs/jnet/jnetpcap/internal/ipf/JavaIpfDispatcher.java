@@ -31,7 +31,7 @@ import org.jnetpcap.internal.PcapHeaderABI;
 
 import com.slytechs.jnet.jnetpcap.IpfReassembler;
 import com.slytechs.jnet.jnetpcap.IpfStatistics;
-import com.slytechs.jnet.jnetpcap.NetPcap.NetPcapContext;
+import com.slytechs.jnet.jnetpcap.NetPcapDeprecated.NetPcapContext;
 import com.slytechs.jnet.jnetpcap.NetPcapHandler.OfPacket;
 import com.slytechs.jnet.jnetpcap.internal.AbstractPacketReceiver;
 import com.slytechs.jnet.jnetpcap.internal.CaptureStatisticsImpl;
