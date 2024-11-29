@@ -23,4 +23,11 @@
 			<url>scm:git:git@github.com:slytechs-repos/jnetpcap-api.git</url>
 		</site>
 	</distributionManagement>
+	<dependencies>
+	  <dependency>
+	    <groupId>com.slytechs.jnet.protocol</groupId>
+	    <artifactId>protocol-pack-api</artifactId>
+	    <version>0.10.0-SNAPSHOT</version>
+	  </dependency>
+	</dependencies>
 </project>

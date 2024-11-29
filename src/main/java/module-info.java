@@ -20,7 +20,6 @@
  * Provides packet dissection and IP fragment reassembly services.
  * 
  * @author Mark Bednarczyk.
- *
  */
 module com.slytechs.jnet.jnetpcap {
 	exports com.slytechs.jnet.jnetpcap;

@@ -34,7 +34,7 @@ import com.slytechs.jnet.jnetpcap.internal.ipf.TimeoutQueue.Expirable;
 import com.slytechs.jnet.jnetruntime.hash.HashTable.HashEntry;
 import com.slytechs.jnet.jnetruntime.time.TimestampSource;
 import com.slytechs.jnet.jnetruntime.util.Detail;
-import com.slytechs.jnet.protocol.Registration;
+import com.slytechs.jnet.jnetruntime.util.Registration;
 import com.slytechs.jnet.protocol.core.constants.CoreConstants;
 import com.slytechs.jnet.protocol.descriptor.IpfFragment;
 import com.slytechs.jnet.protocol.descriptor.IpfReassemblyLayout;
@@ -101,10 +101,10 @@ public class IpfDgramReassembler implements Expirable {
 
 	/** The entire storage ecaps + frag data. */
 	private final ByteBuffer buffer;
-	
+
 	/** The mseg. */
 	private final MemorySegment mseg;
-	
+
 	/** The session. */
 	private Arena session;
 
@@ -123,34 +123,34 @@ public class IpfDgramReassembler implements Expirable {
 	 * accurately.
 	 */
 	private final TimestampSource timeSource;
-	
+
 	/** The table entry. */
 	private final HashEntry<IpfDgramReassembler> tableEntry;
-	
+
 	/** The config. */
 	private final IpfReassembler config;
-	
+
 	/** The expiration. */
 	private long expiration;
 
 	/** The start time milli. */
 	private long startTimeMilli = 0;
-	
+
 	/** The reassembled milli. */
 	private long reassembledMilli;
 
 	/** The next segment index. */
 	private int nextSegmentIndex = 0;
-	
+
 	/** The segments. */
 	private final IpfSegment[] segments;
 
 	/** The has first. */
 	private boolean hasFirst;
-	
+
 	/** The has last. */
 	private boolean hasLast;
-	
+
 	/** The frame no. */
 	private long frameNo;
 
@@ -159,25 +159,25 @@ public class IpfDgramReassembler implements Expirable {
 
 	/** The is ip 4. */
 	private boolean isIp4;
-	
+
 	/** The is reassembled. */
 	private boolean isReassembled;
-	
+
 	/** The is complete. */
 	private boolean isComplete;
-	
+
 	/** The is timeout on last. */
 	private boolean isTimeoutOnLast;
-	
+
 	/** The observed size. */
 	private int observedSize;
-	
+
 	/** The reassembled bytes. */
 	private int reassembledBytes = 0;
-	
+
 	/** The hole bytes. */
 	private int holeBytes = 0;
-	
+
 	/** The overlap bytes. */
 	private int overlapBytes = 0;
 
@@ -576,7 +576,7 @@ public class IpfDgramReassembler implements Expirable {
 	 * @param desc     the desc
 	 */
 	private void clearIp4Flags(int position, IpfFragment desc) {
-		/* clear all flags and set fragment offset to 0 */ 
+		/* clear all flags and set fragment offset to 0 */
 		encapsView.put(position + desc.headerOffset() + CoreConstants.IPv4_FIELD_FLAGS, (byte) 0);
 	}
 

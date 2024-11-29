@@ -25,11 +25,13 @@ import com.slytechs.jnet.jnetpcap.NativePacketPipeline.StatefulNativePacket;
 import com.slytechs.jnet.jnetpcap.PacketPipeline.StatefulPacket;
 import com.slytechs.jnet.jnetpcap.RawPacketPipeline.StatefulRawPacket;
 import com.slytechs.jnet.jnetruntime.pipeline.DataType;
+import com.slytechs.jnet.protocol.core.network.IpPipeline.StatefulIpf;
 
 public enum NetDataTypes implements DataType {
 	STATEFUL_NATIVE_PACKET(StatefulNativePacket.class, NetDataTypes::arrayWrapper),
 	STATEFUL_RAW_PACKET(StatefulRawPacket.class, NetDataTypes::arrayWrapper),
 	STATEFUL_PACKET(StatefulPacket.class, NetDataTypes::arrayWrapper),
+	STATEFUL_IPF(StatefulIpf.class, NetDataTypes::arrayWrapper),
 	PCAP_PACKET_OF_ARRAY(PcapHandler.OfArray.class, NetDataTypes::arrayWrapper),
 	PCAP_PACKET_OF_BUFFER(PcapHandler.OfByteBuffer.class, NetDataTypes::arrayWrapper),
 	PCAP_PACKET_OF_SEGMENT(PcapHandler.OfMemorySegment.class, NetDataTypes::arrayWrapper),
@@ -85,6 +87,14 @@ public enum NetDataTypes implements DataType {
 		};
 	}
 
+	private static StatefulIpf arrayWrapper(StatefulIpf[] array) {
+		return (mseg, buf, ts, caplen, wirelen, ipf) -> {
+			for (var a : array) {
+				a.handleIpf(mseg, buf, ts, caplen, wirelen, ipf);
+			}
+		};
+	}
+
 	private static <U> NetPcapHandler.OfPacket<U> arrayWrapper(NetPcapHandler.OfPacket<U>[] array) {
 		return (user, packet) -> {
 			for (var a : array) {
@@ -93,7 +103,7 @@ public enum NetDataTypes implements DataType {
 		};
 	}
 
-	/** The data support. */
+	/** The data settingsSupport. */
 	private final DataSupport<?> dataSupport;
 
 	<T> NetDataTypes(Class<T> dataClass, Function<T[], T> arrayHandler) {

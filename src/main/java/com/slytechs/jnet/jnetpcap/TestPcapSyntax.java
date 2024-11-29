@@ -19,24 +19,31 @@ package com.slytechs.jnet.jnetpcap;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.foreign.MemorySegment;
-import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jnetpcap.PcapException;
-import org.jnetpcap.PcapHeader;
 
-import com.slytechs.jnet.jnetpcap.NativePacketPipeline.NativeProcessorContext;
-import com.slytechs.jnet.jnetpcap.NativePacketPipeline.StatefulNativePacket;
-import com.slytechs.jnet.jnetpcap.RawPacketPipeline.RawProcessorContext;
-import com.slytechs.jnet.jnetpcap.RawPacketPipeline.StatefulRawPacket;
 import com.slytechs.jnet.jnetruntime.NotFound;
-import com.slytechs.jnet.jnetruntime.pipeline.PeekProcessor;
-import com.slytechs.jnet.jnetruntime.time.Timestamp;
 import com.slytechs.jnet.jnetruntime.util.HexStrings;
-import com.slytechs.jnet.protocol.HeaderNotFound;
-import com.slytechs.jnet.protocol.Packet;
-import com.slytechs.jnet.protocol.core.Ip4;
+import com.slytechs.jnet.protocol.core.link.Ppp;
+import com.slytechs.jnet.protocol.core.network.Ip4;
+import com.slytechs.jnet.protocol.core.network.Ip4MtuProbeOption;
+import com.slytechs.jnet.protocol.core.network.Ip4MtuReplyOption;
+import com.slytechs.jnet.protocol.core.network.Ip4QuickStartOption;
+import com.slytechs.jnet.protocol.core.network.Ip4RecordRouteOption;
+import com.slytechs.jnet.protocol.core.network.Ip4RouterAlertOption;
+import com.slytechs.jnet.protocol.core.network.Ip4SecurityDefunctOption;
+import com.slytechs.jnet.protocol.core.network.Ip4TimestampOption;
+import com.slytechs.jnet.protocol.core.network.Ip4TracerouteOption;
+import com.slytechs.jnet.protocol.core.network.Ip6;
+import com.slytechs.jnet.protocol.core.network.Ip6AuthHeaderExtension;
+import com.slytechs.jnet.protocol.core.network.Ip6DestinationExtension;
+import com.slytechs.jnet.protocol.core.network.Ip6EcapsSecPayloadExtension;
+import com.slytechs.jnet.protocol.core.network.Ip6FragmentExtension;
+import com.slytechs.jnet.protocol.core.network.Ip6HopByHopExtension;
+import com.slytechs.jnet.protocol.core.network.Ip6MobilityExtension;
+import com.slytechs.jnet.protocol.core.network.Ip6RoutingExtension;
+import com.slytechs.jnet.protocol.core.network.Ip6Shim6Extension;
+import com.slytechs.jnet.protocol.meta.PacketFormat;
 
 /**
  * @author Mark Bednarczyk
@@ -47,78 +54,185 @@ public class TestPcapSyntax {
 	public TestPcapSyntax() {
 	}
 
-	public static void main(String[] args) throws NotFound, IOException {
+	public static void main(String[] args) throws NotFound, IOException, PcapException {
 		final File FILE = new File("pcaps/HTTP.cap");
-		final AtomicInteger pktCount = new AtomicInteger(1);
 
-		final int COUNT = 2;
+//		Pack.listAllDeclaredPacks().forEach(System.out::println);
+//		Arrays.stream(CoreId.values()).forEach(System.out::println);
 
-		try (var pcap = NetPcap.openOffline(FILE)) {
+		/**
+		 * <pre>
+		 * Breakdown of the packet:
+		
+		PPP Header:
+		
+		7E: Flag byte
+		FF: Address byte (broadcast)
+		03: Control byte (unnumbered information)
+		0021: Protocol (IPv4)
+		
+		
+		Payload (simple IPv4 packet):
+		
+		45: IPv4 version and header length
+		Rest of payload bytes representing a minimal IPv4 packet
+		
+		
+		End flag:
+		
+		7E: Ending flag byte
+		 * </pre>
+		 */
+		final byte[] pppPacket = HexStrings.parseHexString(
+				"7E FF 03 00 21 45 00 00 14 00 01 00 00 40 00 7C E7 7F 00 00 01 7F 00 00 01 7E");
 
-			pcap.addProcessor(0, PeekProcessor::new, StatefulNativePacket.class)
-					.peek((MemorySegment h, MemorySegment d, NativeProcessorContext ctx) -> {
-						System.out.printf("#%03d ::peek:NativePacketPipe h=%s bytes, data=%s bytes%n",
-								pktCount.getAndIncrement(),
-								h.byteSize(),
-								d.byteSize());
-					});
+		Ppp ppp = new Ppp();
+		ppp.setFormatter(new PacketFormat());
 
-			pcap.addProcessor(0, PeekProcessor::new, StatefulRawPacket.class)
-					.peek((PcapHeader h, MemorySegment d, RawProcessorContext ctx) -> {
-						System.out.printf("#%03d ::peek:RawPacketPipe hdr=%s, data=%s%n",
-								pktCount.getAndIncrement(),
-								h.toString(),
-								d.byteSize());
-					});
+		ppp.bind(pppPacket);
 
-//			System.out.println("TestPcapSyntax:: pcap.name=" + pcap.name());
+		System.out.println(ppp);
 
-//			pcap.setPromisc(true);
-//			pcap.activate();
+		try (var pcap = NetPcap.offline(FILE)) {
 
-			pcap.dispatchNative(2, (MemorySegment u, MemorySegment h, MemorySegment d) -> {
-				System.out.printf("#%03d ::dispatchNative hdr=%s bytes, data=%s bytes%n",
-						pktCount.getAndIncrement(),
-						h.byteSize(),
-						d.byteSize());
-			}, MemorySegment.NULL);
+			Ip4 ip4 = new Ip4();
+			Ip6 ip6 = new Ip6();
 
-			pcap.dispatchPacket(COUNT, (String user, Packet packet) -> {
-				try {
-					System.out.printf("#%03d ::dispatchPacket \"%s\"%n" + "%s%n",
-							pktCount.getAndIncrement(),
-							user,
-							packet.getHeader(new Ip4()));
+			pcap.dispatchPacket(1, (u, packet) -> {
 
-				} catch (HeaderNotFound e) {
-					e.printStackTrace();
+				if (packet.hasHeader(ip6)) {
+					System.out.println("Source IP: " + ip4.srcAsAddress());
+					System.out.println("Destination IP: " + ip4.dstAsAddress());
+					System.out.println("Next Header: " + ip6.nextHeader());
+					System.out.println("Hop Limit: " + ip6.hopLimit());
+					System.out.println("Payload Length: " + ip6.payloadLength());
+					System.out.println("Traffic Class: " + ip6.trafficClass());
+					System.out.println("Flow Label: " + ip6.flowLabel());
+
+					// Authentication Header
+					Ip6AuthHeaderExtension authHeader = new Ip6AuthHeaderExtension();
+					if (packet.hasHeader(authHeader)) {
+						System.out.println("Authentication Header present");
+						// Access authentication data
+					}
+
+					// Destination Options Header
+					Ip6DestinationExtension destOptions = new Ip6DestinationExtension();
+					if (packet.hasHeader(destOptions)) {
+						System.out.println("Destination Options Header present");
+						// Access destination options
+					}
+
+					// Encapsulating Security Payload Header
+					Ip6EcapsSecPayloadExtension espHeader = new Ip6EcapsSecPayloadExtension();
+					if (packet.hasHeader(espHeader)) {
+						System.out.println("ESP Header present");
+						// Access ESP data
+					}
+
+					// Fragment Header
+					Ip6FragmentExtension fragmentHeader = new Ip6FragmentExtension();
+					if (packet.hasHeader(fragmentHeader)) {
+						System.out.println("Fragment Header present");
+						System.out.println("Fragment Offset: " + fragmentHeader.fragmentOffset());
+					}
+
+					// Hop-by-Hop Options Header
+					Ip6HopByHopExtension hopByHopHeader = new Ip6HopByHopExtension();
+					if (packet.hasHeader(hopByHopHeader)) {
+						System.out.println("Hop-by-Hop Options Header present");
+						// Access hop-by-hop options
+					}
+
+					// Mobility Header
+					Ip6MobilityExtension mobilityHeader = new Ip6MobilityExtension();
+					if (packet.hasHeader(mobilityHeader)) {
+						System.out.println("Mobility Header present");
+						// Access mobility data
+					}
+
+					// Routing Header
+					Ip6RoutingExtension routingHeader = new Ip6RoutingExtension();
+					if (packet.hasHeader(routingHeader)) {
+						System.out.println("Routing Header present");
+						System.out.println("Routing Type: " + routingHeader.routingType());
+					}
+
+					// Shim6 Header
+					Ip6Shim6Extension shim6Header = new Ip6Shim6Extension();
+					if (packet.hasHeader(shim6Header)) {
+						System.out.println("Shim6 Header present");
+						// Access Shim6 data
+					}
 				}
 
-			}, "Hello World");
+				if (packet.hasHeader(ip4)) {
+					System.out.println("Source IP: " + ip4.srcAsAddress());
+					System.out.println("Destination IP: " + ip4.dstAsAddress());
+					System.out.println("Protocol: " + ip4.protocol());
+					System.out.println("TTL: " + ip4.ttl());
+					System.out.println("Total Length: " + ip4.totalLength());
+					System.out.println("Identification: " + ip4.identification());
+					System.out.println("Don't Fragment: " + ip4.flags_DF());
+					System.out.println("More Fragments: " + ip4.flags_MF());
+					System.out.println("Fragment Offset: " + ip4.fragOffset());
 
-			pcap.dispatchArray(COUNT, (String user, PcapHeader hdr, byte[] packet) -> {
-				int len = hdr.captureLength() < 64 ? hdr.captureLength() : 64;
-				System.out.printf("#%03d ::dispatchArray caplen=%s bytes, ts=%s, dump:%n%s",
-						pktCount.getAndIncrement(),
-						hdr.captureLength(),
-						new Timestamp(hdr.toEpochMilli()),
-						HexStrings.toHexDump(packet, 0, len));
-			}, "");
+					// MTU Probe Option
+					Ip4MtuProbeOption mtuProbeOption = new Ip4MtuProbeOption();
+					if (ip4.hasOption(mtuProbeOption)) {
+						System.out.println("MTU Probe Option present");
+						// Access option-specific data
+					}
 
-			pcap.dispatchBuffer(COUNT, (String user, PcapHeader hdr, ByteBuffer packet) -> {
-				int len = hdr.captureLength() < 64 ? hdr.captureLength() : 64;
-				System.out.printf("#%03d ::dispatchBuffer caplen=%s bytes, ts=%s, dump:%n%s",
-						pktCount.getAndIncrement(),
-						hdr.captureLength(),
-						new Timestamp(hdr.toEpochMilli()),
-						HexStrings.toHexDump(packet.limit(len)));
-			}, "");
+					// MTU Reply Option
+					Ip4MtuReplyOption mtuReplyOption = new Ip4MtuReplyOption();
+					if (ip4.hasOption(mtuReplyOption)) {
+						System.out.println("MTU Reply Option present");
+						// Access option-specific data
+					}
 
-			pcap.dispatchSegment(COUNT, (String user, MemorySegment hdr, MemorySegment data) -> {
-				System.out.printf("#%03d ::dispatchSegment hdr=%s bytes, data=%s bytes%n",
-						pktCount.getAndIncrement(),
-						hdr.byteSize(),
-						data.byteSize());
+					// Quick-Start Option
+					Ip4QuickStartOption quickStartOption = new Ip4QuickStartOption();
+					if (ip4.hasOption(quickStartOption)) {
+						System.out.println("Quick-Start Option present");
+						// Access option-specific data
+					}
+
+					// Record Route Option
+					Ip4RecordRouteOption recordRouteOption = new Ip4RecordRouteOption();
+					if (ip4.hasOption(recordRouteOption)) {
+						System.out.println("Record Route Option present");
+						// Access recorded routes
+					}
+
+					// Security and Extended Security Option
+					Ip4SecurityDefunctOption securityOption = new Ip4SecurityDefunctOption();
+					if (ip4.hasOption(securityOption)) {
+						System.out.println("Security Option present");
+						// Access security-related data
+					}
+
+					// Timestamp Option
+					Ip4TimestampOption timestampOption = new Ip4TimestampOption();
+					if (ip4.hasOption(timestampOption)) {
+						System.out.println("Timestamp Option present");
+						// Access timestamp data
+					}
+
+					// Traceroute Option
+					Ip4TracerouteOption tracerouteOption = new Ip4TracerouteOption();
+					if (ip4.hasOption(tracerouteOption)) {
+						System.out.println("Traceroute Option present");
+						// Access traceroute data
+					}
+
+					// Router Alert Option
+					Ip4RouterAlertOption routerAlertOption = new Ip4RouterAlertOption();
+					if (ip4.hasOption(routerAlertOption)) {
+						System.out.println("Router Alert Option present");
+						System.out.println("Alert Value: " + routerAlertOption.routerAlert());
+					}
+				}
 			}, "");
 
 		} catch (PcapException e) {

@@ -32,7 +32,7 @@ import com.slytechs.jnet.protocol.core.constants.PacketDescriptorType;
 import com.slytechs.jnet.protocol.descriptor.PacketDissector;
 
 /**
- * Packet dispatcher with protocol level support.
+ * Packet dispatcher with protocol level settingsSupport.
  *
  * @author Mark Bednarczyk
  */

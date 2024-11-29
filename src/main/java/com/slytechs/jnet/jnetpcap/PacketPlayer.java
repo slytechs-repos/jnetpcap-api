@@ -26,7 +26,7 @@ import org.jnetpcap.internal.PcapHeaderABI;
 import com.slytechs.jnet.jnetruntime.pipeline.AbstractProcessor;
 import com.slytechs.jnet.jnetruntime.pipeline.Pipeline;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
-import com.slytechs.jnet.jnetruntime.util.SystemProperties;
+import com.slytechs.jnet.jnetruntime.util.config.SystemProperties;
 
 /**
  * The Class PacketPlayer.

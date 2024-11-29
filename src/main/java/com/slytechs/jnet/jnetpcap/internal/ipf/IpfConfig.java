@@ -17,7 +17,7 @@
  */
 package com.slytechs.jnet.jnetpcap.internal.ipf;
 
-import static com.slytechs.jnet.jnetruntime.util.SystemProperties.*;
+import static com.slytechs.jnet.jnetruntime.util.config.SystemProperties.*;
 
 import java.util.concurrent.TimeUnit;
 

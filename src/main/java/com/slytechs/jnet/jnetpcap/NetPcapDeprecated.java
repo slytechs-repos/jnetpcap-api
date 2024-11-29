@@ -56,9 +56,9 @@ import com.slytechs.jnet.protocol.descriptor.PacketDissector;
 import com.slytechs.jnet.protocol.meta.PacketFormat;
 
 /**
- * Pcap packet capture with high level packet and protocol support.
+ * Pcap packet capture with high level packet and protocol settingsSupport.
  * 
- * <h2>IPF Modes</h2> The pro pcap API provides support for IP fragment
+ * <h2>IPF Modes</h2> The pro pcap API provides settingsSupport for IP fragment
  * reassembly and tracking. When enabled, the user packet handler will receive
  * fully reassembled IP datagrams instead of individual fragments along with any
  * other type of packets selected by the packet filter applied.
