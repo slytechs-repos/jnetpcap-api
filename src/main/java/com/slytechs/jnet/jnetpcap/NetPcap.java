@@ -42,10 +42,10 @@ import com.slytechs.jnet.jnetruntime.NotFound;
 import com.slytechs.jnet.jnetruntime.pipeline.DataProcessor;
 import com.slytechs.jnet.jnetruntime.pipeline.DataProcessor.ProcessorFactory;
 import com.slytechs.jnet.jnetruntime.pipeline.DataTransformer.OutputTransformer.EndPoint;
-import com.slytechs.jnet.jnetruntime.pipeline.DataType;
+import com.slytechs.jnet.jnetruntime.pipeline.DataTypeTooCompilicated;
 import com.slytechs.jnet.jnetruntime.pipeline.Pipeline;
 import com.slytechs.jnet.jnetruntime.util.Flags;
-import com.slytechs.jnet.jnetruntime.util.HasName;
+import com.slytechs.jnet.jnetruntime.util.Named;
 import com.slytechs.jnet.jnetruntime.util.config.BroadcastNetConfigurator;
 import com.slytechs.jnet.jnetruntime.util.config.NetConfigurator;
 import com.slytechs.jnet.protocol.Packet;
@@ -84,7 +84,7 @@ import com.slytechs.jnet.protocol.core.IpReassembly;
  * 
  * @author Mark Bednarczyk
  */
-public class NetPcap extends DelegatePcap<NetPcap> implements HasName {
+public class NetPcap extends DelegatePcap<NetPcap> implements Named {
 
 	private static final MemorySegment DEFAULT_USER_ARG = MemorySegment.NULL;
 
@@ -388,7 +388,7 @@ public class NetPcap extends DelegatePcap<NetPcap> implements HasName {
 	public <T, T_PROC extends DataProcessor<T, T_PROC>> T_PROC addProcessor(
 			int priority,
 			ProcessorFactory<T, T_PROC> processorFactory) throws NotFound {
-		DataType type = processorFactory.dataType();
+		DataTypeTooCompilicated type = processorFactory.dataTypeTooCompilicated();
 		Pipeline<T, ?> pipeline = getPipeline(type);
 
 		var p = pipeline.addProcessor(priority, processorFactory);
@@ -483,9 +483,9 @@ public class NetPcap extends DelegatePcap<NetPcap> implements HasName {
 	}
 
 	@SuppressWarnings("unchecked")
-	private <T> Pipeline<T, ?> getPipeline(DataType dataType) throws NotFound {
+	private <T> Pipeline<T, ?> getPipeline(DataTypeTooCompilicated dataTypeTooCompilicated) throws NotFound {
 		return pipelineList.stream()
-				.filter(p -> p.dataType().equals(dataType))
+				.filter(p -> p.dataTypeTooCompilicated().equals(dataType))
 				.map(p -> (Pipeline<T, ?>) p)
 				.findAny()
 				.orElseThrow(() -> new NotFound("pipeline for data type [%s.%s]"
@@ -497,7 +497,7 @@ public class NetPcap extends DelegatePcap<NetPcap> implements HasName {
 	}
 
 	/**
-	 * @see com.slytechs.jnet.jnetruntime.util.HasName#name()
+	 * @see com.slytechs.jnet.jnetruntime.util.Named#name()
 	 */
 	@Override
 	public String name() {

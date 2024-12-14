@@ -22,6 +22,8 @@ import java.util.function.Function;
 
 import com.slytechs.jnet.jnetpcap.NetPcapHandler.OfPacket;
 import com.slytechs.jnet.jnetruntime.pipeline.DataType;
+import com.slytechs.jnet.jnetruntime.pipeline.DataTypeInfo;
+import com.slytechs.jnet.jnetruntime.pipeline.RawDataType;
 
 /**
  * PCAP specific RX processor data types.
@@ -29,7 +31,7 @@ import com.slytechs.jnet.jnetruntime.pipeline.DataType;
  * @author Mark Bednarczyk
  */
 @SuppressWarnings("unchecked")
-public enum CoreDataType implements DataType {
+public enum CoreDataType implements DataTypeInfo {
 
 	/** A dissected and protocol enabled packet object type. */
 	PACKET(OfPacket.class, OfPacket::wrapUser, CoreDataType::arrayOfPacket),
@@ -40,7 +42,7 @@ public enum CoreDataType implements DataType {
 	;
 
 	/** The data settingsSupport. */
-	private final DataSupport<?> dataSupport;
+	private final DataType<?> dataType;
 
 	/**
 	 * Instantiates a new pcap data type.
@@ -52,7 +54,7 @@ public enum CoreDataType implements DataType {
 	 */
 	<T> CoreDataType(Class<T> dataClass, BiFunction<T, ? super Object, T> opaqueWrapper,
 			Function<T[], T> arrayHandler) {
-		this.dataSupport = new DataSupport<T>(this, dataClass, arrayHandler);
+		this.dataType = new RawDataType<T>(name(), dataClass, arrayHandler);
 	}
 
 	/**
@@ -60,11 +62,11 @@ public enum CoreDataType implements DataType {
 	 *
 	 * @param <T> the generic type
 	 * @return the data settingsSupport
-	 * @see com.slytechs.jnet.jnetruntime.pipeline.DataType#dataSupport()
+	 * @see com.slytechs.jnet.jnetruntime.pipeline.DataTypeTooCompilicated#dataSupport()
 	 */
 	@Override
-	public <T> DataSupport<T> dataSupport() {
-		return (DataSupport<T>) dataSupport;
+	public <T> DataType<T> dataType() {
+		return (DataType<T>) dataType;
 	}
 
 	/**

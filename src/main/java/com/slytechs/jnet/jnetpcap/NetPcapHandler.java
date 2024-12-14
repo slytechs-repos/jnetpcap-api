@@ -22,6 +22,8 @@ import java.util.function.Consumer;
 
 import org.jnetpcap.PcapHandler;
 
+import com.slytechs.jnet.jnetruntime.pipeline.DataType;
+import com.slytechs.jnet.jnetruntime.pipeline.DT;
 import com.slytechs.jnet.protocol.Packet;
 import com.slytechs.jnet.protocol.descriptor.IpfFragment;
 
@@ -42,8 +44,7 @@ public interface NetPcapHandler extends PcapHandler {
 	@FunctionalInterface
 	public interface OfPacket<U> extends NetPcapHandler {
 
-		/** Empty/No-op callback handler. */
-		OfPacket<?> EMPTY = (u, p) -> {};
+		DataType<OfPacket<?>> TYPE = new DT<>((u, p) -> {}, OfPacket[]::new) {};
 
 		/**
 		 * Creates a new handler that passes on new user data to the old handler. The
@@ -71,6 +72,8 @@ public interface NetPcapHandler extends PcapHandler {
 	 * @author Mark Bednarczyk
 	 */
 	public interface IpfHandler {
+
+		DataType<IpfHandler> TYPE = new DT<>() {};
 
 		/**
 		 * Handle ipf.

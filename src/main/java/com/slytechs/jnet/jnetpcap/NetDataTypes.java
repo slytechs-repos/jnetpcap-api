@@ -25,9 +25,11 @@ import com.slytechs.jnet.jnetpcap.NativePacketPipeline.StatefulNativePacket;
 import com.slytechs.jnet.jnetpcap.PacketPipeline.StatefulPacket;
 import com.slytechs.jnet.jnetpcap.RawPacketPipeline.StatefulRawPacket;
 import com.slytechs.jnet.jnetruntime.pipeline.DataType;
+import com.slytechs.jnet.jnetruntime.pipeline.DataTypeInfo;
+import com.slytechs.jnet.jnetruntime.pipeline.RawDataType;
 import com.slytechs.jnet.protocol.core.network.IpPipeline.StatefulIpf;
 
-public enum NetDataTypes implements DataType {
+public enum NetDataTypes implements DataTypeInfo {
 	STATEFUL_NATIVE_PACKET(StatefulNativePacket.class, NetDataTypes::arrayWrapper),
 	STATEFUL_RAW_PACKET(StatefulRawPacket.class, NetDataTypes::arrayWrapper),
 	STATEFUL_PACKET(StatefulPacket.class, NetDataTypes::arrayWrapper),
@@ -104,16 +106,16 @@ public enum NetDataTypes implements DataType {
 	}
 
 	/** The data settingsSupport. */
-	private final DataSupport<?> dataSupport;
+	private final DataType<?> dataType;
 
 	<T> NetDataTypes(Class<T> dataClass, Function<T[], T> arrayHandler) {
-		this.dataSupport = new DataSupport<T>(this, dataClass, arrayHandler);
+		this.dataType = new RawDataType<T>(name(), dataClass, arrayHandler);
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T> DataSupport<T> dataSupport() {
-		return (DataSupport<T>) dataSupport;
+	public <T> DataType<T> dataType() {
+		return (DataType<T>) dataType;
 	}
 
 }

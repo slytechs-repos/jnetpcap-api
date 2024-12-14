@@ -23,6 +23,8 @@ import org.jnetpcap.PcapHandler.NativeCallback;
 import org.jnetpcap.PcapHandler.OfByteBuffer;
 
 import com.slytechs.jnet.jnetruntime.pipeline.DataType;
+import com.slytechs.jnet.jnetruntime.pipeline.DataTypeInfo;
+import com.slytechs.jnet.jnetruntime.pipeline.RawDataType;
 
 /**
  * PCAP specific RX processor data types.
@@ -30,7 +32,7 @@ import com.slytechs.jnet.jnetruntime.pipeline.DataType;
  * @author Mark Bednarczyk
  */
 @SuppressWarnings("unchecked")
-public enum PcapDataType implements DataType {
+public enum PcapDataType implements DataTypeInfo {
 
 	/** Low level PCAP callback type. */
 	PCAP_NATIVE_PACKET(NativeCallback.class, PcapDataType::arrayOfNativeCallbacks),
@@ -41,7 +43,7 @@ public enum PcapDataType implements DataType {
 	;
 
 	/** The data settingsSupport. */
-	private final DataSupport<?> dataSupport;
+	private final DataType<?> dataType;
 
 	/**
 	 * Instantiates a new pcap data type.
@@ -54,7 +56,7 @@ public enum PcapDataType implements DataType {
 	<T> PcapDataType(
 			Class<T> dataClass,
 			Function<T[], T> arrayHandler) {
-		this.dataSupport = new DataSupport<T>(this, dataClass, arrayHandler);
+		this.dataType = new RawDataType<T>(name(), dataClass, arrayHandler);
 	}
 
 	/**
@@ -62,11 +64,11 @@ public enum PcapDataType implements DataType {
 	 *
 	 * @param <T> the generic type
 	 * @return the data settingsSupport
-	 * @see com.slytechs.jnet.jnetruntime.pipeline.DataType#dataSupport()
+	 * @see com.slytechs.jnet.jnetruntime.pipeline.DataTypeTooCompilicated#dataSupport()
 	 */
 	@Override
-	public <T> DataSupport<T> dataSupport() {
-		return (DataSupport<T>) dataSupport;
+	public <T> DataType<T> dataType() {
+		return (DataType<T>) dataType;
 	}
 
 	/**

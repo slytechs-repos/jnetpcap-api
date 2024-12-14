@@ -290,7 +290,7 @@ public class NativePacketPipeline
 	}
 
 	public Registration link(EntryPoint<NativeCallback> entryPoint) {
-		assert entryPoint.dataType() == endPointOfNative().dataType();
+		assert entryPoint.dataTypeTooCompilicated() == endPointOfNative().dataTypeTooCompilicated();
 
 		final NativeCallback data = entryPoint.data();
 		endPointOfNativeMulti.data(data);
