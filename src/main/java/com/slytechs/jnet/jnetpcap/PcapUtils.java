@@ -20,6 +20,7 @@ package com.slytechs.jnet.jnetpcap;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Mark Bednarczyk
@@ -50,6 +51,47 @@ class PcapUtils {
 		}
 
 		return name;
+	}
+
+	/**
+	 * Delay.
+	 * 
+	 * @throws InterruptedException
+	 */
+	public static void delay(long minIfgNano) throws InterruptedException {
+		final long MIN_BLOCK = 150_000_000;
+		long start = System.nanoTime();
+		long end = start + minIfgNano;
+
+		long remaining = end - start;
+		do {
+			remaining = end - start;
+
+			if (remaining > MIN_BLOCK)
+				delayBlock(end);
+			else
+				delaySpin(end);
+
+		} while (remaining > 0);
+	}
+
+	/**
+	 * Delay spin.
+	 *
+	 * @param endNanoTime the end nano time
+	 */
+	public static void delaySpin(long endNanoTime) {
+		while (System.nanoTime() < endNanoTime);
+	}
+
+	/**
+	 * Delay block.
+	 *
+	 * @param endNanoTime the end nano time
+	 * @throws InterruptedException the interrupted exception
+	 */
+	public static void delayBlock(long endNanoTime) throws InterruptedException {
+		TimeUnit.NANOSECONDS.sleep(endNanoTime - System.nanoTime());
 	}
 
 	private PcapUtils() {

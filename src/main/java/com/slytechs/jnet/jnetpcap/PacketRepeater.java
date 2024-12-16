@@ -24,10 +24,9 @@ import java.util.function.BooleanSupplier;
 import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 
-import org.jnetpcap.PcapHandler.OfMemorySegment;
-
-import com.slytechs.jnet.jnetruntime.pipeline.AbstractProcessor;
-import com.slytechs.jnet.jnetruntime.pipeline.Pipeline;
+import com.slytechs.jnet.jnetpcap.NativePacketPipeline.NativeContext;
+import com.slytechs.jnet.jnetpcap.PreProcessors.NativePacketProcessor;
+import com.slytechs.jnet.jnetruntime.pipeline.Processor;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
 import com.slytechs.jnet.jnetruntime.util.config.SystemProperties;
 
@@ -45,8 +44,8 @@ import com.slytechs.jnet.jnetruntime.util.config.SystemProperties;
  * @author Mark Bednarczyk
  */
 public final class PacketRepeater
-		extends AbstractProcessor<OfMemorySegment<Object>, PacketRepeater>
-		implements OfMemorySegment<Object> {
+		extends Processor<NativePacketProcessor>
+		implements NativePacketProcessor {
 
 	/** The Constant PREFIX. */
 	private static final String PREFIX = "packet.repeater";
@@ -74,20 +73,18 @@ public final class PacketRepeater
 
 	/** The timestamp unit. */
 	private TimestampUnit timestampUnit = TimestampUnit.PCAP_MICRO;
-	
+
 	/** The Constant NAME. */
-	public static final String NAME = "packet-repeater";
+	public static final String NAME = "PacketRepeater";
 
 	/**
-	 * Instantiates a new packet repeater.
-	 *
-	 * @param pipeline the pipeline
-	 * @param priority the priority
+	 * @param priority
+	 * @param name
 	 */
-	public PacketRepeater(Pipeline<OfMemorySegment<Object>, ?> pipeline, int priority) {
-		super(pipeline, priority, NAME, PcapDataType.PCAP_RAW_PACKET);
+	public PacketRepeater(long repeatCount) {
+		super(PreProcessors.PACKET_REPEATER_PRIORITY, NAME);
 
-		name(PREFIX);
+		repeatCount(repeatCount);
 	}
 
 	/**
@@ -299,63 +296,22 @@ public final class PacketRepeater
 	}
 
 	/**
-	 * Handle segment.
-	 *
-	 * @param user   the user
-	 * @param header the header
-	 * @param packet the packet
-	 * @see org.jnetpcap.PcapHandler.OfMemorySegment#handleSegment(java.lang.Object,
-	 *      java.lang.foreign.MemorySegment, java.lang.foreign.MemorySegment)
+	 * @see com.slytechs.jnet.jnetpcap.NativePacketPipeline.NativePacketProcessor#processNativePacket(java.lang.foreign.MemorySegment,
+	 *      java.lang.foreign.MemorySegment,
+	 *      com.slytechs.jnet.jnetpcap.NativePacketPipeline.NativeContext)
 	 */
+	@SuppressWarnings("exports")
 	@Override
-	public void handleSegment(Object user, MemorySegment header, MemorySegment packet) {
-		for (long c = 0; c < repeatCount; c++)
-			delay();
+	public int processNativePacket(MemorySegment header, MemorySegment packet, NativeContext context) {
+		int count = 0;
 
-		outputData().handleSegment(user, header, packet);
-	}
+		for (long c = 0; c < repeatCount; c++) {
+//			PcapUtils.delay(minIfgNano);
 
-	/**
-	 * Delay.
-	 */
-	private void delay() {
-		final long MIN_BLOCK = 150_000_000;
-		long start = System.nanoTime();
-		long end = start + minIfgNano;
+			count += getOutput().processNativePacket(header, packet, context);
+		}
 
-		long remaining = end - start;
-		do {
-			remaining = end - start;
-
-			if (remaining > MIN_BLOCK)
-				try {
-					delayBlock(end);
-				} catch (InterruptedException e) {
-					throw new RuntimeException(e);
-				}
-			else
-				delaySpin(end);
-
-		} while (remaining > 0);
-	}
-
-	/**
-	 * Delay spin.
-	 *
-	 * @param endNanoTime the end nano time
-	 */
-	private void delaySpin(long endNanoTime) {
-		while (System.nanoTime() < endNanoTime);
-	}
-
-	/**
-	 * Delay block.
-	 *
-	 * @param endNanoTime the end nano time
-	 * @throws InterruptedException the interrupted exception
-	 */
-	private void delayBlock(long endNanoTime) throws InterruptedException {
-		TimeUnit.NANOSECONDS.sleep(endNanoTime - System.nanoTime());
+		return count;
 	}
 
 }

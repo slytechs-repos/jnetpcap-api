@@ -17,284 +17,278 @@
  */
 package com.slytechs.jnet.jnetpcap;
 
+import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
-import java.util.ArrayList;
-import java.util.List;
+import java.lang.foreign.ValueLayout;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
-import org.jnetpcap.PcapHandler;
 import org.jnetpcap.PcapHandler.NativeCallback;
+import org.jnetpcap.PcapHandler.OfArray;
+import org.jnetpcap.PcapHandler.OfByteBuffer;
+import org.jnetpcap.PcapHandler.OfMemorySegment;
+import org.jnetpcap.PcapHeader;
+import org.jnetpcap.internal.PcapHeaderABI;
 
-import com.slytechs.jnet.jnetpcap.NativePacketPipeline.NativePacketConfig.NativePacketProperty;
-import com.slytechs.jnet.jnetpcap.NativePacketPipeline.StatefulNativePacket;
-import com.slytechs.jnet.jnetruntime.pipeline.AbstractInput;
-import com.slytechs.jnet.jnetruntime.pipeline.AbstractOutput;
-import com.slytechs.jnet.jnetruntime.pipeline.AbstractPipeline;
-import com.slytechs.jnet.jnetruntime.pipeline.DataTransformer.InputTransformer.EntryPoint;
-import com.slytechs.jnet.jnetruntime.pipeline.DataTransformer.OutputTransformer.EndPoint;
-import com.slytechs.jnet.jnetruntime.pipeline.HeadNode;
-import com.slytechs.jnet.jnetruntime.pipeline.MultiEndPoint;
-import com.slytechs.jnet.jnetruntime.pipeline.TailNode;
-import com.slytechs.jnet.jnetruntime.util.Registration;
-import com.slytechs.jnet.jnetruntime.util.config.BroadcastNetConfigurator;
-import com.slytechs.jnet.jnetruntime.util.config.NetConfig;
-import com.slytechs.jnet.jnetruntime.util.config.NetConfigurator;
-import com.slytechs.jnet.jnetruntime.util.config.NetConfigurator.NetEnumPropertyChange;
-import com.slytechs.jnet.jnetruntime.util.config.NetProperty;
-import com.slytechs.jnet.jnetruntime.util.config.SystemProperties;
-import com.slytechs.jnet.jnetruntime.util.config.SystemProperties.SystemPropertyGetter;
+import com.slytechs.jnet.jnetpcap.PreProcessors.NativePacketProcessor;
+import com.slytechs.jnet.jnetruntime.pipeline.DT;
+import com.slytechs.jnet.jnetruntime.pipeline.InputTransformer;
+import com.slytechs.jnet.jnetruntime.pipeline.OutputSwitch;
+import com.slytechs.jnet.jnetruntime.pipeline.OutputTransformer;
+import com.slytechs.jnet.jnetruntime.pipeline.Pipeline;
+import com.slytechs.jnet.jnetruntime.pipeline.RawDataType;
+import com.slytechs.jnet.protocol.Packet;
+import com.slytechs.jnet.protocol.core.constants.PacketDescriptorType;
+import com.slytechs.jnet.protocol.descriptor.PcapDescriptor;
 
 /**
  * @author Mark Bednarczyk
  */
-public class NativePacketPipeline
-		extends AbstractPipeline<StatefulNativePacket, NativePacketPipeline> {
+final class NativePacketPipeline
+		extends Pipeline<NativePacketProcessor>
+		implements PreProcessors {
 
-	public static class NativePacketConfig extends NetConfig<NativePacketProperty, NativePacketConfig> {
+	/**
+	 * @author Mark Bednarczyk [mark@slytechs.com]
+	 * @author Sly Technologies Inc.
+	 */
+	static class NativeContext {
+		public Object user;
+		public int packetCount;
 
-		@SuppressWarnings("unchecked")
-		public enum NativePacketProperty implements NetProperty {
-
-			NAME("native.pipeline", NativePacketPipeline::name, SystemProperties::stringValue),
-			ENABLE(true, NativePacketPipeline::enable, SystemProperties::boolValue),
-			BYPASS(false, NativePacketPipeline::bypass, SystemProperties::boolValue),
-//			AUTO_PRUNE(false, NativePacketPipeline::autoPrune, SystemProperties::boolValue),
-			AUTO_PRUNE(false, (i, v) -> System.out.println("AUTO_PRUNE=" + v), SystemProperties::boolValue),
-
-			;
-
-			private final Object defaultValue;
-			private final Class<?> valueType;
-			private final NetEnumPropertyChange<NativePacketPipeline, ?> action;
-			private final SystemPropertyGetter<?> systemProperty;
-
-			<T> NativePacketProperty(
-					T defaultValue,
-					NetEnumPropertyChange<NativePacketPipeline, T> action,
-					SystemPropertyGetter<T> systemProperty) {
-
-				this.defaultValue = defaultValue;
-				this.action = action;
-				this.systemProperty = systemProperty;
-				this.valueType = defaultValue.getClass();
-
-			}
-
-			/**
-			 * @see com.slytechs.jnet.jnetruntime.util.config.NetProperty#defaultValue()
-			 */
-			@Override
-			public <T> T defaultValue() {
-				return (T) defaultValue;
-			}
-
-			/**
-			 * @see com.slytechs.jnet.jnetruntime.util.config.NetProperty#prefix()
-			 */
-			@Override
-			public String prefix() {
-				return PREFIX;
-			}
-
-			/**
-			 * @see com.slytechs.jnet.jnetruntime.util.config.NetProperty#valueType()
-			 */
-			@Override
-			public <T> Class<T> valueType() {
-				return (Class<T>) valueType;
-			}
-
-			/**
-			 * @see com.slytechs.jnet.jnetruntime.util.config.NetProperty#fieldPropertySetter()
-			 */
-			@Override
-			public <T, T_BASE> NetEnumPropertyChange<T_BASE, T> fieldPropertySetter() {
-				return (NetEnumPropertyChange<T_BASE, T>) action;
-			}
-
-			/**
-			 * @see com.slytechs.jnet.jnetruntime.util.config.NetProperty#systemPropertyGetter()
-			 */
-			@Override
-			public <T> SystemPropertyGetter<T> systemPropertyGetter() {
-				return (SystemPropertyGetter<T>) this.systemProperty;
-			}
-		}
-
-		public static final String PREFIX = "native.packet";
-
-		public NativePacketConfig(NetConfig<?, ?> superconfig) {
-			super(superconfig, PREFIX, NativePacketProperty.values());
-		}
-
-		public NativePacketConfig autoPrune(boolean b) {
-
-			super.bool(NativePacketProperty.AUTO_PRUNE, b);
-
-			return this;
+		public void reset() {
+			this.packetCount = 0;
+			this.user = null;
 		}
 	}
 
-	public static class NativeProcessorContext {
+	private final NativeCallback inputNativeCallback;
+	private final NativeContext ctx = new NativeContext();
 
-		MemorySegment userData;
+	private final OutputSwitch<NativePacketProcessor> cbSwitch;
+	private final Consumer<NativeCallback> cbSwitchNativeCallback;
+	@SuppressWarnings("rawtypes")
+	private final Consumer<OfByteBuffer> cbSwitchOfByteBuffer;
+	@SuppressWarnings("rawtypes")
+	private final Consumer<OfArray> cbSwitchOfArray;
+	@SuppressWarnings("rawtypes")
+	private final Consumer<OfMemorySegment> cbSwitchOfMemorySegment;
 
+	private final int NATIVE_CB = 0;
+	private final int BUFFER_CB = 1;
+	private final int ARRAY_CB = 2;
+	private final int MEMORY_SEGMENT_CB = 3;
+	private final NetPcap pcap;
+	private final PcapDescriptor pcapDescriptorReusable = new PcapDescriptor();
+	private final PcapHeaderABI PCAP_ABI;
+
+	/**
+	 * @param name
+	 * @param reducer
+	 */
+	@SuppressWarnings("unchecked")
+	public NativePacketPipeline(String deviceName, NetPcap pcap) {
+		super(deviceName, new RawDataType<>(NativePacketProcessor.class));
+		this.pcap = pcap;
+		this.PCAP_ABI = pcap.getPcapHeaderABI();
+
+		var mseg = Arena.ofAuto().allocate(PcapDescriptor.PCAP_DESCRIPTOR_LENGTH);
+		this.pcapDescriptorReusable.bind(mseg.asByteBuffer(), mseg);
+
+		this.inputNativeCallback = head()
+				.addInput("NativeCallback", this::inputNativeCallback, new RawDataType<>(NativeCallback.class))
+				.getInputPerma(); // Guaranteed it will never change
+
+		/* Only 1 of the switch outputs can be selected at a time */
+		this.cbSwitch = tail().getOutputSwitch();
+
+		var out1 = cbSwitch
+				.setOutput(NATIVE_CB, this::outputNativeCallback, new RawDataType<>(NativeCallback.class));
+		this.cbSwitchNativeCallback = cb -> out1.connect(cb);
+
+		var out2 = cbSwitch
+				.setOutput(BUFFER_CB, this::outputOfByteBuffer, new DT<OfByteBuffer<Object>>() {});
+		this.cbSwitchOfByteBuffer = cb -> out2.connect(cb);
+
+		var out3 = cbSwitch
+				.setOutput(ARRAY_CB, this::outputOfArray, new DT<OfArray<Object>>() {});
+		this.cbSwitchOfArray = cb -> out3.connect(cb);
+
+		var out4 = cbSwitch
+				.setOutput(MEMORY_SEGMENT_CB, this::outputOfMemorySegment, new DT<OfMemorySegment<Object>>() {});
+		this.cbSwitchOfMemorySegment = cb -> out4.connect(cb);
 	}
 
-	public static class OfNativeOutput
-			extends AbstractOutput<StatefulNativePacket, NativeCallback, OfNativeOutput>
-			implements StatefulNativePacket {
+	private final NativePacketProcessor outputOfMemorySegment(Supplier<OfMemorySegment<Object>> out) {
+		return (header, packet, ctx) -> {
+			var cb = out.get();
+			cb.handleSegment(ctx.user, header, packet);
 
-		/**
-		 * @param tailNode
-		 * @param name
-		 * @param inputType
-		 * @param outputType
-		 */
-		public OfNativeOutput(TailNode<StatefulNativePacket> tailNode) {
-			super(tailNode, "OfNativeOutput", NetDataTypes.STATEFUL_NATIVE_PACKET, PcapDataType.PCAP_NATIVE_PACKET);
-		}
-
-		/**
-		 * @see com.slytechs.jnet.jnetpcap.NativePacketPipeline.StatefulNativePacket#processNativePacket(java.lang.foreign.MemorySegment,
-		 *      java.lang.foreign.MemorySegment,
-		 *      com.slytechs.jnet.jnetpcap.NativePacketPipeline.NativeProcessorContext)
-		 */
-		@Override
-		public void processNativePacket(MemorySegment header, MemorySegment packet,
-				NativeProcessorContext context) {
-			outputData().nativeCallback(context.userData, header, packet);
-		}
-
+			return 1;
+		};
 	}
 
-	public static class OfSegmentOutput
-			extends AbstractOutput<StatefulNativePacket, PcapHandler.OfMemorySegment<?>, OfSegmentOutput>
-			implements StatefulNativePacket {
+	private final NativePacketProcessor outputOfArray(Supplier<OfArray<Object>> out) {
+		return (header, packet, ctx) -> {
+			var hdr = new PcapHeader(header);
+			var buf = packet.toArray(ValueLayout.JAVA_BYTE);
 
-		/**
-		 * @param tailNode
-		 * @param name
-		 * @param inputType
-		 * @param outputType
-		 */
-		public OfSegmentOutput(TailNode<StatefulNativePacket> tailNode) {
-			super(tailNode, "OfSegmentOutput",
-					NetDataTypes.STATEFUL_NATIVE_PACKET,
-					NetDataTypes.PCAP_PACKET_OF_SEGMENT);
-		}
+			var cb = out.get();
+			cb.handleArray(ctx.user, hdr, buf);
 
-		/**
-		 * @see com.slytechs.jnet.jnetpcap.NativePacketPipeline.StatefulNativePacket#processNativePacket(java.lang.foreign.MemorySegment,
-		 *      java.lang.foreign.MemorySegment,
-		 *      com.slytechs.jnet.jnetpcap.NativePacketPipeline.NativeProcessorContext)
-		 */
-		@Override
-		public void processNativePacket(MemorySegment header, MemorySegment packet, NativeProcessorContext context) {
-			outputData().handleSegment(null, header, packet);
-		}
-
+			return 1;
+		};
 	}
 
-	public static class PcapCallback
-			extends AbstractInput<NativeCallback, StatefulNativePacket, PcapCallback>
-			implements NativeCallback {
+	private final NativePacketProcessor outputOfByteBuffer(Supplier<OfByteBuffer<Object>> out) {
+		return (header, packet, ctx) -> {
+			var hdr = new PcapHeader(header);
+			var buf = packet.asByteBuffer();
 
-		private NativeProcessorContext context;
+			var cb = out.get();
+			cb.handleByteBuffer(ctx.user, hdr, buf);
 
-		/**
-		 * @param headNode
-		 * @param name
-		 * @param inputType
-		 * @param outputType
-		 */
-		public PcapCallback(
-				HeadNode<StatefulNativePacket> headNode) {
-			super(headNode, "input", PcapDataType.PCAP_NATIVE_PACKET, NetDataTypes.STATEFUL_NATIVE_PACKET);
-
-			this.context = new NativeProcessorContext();
-		}
-
-		/**
-		 * @see org.jnetpcap.PcapHandler.NativeCallback#nativeCallback(java.lang.foreign.MemorySegment,
-		 *      java.lang.foreign.MemorySegment, java.lang.foreign.MemorySegment)
-		 */
-		@Override
-		public void nativeCallback(MemorySegment user, MemorySegment header, MemorySegment packet) {
-			context.userData = user;
-
-			try {
-				readLock.lock();
-				outputData().processNativePacket(header, packet, context);
-
-			} finally {
-				readLock.unlock();
-			}
-		}
+			return 1;
+		};
 	}
 
-	public interface StatefulNativePacket {
-		void processNativePacket(MemorySegment header, MemorySegment packet, NativeProcessorContext context);
+	private final NativePacketProcessor outputNativeCallback(Supplier<NativeCallback> out,
+			OutputTransformer<?, ?> output) {
+		return (header, packet, ctx) -> {
+			var cb = out.get();
+			cb.nativeCallback((MemorySegment) ctx.user, header, packet);
+
+			return 1;
+		};
 	}
 
-	private final EntryPoint<NativeCallback> entryPoint;
-	private final EndPoint<NativeCallback> endPointOfNativeMulti;
-	private EndPoint<NativeCallback> endPointOfNativeSingle;
-	private EndPoint<PcapHandler.OfMemorySegment<?>> endPointOfSegment;
-	private OfNativeOutput nativeOutput;
+	private final NativeCallback inputNativeCallback(Supplier<NativePacketProcessor> out,
+			InputTransformer<?, ?> input) {
+		return (_, header, packet) -> {
+			if (header.byteSize() == 0)
+				header = header.reinterpret(24);
 
-	private final NetConfigurator config = new BroadcastNetConfigurator(name());
-	private final List<Registration> registrations = new ArrayList<>();
+			if (packet.byteSize() == 0)
+				packet = packet.reinterpret(PCAP_ABI.captureLength(header));
 
-	public NativePacketPipeline(String name) {
-		super(name, NetDataTypes.STATEFUL_NATIVE_PACKET);
+			ctx.reset();
 
-		var pcapInput = this.addInput(NativePacketPipeline.PcapCallback::new);
-		this.entryPoint = pcapInput.createEntryPoint(name());
+			var np = out.get();
+			int count = np.processNativePacket(header, packet, ctx);
+			ctx.packetCount = count;
 
-		this.nativeOutput = this.addOutput(NativePacketPipeline.OfNativeOutput::new);
-		this.endPointOfNativeMulti = nativeOutput
-				.createEndPoint(name(), MultiEndPoint::new);
+		};
+	}
 
-		var reg = config.registerAllPropertyListeners(this, NativePacketProperty.values());
-		registrations.add(reg);
+	private NativeCallback getNativeCallbackInput() {
+		return this.inputNativeCallback;
+	}
 
-		config.applyAllFieldPropertySetters(this, NativePacketProperty.values());
+	private <U> void switchToByteBufferCallback(OfByteBuffer<U> cb, U user) {
+		cbSwitch.select(BUFFER_CB);
+		ctx.user = user;
+
+		cbSwitchOfByteBuffer.accept(cb);
+	}
+
+	private <U> void switchToArrayCallback(OfArray<U> cb, U user) {
+		cbSwitch.select(ARRAY_CB);
+		ctx.user = user;
+
+		cbSwitchOfArray.accept(cb);
+	}
+
+	private void switchToNativeCallback(NativeCallback cb, MemorySegment user) {
+		cbSwitch.select(NATIVE_CB);
+		ctx.user = user;
+
+		cbSwitchNativeCallback.accept(cb);;
+	}
+
+	private <U> void switchToMemoryCallback(OfMemorySegment<U> cb, U user) {
+		cbSwitch.select(MEMORY_SEGMENT_CB);
+		ctx.user = user;
+
+		cbSwitchOfMemorySegment.accept(cb);
+	}
+
+	private void resetSwitch() {
+		cbSwitch.reset();
 	}
 
 	@Override
-	public void unregister() {
-		registrations.forEach(Registration::unregister);
-		registrations.clear();
+	public <U> int dispatchSegment(int count, OfMemorySegment<U> memorySegmentHandler, U user) {
+
+		this.switchToMemoryCallback(memorySegmentHandler, user);
+
+		pcap.dispatch(count, this.getNativeCallbackInput(), MemorySegment.NULL);
+
+		this.resetSwitch();
+
+		return ctx.packetCount;
 	}
 
-	public EndPoint<NativeCallback> endPointOfNative() {
-		if (endPointOfNativeSingle == null)
-			this.endPointOfNativeSingle = nativeOutput
-					.createMutableEndPoint(name())
-					.resetAsEmpty();
+	@Override
+	public int dispatchNative(int count, NativeCallback handler, MemorySegment user) {
 
-		return endPointOfNativeSingle;
+		this.switchToNativeCallback(handler, user);
+
+		pcap.dispatch(count, this.getNativeCallbackInput(), MemorySegment.NULL);
+
+		this.resetSwitch();
+
+		return ctx.packetCount;
 	}
 
-	public EndPoint<PcapHandler.OfMemorySegment<?>> endPointOfSegment() {
-		if (endPointOfSegment == null)
-			this.endPointOfSegment = this.addOutput(NativePacketPipeline.OfSegmentOutput::new)
-					.createMutableEndPoint(name())
-					.resetAsEmpty();
+	@Override
+	public <U> int dispatchArray(int count, OfArray<U> cb, U user) {
+		this.switchToArrayCallback(cb, user);
 
-		return endPointOfSegment;
+		pcap.dispatch(count, this.getNativeCallbackInput(), MemorySegment.NULL);
+
+		this.resetSwitch();
+
+		return ctx.packetCount;
 	}
 
-	public EntryPoint<NativeCallback> entryPoint() {
-		return entryPoint;
+	@Override
+	public <U> int dispatchBuffer(int count, OfByteBuffer<U> cb, U user) {
+
+		this.switchToByteBufferCallback(cb, user);
+
+		pcap.dispatch(count, this.getNativeCallbackInput(), MemorySegment.NULL);
+
+		this.resetSwitch();
+
+		return ctx.packetCount;
 	}
 
-	public Registration link(EntryPoint<NativeCallback> entryPoint) {
-		assert entryPoint.dataTypeTooCompilicated() == endPointOfNative().dataTypeTooCompilicated();
+	@Override
+	public boolean nextPacket(Packet packetReference) {
+		assert packetReference.descriptor().type() == PacketDescriptorType.PCAP
+				: "packet descriptor must be PcapDescriptor type";
 
-		final NativeCallback data = entryPoint.data();
-		endPointOfNativeMulti.data(data);
+		int count = dispatchNative(1, new NativeCallback() {
 
-		return endPointOfNativeSingle::clear;
+			@Override
+			public void nativeCallback(MemorySegment user, MemorySegment header, MemorySegment packet) {
+				PcapHeader pcapHeader = new PcapHeader(header);
+				long timestamp = pcapHeader.timestamp();
+				int caplen = pcapHeader.captureLength();
+				int wirelen = pcapHeader.wireLength();
+
+				pcapDescriptorReusable.initDescriptor(timestamp, caplen, wirelen);
+
+				var newPacket = Arena.ofAuto().allocate(packet.byteSize()).copyFrom(packet);
+
+				packetReference.bind(newPacket.asByteBuffer(), newPacket);
+				packetReference.descriptor()
+						.withBinding(pcapDescriptorReusable.buffer(), pcapDescriptorReusable.memorySegment());
+
+			}
+
+		}, MemorySegment.NULL);
+
+		return ctx.packetCount > 0;
 	}
 }

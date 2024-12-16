@@ -627,7 +627,7 @@ public final class NetPcapDeprecated extends DelegatePcap<NetPcapDeprecated> imp
 	private final List<Runnable> closeActions = new LinkedList<>();
 
 	/** The pcap pipeline. */
-	private final PcapPipeline pcapPipeline;
+	private final NativePacketPipeline nativePacketPipeline;
 
 	/** The proto pipeline. */
 	private final ProtocolPipeline protoPipeline;
@@ -660,12 +660,12 @@ public final class NetPcapDeprecated extends DelegatePcap<NetPcapDeprecated> imp
 		config.portName = getName();
 
 		this.dispatcherL0 = new StandardPcapDispatcher(getPcapHandle(), getPcapHeaderABI(), this::breakloop);
-		this.pcapPipeline = new PcapPipeline(0);
-		this.protoPipeline = this.pcapPipeline.installPipeline(ProtocolPipeline::new);
+		this.nativePacketPipeline = new NativePacketPipeline(0);
+		this.protoPipeline = this.nativePacketPipeline.installPipeline(ProtocolPipeline::new);
 
 		this.context = new NetPcapContext(Objects.requireNonNull(pcapType, "pcapType"));
 
-		this.pcapPipeline.context()
+		this.nativePacketPipeline.context()
 				.property(getPcapHandle());
 
 		setDescriptorType(PacketDescriptorType.TYPE2);
@@ -815,7 +815,7 @@ public final class NetPcapDeprecated extends DelegatePcap<NetPcapDeprecated> imp
 		checkIfActiveOrElseThrow();
 
 		try (Registration reg = protoPipeline.registerOutput(handler.wrapUser(user))) {
-			return dispatcherL0.invokeDispatchNativeCallback(count, pcapPipeline, MemorySegment.NULL);
+			return dispatcherL0.invokeDispatchNativeCallback(count, nativePacketPipeline, MemorySegment.NULL);
 		}
 	}
 
@@ -1049,7 +1049,7 @@ public final class NetPcapDeprecated extends DelegatePcap<NetPcapDeprecated> imp
 		checkIfActiveOrElseThrow();
 
 		try (Registration reg = protoPipeline.registerOutput(handler.wrapUser(user))) {
-			return dispatcherL0.invokeLoopNativeCallback(count, pcapPipeline, MemorySegment.NULL);
+			return dispatcherL0.invokeLoopNativeCallback(count, nativePacketPipeline, MemorySegment.NULL);
 		}
 	}
 
@@ -1104,8 +1104,8 @@ public final class NetPcapDeprecated extends DelegatePcap<NetPcapDeprecated> imp
 	 *
 	 * @return the processor config
 	 */
-	public PcapPipeline pipeline() {
-		return pcapPipeline;
+	public NativePacketPipeline pipeline() {
+		return nativePacketPipeline;
 	}
 
 	/**
@@ -1135,8 +1135,8 @@ public final class NetPcapDeprecated extends DelegatePcap<NetPcapDeprecated> imp
 	 *
 	 * @return the pcap pipeline
 	 */
-	public PcapPipeline protocolStack() {
-		return pcapPipeline;
+	public NativePacketPipeline protocolStack() {
+		return nativePacketPipeline;
 	}
 
 	/**

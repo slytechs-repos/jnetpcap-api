@@ -18,13 +18,12 @@
 package com.slytechs.jnet.jnetpcap;
 
 import java.lang.foreign.MemorySegment;
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
-import org.jnetpcap.PcapHandler.OfMemorySegment;
-
-import com.slytechs.jnet.jnetruntime.pipeline.AbstractProcessor;
-import com.slytechs.jnet.jnetruntime.pipeline.Pipeline;
-import com.slytechs.jnet.jnetruntime.util.config.SystemProperties;
+import com.slytechs.jnet.jnetpcap.NativePacketPipeline.NativeContext;
+import com.slytechs.jnet.jnetpcap.PreProcessors.NativePacketProcessor;
+import com.slytechs.jnet.jnetruntime.pipeline.Processor;
 
 /**
  * The Class PacketDelay.
@@ -32,32 +31,43 @@ import com.slytechs.jnet.jnetruntime.util.config.SystemProperties;
  * @author Mark Bednarczyk
  */
 public final class PacketDelay
-		extends AbstractProcessor<OfMemorySegment<Object>, PacketDelay>
-		implements OfMemorySegment<Object> {
+		extends Processor<NativePacketProcessor>
+		implements NativePacketProcessor {
 
-	/** The Constant PREFIX. */
-	private static final String PREFIX = "packet.delay";
-
-	/** The Constant PROPERTY_PACKET_REPEATER_ENABLE. */
-	public static final String PROPERTY_PACKET_REPEATER_ENABLE = PREFIX + ".enable";
-
-	/** The Constant PROPERTY_PACKET_REPEATER_DELAY_NANO. */
-	public static final String PROPERTY_PACKET_REPEATER_DELAY_NANO = PREFIX + ".delayNano";
-
-	/** The delay nano. */
-	private long delayNano = SystemProperties.longValue(PROPERTY_PACKET_REPEATER_DELAY_NANO, 1);
+	private final PacketDelaySettings settings = new PacketDelaySettings();
 
 	/** The Constant NAME. */
-	public static final String NAME = "packet-delay";
+	public static final String NAME = "PacketDelay";
+
+	public PacketDelay(PacketDelaySettings settings) {
+		super(PreProcessors.PACKET_DELAY_PRIORITY, NAME);
+
+		this.settings.mergeValues(settings);
+	}
+
+	public PacketDelay(long duration, TimeUnit unit) {
+		super(PreProcessors.PACKET_DELAY_PRIORITY, NAME);
+
+		setDelay(duration, unit);
+	}
+
+	public PacketDelay(Duration duration) {
+		super(PreProcessors.PACKET_DELAY_PRIORITY, NAME);
+
+		setDelay(duration);
+	}
 
 	/**
-	 * Instantiates a new packet delay.
+	 * Sets the delay.
 	 *
-	 * @param pipeline the pipeline
-	 * @param priority the priority
+	 * @param duration the duration
+	 * @param unit     the unit
+	 * @return the packet delay
 	 */
-	public PacketDelay(Pipeline<OfMemorySegment<Object>, ?> pipeline, int priority) {
-		super(pipeline, priority, NAME, PcapDataType.PCAP_RAW_PACKET);
+	public PacketDelay setDelay(Duration duration) {
+		settings.DELAY_NANO.setLong(duration.toNanos());
+
+		return this;
 	}
 
 	/**
@@ -68,7 +78,7 @@ public final class PacketDelay
 	 * @return the packet delay
 	 */
 	public PacketDelay setDelay(long duration, TimeUnit unit) {
-		this.delayNano = unit.toNanos(duration);
+		settings.delayNano(unit.toNanos(duration));
 
 		return this;
 	}
@@ -80,7 +90,7 @@ public final class PacketDelay
 	 * @return the delay
 	 */
 	public long getDelay(TimeUnit unit) {
-		return unit.convert(delayNano, TimeUnit.NANOSECONDS);
+		return unit.convert(settings.delayNano(), TimeUnit.NANOSECONDS);
 	}
 
 	/**
@@ -89,21 +99,25 @@ public final class PacketDelay
 	 * @return the delay nano
 	 */
 	public long getDelayNano() {
-		return delayNano;
+		return settings.delayNano();
 	}
 
 	/**
-	 * Handle segment.
-	 *
-	 * @param user   the user
-	 * @param header the header
-	 * @param packet the packet
-	 * @see org.jnetpcap.PcapHandler.OfMemorySegment#handleSegment(java.lang.Object,
-	 *      java.lang.foreign.MemorySegment, java.lang.foreign.MemorySegment)
+	 * @see com.slytechs.jnet.jnetpcap.PreProcessors.NativePacketProcessor#processNativePacket(java.lang.foreign.MemorySegment,
+	 *      java.lang.foreign.MemorySegment,
+	 *      com.slytechs.jnet.jnetpcap.NativePacketPipeline.NativeContext)
 	 */
 	@Override
-	public void handleSegment(Object user, MemorySegment header, MemorySegment packet) {
-		outputData().handleSegment(user, header, packet);
+	public int processNativePacket(MemorySegment header, MemorySegment packet, NativeContext context) {
+		try {
+			long nanosDelay = settings.delayNano();
+
+			PcapUtils.delay(nanosDelay);
+		} catch (InterruptedException e) {
+			return 0;
+		}
+
+		return getOutput().processNativePacket(header, packet, context);
 	}
 
 }

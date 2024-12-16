@@ -46,7 +46,7 @@ class ProcessorTests {
 
 			/**
 			 * <pre>
-			 * + PcapPipeline
+			 * + NativePacketPipeline
 			 * 	 + ProtocolPipeline
 			 * 		+ TcpIpProtocolFamily
 			 * 		+ QuicProtocolFamily

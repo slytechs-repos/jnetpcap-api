@@ -21,38 +21,29 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.foreign.MemorySegment;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 
 import org.jnetpcap.Pcap;
 import org.jnetpcap.PcapException;
 import org.jnetpcap.PcapHandler.NativeCallback;
-import org.jnetpcap.PcapHandler.OfArray;
-import org.jnetpcap.PcapHandler.OfByteBuffer;
-import org.jnetpcap.PcapHandler.OfMemorySegment;
+import org.jnetpcap.PcapHeader;
 import org.jnetpcap.PcapIf;
 import org.jnetpcap.constant.PcapConstants;
 import org.jnetpcap.constant.PcapDlt;
-import org.jnetpcap.internal.DelegatePcap;
 
-import com.slytechs.jnet.jnetpcap.NetPcapHandler.OfPacket;
 import com.slytechs.jnet.jnetruntime.NotFound;
-import com.slytechs.jnet.jnetruntime.pipeline.DataProcessor;
-import com.slytechs.jnet.jnetruntime.pipeline.DataProcessor.ProcessorFactory;
-import com.slytechs.jnet.jnetruntime.pipeline.DataTransformer.OutputTransformer.EndPoint;
-import com.slytechs.jnet.jnetruntime.pipeline.DataTypeTooCompilicated;
-import com.slytechs.jnet.jnetruntime.pipeline.Pipeline;
 import com.slytechs.jnet.jnetruntime.util.Flags;
+import com.slytechs.jnet.jnetruntime.util.HexStrings;
 import com.slytechs.jnet.jnetruntime.util.Named;
-import com.slytechs.jnet.jnetruntime.util.config.BroadcastNetConfigurator;
-import com.slytechs.jnet.jnetruntime.util.config.NetConfigurator;
-import com.slytechs.jnet.protocol.Packet;
-import com.slytechs.jnet.protocol.core.IpReassembly;
+import com.slytechs.jnet.jnetruntime.util.Registration;
+import com.slytechs.jnet.protocol.core.network.IpReassembly;
 
 /**
- * Provides high-level packet capture and protocol settingsSupport using libpcap.
+ * Provides high-level packet capture and protocol settingsSupport using
+ * libpcap.
  * 
  * <h2>IP Fragment (IPF) Modes</h2> The NetPcap API supports IP fragment
  * reassembly and tracking. When enabled, the user's packet handler receives
@@ -84,7 +75,82 @@ import com.slytechs.jnet.protocol.core.IpReassembly;
  * 
  * @author Mark Bednarczyk
  */
-public class NetPcap extends DelegatePcap<NetPcap> implements Named {
+public class NetPcap extends AbstractPcap implements Named, AutoCloseable {
+
+	public static void main(String[] args) throws PcapException, NotFound, TimeoutException {
+		try (var pcap = NetPcap.live()) {
+
+			pcap.addErrorListener(Throwable::printStackTrace);
+
+			pcap.activate();
+
+			PreProcessors preProcessors = pcap.getPreProcessors();
+
+			preProcessors.addProcessor(new PacketRepeater(2));
+			preProcessors.addProcessor(21, new PacketRepeater(2));
+//			preProcessors.addProcessor(new PacketDelay(2, TimeUnit.MILLISECONDS));
+
+			System.out.println(preProcessors);
+
+			int count = 0;
+
+			count += preProcessors.dispatchNative(1, (NativeCallback) (user, header, packet) -> {
+
+				System.out.println();
+				System.out.println("---- NATIVE CB ----");
+
+				System.out.print(HexStrings.toHexDump(header.asByteBuffer()));
+
+				var hdr = new PcapHeader(header);
+
+				System.out.println("Caught packet " + hdr);
+
+			}, DEFAULT_USER_ARG);
+
+//			count += preProcessors.dispatchBuffer(1, (OfByteBuffer<String>) (user, header, packet) -> {
+//
+//				System.out.println();
+//				System.out.println("---- BYTE BUFFER CB ----");
+//
+//				System.out.println("Caught packet " + header);
+//				System.out.println("User = " + user);
+//
+//			}, "OfByteBuffer callback");
+//
+//			count += preProcessors.dispatchArray(1, (OfArray<String>) (user, header, packet) -> {
+//
+//				System.out.println("---- ARRAY CB ----");
+//
+//				System.out.println("Caught packet " + header);
+//				System.out.println("User = " + user);
+//
+//			}, "OfArray callback");
+//
+//			count += preProcessors.dispatchSegment(1, (OfMemorySegment<String>) (user, header, packet) -> {
+//
+//				System.out.println();
+//				System.out.println("---- MEMORY SEGMENT CB ----");
+//
+//				System.out.println(HexStrings.toHexDump(header.asByteBuffer()));
+//
+//				var hdr = new PcapHeader(header);
+//
+//				System.out.println("Caught packet " + hdr);
+//				System.out.println("User = " + user);
+//
+//			}, "OfMemorySegment callback");
+//
+//			Packet packet = new Packet(PacketDescriptorType.PCAP);
+//			preProcessors.nextPacket(packet);
+//			count++;
+//			System.out.println("---- NEXT_PACKET CB ----");
+//			System.out.println("Caught packet " + packet);
+
+			System.out.println();
+			System.out.printf("processed %d packets%n", count);
+		}
+
+	}
 
 	private static final MemorySegment DEFAULT_USER_ARG = MemorySegment.NULL;
 
@@ -209,51 +275,20 @@ public class NetPcap extends DelegatePcap<NetPcap> implements Named {
 	public static final int MAX_SNAPLEN = PcapConstants.MAX_SNAPLEN;
 
 	/**
-	 * Creates a NetPcap instance using an existing Pcap handle. This method allows
-	 * for integration with pre-existing Pcap configurations or external Pcap handle
-	 * creation. Unlike other creation methods, this one may not require calling
-	 * NetPcap::activate, depending on the state of the provided Pcap handle.
-	 *
-	 * @param pcapHandle The existing Pcap handle to use
-	 * @param pcapType   The type of the Pcap handle (e.g., LIVE_CAPTURE,
-	 *                   OFFLINE_READER, DEAD_HANDLE)
-	 * @return A new NetPcap instance using the provided Pcap handle
-	 * @throws IllegalArgumentException If the provided Pcap handle is null
-	 * @throws IllegalStateException    If the Pcap handle is in an invalid state
-	 *                                  for the specified PcapType
-	 */
-	public static NetPcap using(Pcap pcapHandle, PcapType pcapType) {
-		return new NetPcap(pcapHandle, pcapType);
-	}
-
-	/**
-	 * Creates a NetPcap instance for live packet capture using an Optional PcapIf
-	 * device. This method requires NetPcap::activate to be called after creation to
+	 * Creates a NetPcap instance for live packet capture using a device name
+	 * string. This method requires NetPcap::activate to be called after creation to
 	 * start the capture.
 	 *
-	 * @param deviceName An Optional containing the PcapIf device to use for capture
+	 * @param deviceName The name of the device to use for capture
 	 * @return A new NetPcap instance configured for live capture
 	 * @throws PcapException If there's an error creating the Pcap instance
-	 * @throws NotFound      If the Optional deviceName is empty
+	 * @throws NotFound
 	 */
-	public static NetPcap live(Optional<PcapIf> deviceName) throws PcapException, NotFound {
-		if (deviceName.isEmpty())
-			throw new NotFound("PcapIf device not found");
+	public static NetPcap live() throws PcapException, NotFound {
+		var firstDevice = getDefaultDevice();
+		var pcap = Pcap.create(firstDevice);
 
-		return live(deviceName.get());
-	}
-
-	/**
-	 * Creates a NetPcap instance for live packet capture using a PcapIf device.
-	 * This method requires NetPcap::activate to be called after creation to start
-	 * the capture.
-	 *
-	 * @param deviceName The PcapIf device to use for capture
-	 * @return A new NetPcap instance configured for live capture
-	 * @throws PcapException If there's an error creating the Pcap instance
-	 */
-	public static NetPcap live(PcapIf deviceName) throws PcapException {
-		return new NetPcap(Pcap.create(deviceName), PcapType.LIVE_CAPTURE);
+		return new NetPcap(pcap, PcapType.LIVE_CAPTURE);
 	}
 
 	/**
@@ -266,7 +301,9 @@ public class NetPcap extends DelegatePcap<NetPcap> implements Named {
 	 * @throws PcapException If there's an error creating the Pcap instance
 	 */
 	public static NetPcap live(String deviceName) throws PcapException {
-		return new NetPcap(Pcap.create(deviceName), PcapType.LIVE_CAPTURE);
+		var pcap = Pcap.create(deviceName);
+
+		return new NetPcap(pcap, PcapType.LIVE_CAPTURE);
 	}
 
 	/**
@@ -283,7 +320,9 @@ public class NetPcap extends DelegatePcap<NetPcap> implements Named {
 	public static NetPcap offline(File file) throws PcapException, FileNotFoundException, IOException {
 		PcapUtils.checkFileCanRead(file);
 
-		return new NetPcap(Pcap.openOffline(file), PcapType.OFFLINE_READER);
+		var pcap = Pcap.openOffline(file);
+
+		return new NetPcap(pcap, PcapType.OFFLINE_READER);
 	}
 
 	/**
@@ -301,7 +340,9 @@ public class NetPcap extends DelegatePcap<NetPcap> implements Named {
 	public static NetPcap offline(String filename) throws PcapException, FileNotFoundException, IOException {
 		PcapUtils.checkFileCanRead(new File(filename));
 
-		return new NetPcap(Pcap.openOffline(filename), PcapType.OFFLINE_READER);
+		var pcap = Pcap.openOffline(new File(filename));
+
+		return new NetPcap(pcap, PcapType.OFFLINE_READER);
 	}
 
 	/**
@@ -314,7 +355,9 @@ public class NetPcap extends DelegatePcap<NetPcap> implements Named {
 	 * @throws PcapException If there's an error creating the Pcap instance
 	 */
 	public static NetPcap dead() throws PcapException {
-		return new NetPcap(Pcap.openDead(PcapDlt.EN10MB, MAX_SNAPLEN), PcapType.DEAD_HANDLE);
+		var pcap = Pcap.openDead(PcapDlt.EN10MB, PcapConstants.MAX_SNAPLEN);
+
+		return new NetPcap(pcap, PcapType.DEAD_HANDLE);
 	}
 
 	/**
@@ -328,171 +371,32 @@ public class NetPcap extends DelegatePcap<NetPcap> implements Named {
 	 * @throws PcapException If there's an error creating the Pcap instance
 	 */
 	public static NetPcap dead(PcapDlt dlt) throws PcapException {
-		return new NetPcap(Pcap.openDead(dlt, MAX_SNAPLEN), PcapType.DEAD_HANDLE);
+		var pcap = Pcap.openDead(dlt, PcapConstants.MAX_SNAPLEN);
+
+		return new NetPcap(pcap, PcapType.DEAD_HANDLE);
 	}
 
-	private final NativePacketPipeline nativePipeline;
-	private final RawPacketPipeline rawPipeline;
-	private final PacketPipeline packetPipeline;
+	/** Main native PCAP packet pipeline for packet dispatching */
+	private final NativePacketPipeline nativePacketPipeline;
 
-	private final List<Pipeline<?, ?>> pipelineList = new ArrayList<>();
-	private final NetConfigurator configurator;
+	private NetPcap(Pcap pcap, PcapType pcapType) {
+		super(pcap, pcapType);
 
-	private NetPcap(Pcap pcapHandle, PcapType pcapType) {
-		super(pcapHandle);
-		this.configurator = new BroadcastNetConfigurator(name());
-
-		var abi = Objects.requireNonNull(getPcapHeaderABI(), "abi");
-//		abi = PcapHeaderABI.COMPACT_BE;
-		System.out.println("NetPcap2::init abi=" + abi);
-
-		nativePipeline = new NativePacketPipeline(PcapUtils.shortName(name()));
-		rawPipeline = new RawPacketPipeline(PcapUtils.shortName(name()));
-		packetPipeline = new PacketPipeline(PcapUtils.shortName(name()), abi);
-
-		pipelineList.add(nativePipeline);
-		pipelineList.add(rawPipeline);
-
-		nativePipeline.link(rawPipeline.entryPoint());
-		nativePipeline.link(packetPipeline.entryPoint());
-
-		packetPipeline.endPointOfPacket();
-		System.out.println();
-		System.out.println("NetPcap2::init packet=" + packetPipeline);
-
-		System.out.println();
-		System.out.println("NetPcap2::init raw=" + rawPipeline);
-
-		System.out.println("NetPcap2::init native=" + nativePipeline);
+		this.nativePacketPipeline = new NativePacketPipeline(PcapUtils.shortName(name()), this);
 	}
 
-	public <T, T1, T_PROC extends DataProcessor<T, T_PROC>> T_PROC addProcessor(
-			int priority,
-			ProcessorFactory.Builder1Arg<T, T1, T_PROC> builder,
-			T1 arg1) throws NotFound {
+	public Registration addErrorListener(Consumer<Throwable> listener) {
+		return nativePacketPipeline.addPipelineErrorConsumer(listener);
+	}
 
-		var f = builder.newFactory(arg1);
-
-		return addProcessor(priority, f);
+	public PreProcessors getPreProcessors() {
+		return nativePacketPipeline;
 	}
 
 	/**
-	 * Adds a processor to the pipeline with a specified priority.
-	 *
-	 * @param <T_PROC>         The type of the processor
-	 * @param priority         The priority of the processor in the pipeline
-	 * @param processorFactory The factory to create the processor
-	 * @return The created processor
-	 * @throws NotFound
+	 * @param ipConfig
 	 */
-	public <T, T_PROC extends DataProcessor<T, T_PROC>> T_PROC addProcessor(
-			int priority,
-			ProcessorFactory<T, T_PROC> processorFactory) throws NotFound {
-		DataTypeTooCompilicated type = processorFactory.dataTypeTooCompilicated();
-		Pipeline<T, ?> pipeline = getPipeline(type);
-
-		var p = pipeline.addProcessor(priority, processorFactory);
-
-		System.out.printf("NetPcap2::addProcessor(%s:%s) pipeline=%s%n", p.name(), type, pipeline);
-		return p;
-	}
-
-	/**
-	 * Adds a named processor to the pipeline with a specified priority.
-	 *
-	 * @param <T_PROC>         The type of the processor
-	 * @param priority         The priority of the processor in the pipeline
-	 * @param name             The name of the processor
-	 * @param processorFactory The factory to create the named processor
-	 * @return The created processor
-	 */
-	public <T, T_PROC extends DataProcessor<T, T_PROC>> T_PROC addProcessor(int priority, String name,
-			ProcessorFactory.Named<T, T_PROC> processorFactory) {
-		return null;
-	}
-
-	public <U> int dispatchArray(int count, OfArray<U> arrayHandler, U user) {
-
-		var endPoint = rawPipeline
-				.endPointOfArray()
-				.userOpaque(user)
-				.data(arrayHandler);
-
-		int pktCount = dispatchNative0(count, DEFAULT_USER_ARG, endPoint);
-
-		return pktCount;
-	}
-
-	public <U> int dispatchBuffer(int count, OfByteBuffer<U> byteBufferHandler, U user) {
-
-		var endPoint = rawPipeline
-				.endPointOfByteBuffer()
-				.userOpaque(user)
-				.data(byteBufferHandler);
-
-		int pktCount = dispatchNative0(count, DEFAULT_USER_ARG, endPoint);
-
-		return pktCount;
-	}
-
-	public int dispatchNative(int count, NativeCallback handler, MemorySegment user) {
-
-		var endPoint = nativePipeline
-				.endPointOfNative()
-				.userOpaque(user)
-				.data(handler);
-
-		int pktCount = dispatchNative0(count, user, endPoint);
-
-		return pktCount;
-	}
-
-	private int dispatchNative0(int count, MemorySegment user, EndPoint<?> endPoint) {
-		try {
-			int actualCount = super.dispatch(count, nativePipeline.entryPoint().data(), user);
-
-			return actualCount;
-
-		} finally {
-			endPoint.resetAsEmpty();
-		}
-	}
-
-	public <U> int dispatchPacket(int count, OfPacket<U> handler, U user) {
-
-		var endPoint = packetPipeline
-				.endPointOfPacket()
-				.userOpaque(user)
-				.data(handler);
-
-		int pktCount = dispatchNative0(count, DEFAULT_USER_ARG, endPoint);
-
-		return pktCount;
-	}
-
-	public <U> int dispatchSegment(int count, OfMemorySegment<U> memorySegmentHandler, U user) {
-
-		var endPoint = nativePipeline
-				.endPointOfSegment()
-				.userOpaque(user)
-				.data(memorySegmentHandler);
-
-		int pktCount = dispatchNative0(count, DEFAULT_USER_ARG, endPoint);
-
-		return pktCount;
-	}
-
-	@SuppressWarnings("unchecked")
-	private <T> Pipeline<T, ?> getPipeline(DataTypeTooCompilicated dataTypeTooCompilicated) throws NotFound {
-		return pipelineList.stream()
-				.filter(p -> p.dataTypeTooCompilicated().equals(dataType))
-				.map(p -> (Pipeline<T, ?>) p)
-				.findAny()
-				.orElseThrow(() -> new NotFound("pipeline for data type [%s.%s]"
-						.formatted(dataType.getClass().getSimpleName(), dataType)));
-	}
-
-	public boolean nextEx(Packet packet) {
+	public NetPcap setIpReassembler(IpReassembly reassembler) {
 		throw new UnsupportedOperationException("not implemented yet");
 	}
 
@@ -502,16 +406,5 @@ public class NetPcap extends DelegatePcap<NetPcap> implements Named {
 	@Override
 	public String name() {
 		return getName();
-	}
-
-	public NetPcapConfig configure() {
-		return new NetPcapConfig(configurator, this);
-	}
-
-	/**
-	 * @param ipConfig
-	 */
-	public NetPcap setIpReassembler(IpReassembly reassembler) {
-		throw new UnsupportedOperationException("not implemented yet");
 	}
 }

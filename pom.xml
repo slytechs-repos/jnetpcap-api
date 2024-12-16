@@ -29,5 +29,12 @@
 	    <artifactId>protocol-pack-api</artifactId>
 	    <version>0.10.0-SNAPSHOT</version>
 	  </dependency>
+	  
+	  <dependency>
+		<groupId>com.slytechs.jnet.jnetpcap</groupId>
+		<artifactId>jnetpcap-wrapper</artifactId>
+		<version>2.4.0-SNAPSHOT</version>
+	  </dependency>
+	  
 	</dependencies>
 </project>
