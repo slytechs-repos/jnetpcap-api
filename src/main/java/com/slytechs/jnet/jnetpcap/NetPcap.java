@@ -20,33 +20,36 @@ package com.slytechs.jnet.jnetpcap;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.foreign.MemorySegment;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
 import org.jnetpcap.Pcap;
 import org.jnetpcap.PcapException;
+import org.jnetpcap.PcapHeader;
 import org.jnetpcap.PcapIf;
 import org.jnetpcap.constant.PcapConstants;
 import org.jnetpcap.constant.PcapDlt;
 import org.jnetpcap.internal.PcapHeaderABI;
 
 import com.slytechs.jnet.jnetpcap.PacketHandler.OfNative;
-import com.slytechs.jnet.jnetpcap.PacketHandler.OfPacket;
 import com.slytechs.jnet.jnetpcap.internal.PcapSource;
 import com.slytechs.jnet.jnetpcap.internal.PcapUtils;
 import com.slytechs.jnet.jnetpcap.internal.PostPcapPipeline;
 import com.slytechs.jnet.jnetpcap.internal.PrePcapPipeline;
+import com.slytechs.jnet.jnetpcap.processors.PacketDelay;
 import com.slytechs.jnet.jnetpcap.processors.PostProcessors;
 import com.slytechs.jnet.jnetpcap.processors.PreProcessors;
 import com.slytechs.jnet.jnetruntime.NotFound;
 import com.slytechs.jnet.jnetruntime.pipeline.OutputConnector;
 import com.slytechs.jnet.jnetruntime.util.Flags;
+import com.slytechs.jnet.jnetruntime.util.HexStrings;
 import com.slytechs.jnet.jnetruntime.util.MemoryUnit;
 import com.slytechs.jnet.jnetruntime.util.Named;
 import com.slytechs.jnet.jnetruntime.util.Registration;
-import com.slytechs.jnet.protocol.Packet;
 import com.slytechs.jnet.protocol.core.constants.PacketDescriptorType;
 import com.slytechs.jnet.protocol.core.network.IpReassembly;
 import com.slytechs.jnet.protocol.meta.PacketFormat;
@@ -98,7 +101,7 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 
 //			preProcessors.addProcessor(new PacketRepeater(2));
 //			preProcessors.addProcessor(21, new PacketRepeater(2));
-//			preProcessors.addProcessor(new PacketDelay(2, TimeUnit.MILLISECONDS));
+			preProcessors.addProcessor(new PacketDelay(100, TimeUnit.MILLISECONDS));
 //			preProcessors.addProcessor(new PacketPlayer());
 
 			System.out.println(preProcessors.toStringInOut());
@@ -108,26 +111,26 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 
 			int count = 0;
 
-			count += pcap.dispatchPacket(1, new OfPacket<String>() {
+//			count += pcap.dispatchPacket(1, new OfPacket<String>() {
+//
+//				@Override
+//				public void handlePacket(String user, Packet packet) {
+//					System.out.println(packet);
+//				}
+//			}, "");
 
-				@Override
-				public void handlePacket(String user, Packet packet) {
-					System.out.println(packet);
-				}
-			}, "");
+			count += pcap.dispatchNative(1, (PacketHandler.OfNative) (user, header, packet) -> {
 
-//			count += pcap.dispatchNative(1, (PacketHandler.OfNative) (user, header, packet) -> {
-//
-//				System.out.println();
-//				System.out.println("---- NATIVE CB ----");
-//
-//				System.out.print(HexStrings.toHexDump(header.asByteBuffer()));
-//
-//				var hdr = new PcapHeader(header);
-//
-//				System.out.println("Caught packet " + hdr);
-//
-//			}, MemorySegment.NULL);
+				System.out.println();
+				System.out.println("---- NATIVE CB ----");
+
+				System.out.print(HexStrings.toHexDump(header.asByteBuffer()));
+
+				var hdr = new PcapHeader(header);
+
+				System.out.println("Caught packet " + hdr);
+
+			}, MemorySegment.NULL);
 
 //			count += pcap.dispatchBuffer(1, (OfBuffer<String>) (user, header, packet) -> {
 //
