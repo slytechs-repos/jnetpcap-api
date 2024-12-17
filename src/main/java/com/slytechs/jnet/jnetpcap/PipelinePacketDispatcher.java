@@ -59,22 +59,22 @@ class PipelinePacketDispatcher implements PacketDispatcher {
 	}
 
 	@Override
-	public int dispatchNative(int count, OfNative handler, MemorySegment user) {
+	public long dispatchNative(long count, OfNative handler, MemorySegment user) {
 		return prePipeline.dispatchNative(count, handler, user);
 	}
 
 	@Override
-	public <U> int dispatchForeign(int count, OfForeign<U> handler, U user) {
+	public <U> long dispatchForeign(long count, OfForeign<U> handler, U user) {
 		return prePipeline.dispatchForeign(count, handler, user);
 	}
 
 	@Override
-	public <U> int dispatchBuffer(int count, OfBuffer<U> handler, U user) {
+	public <U> long dispatchBuffer(long count, OfBuffer<U> handler, U user) {
 		return prePipeline.dispatchBuffer(count, handler, user);
 	}
 
 	@Override
-	public <U> int dispatchArray(int count, OfArray<U> handler, U user) {
+	public <U> long dispatchArray(long count, OfArray<U> handler, U user) {
 		return prePipeline.dispatchArray(count, handler, user);
 	}
 
@@ -84,7 +84,7 @@ class PipelinePacketDispatcher implements PacketDispatcher {
 	}
 
 	@Override
-	public <U> int dispatchPacket(int count, OfPacket<U> handler, U user, Supplier<Packet> packetFactory) {
+	public <U> long dispatchPacket(long count, OfPacket<U> handler, U user, Supplier<Packet> packetFactory) {
 		return postPipeline.dispatchPacket(count, handler, user, packetFactory);
 	}
 
@@ -94,7 +94,7 @@ class PipelinePacketDispatcher implements PacketDispatcher {
 	}
 
 	@Override
-	public <U> int dispatchPacket(int count, OfPacket<U> handler, U user) {
+	public <U> long dispatchPacket(long count, OfPacket<U> handler, U user) {
 		return postPipeline.dispatchPacket(count, handler, user);
 	}
 }

@@ -58,7 +58,7 @@ public final class PrePcapPipeline
 	 */
 	public static class NativeContext {
 		public Object user;
-		public int packetCount;
+		public long packetCount;
 
 		public void reset() {
 			this.packetCount = 0;
@@ -161,7 +161,7 @@ public final class PrePcapPipeline
 			ctx.reset();
 
 			var np = out.get();
-			int count = np.processNativePacket(header, packet, ctx);
+			long count = np.processNativePacket(header, packet, ctx);
 			ctx.packetCount = count;
 
 		};
@@ -172,7 +172,7 @@ public final class PrePcapPipeline
 	}
 
 	@SuppressWarnings("unchecked")
-	public <U> int dispatchForeign(int count, OfForeign<U> handler, U user) {
+	public <U> long dispatchForeign(long count, OfForeign<U> handler, U user) {
 
 		ctx.user = user;
 
@@ -187,7 +187,7 @@ public final class PrePcapPipeline
 		return ctx.packetCount;
 	}
 
-	public int dispatchNative(int count, OfNative handler, MemorySegment user) {
+	public long dispatchNative(long count, OfNative handler, MemorySegment user) {
 
 		ctx.user = user;
 
@@ -203,7 +203,7 @@ public final class PrePcapPipeline
 	}
 
 	@SuppressWarnings("unchecked")
-	public <U> int dispatchArray(int count, PacketHandler.OfArray<U> handler, U user) {
+	public <U> long dispatchArray(long count, PacketHandler.OfArray<U> handler, U user) {
 
 		ctx.user = user;
 
@@ -219,7 +219,7 @@ public final class PrePcapPipeline
 	}
 
 	@SuppressWarnings("unchecked")
-	public <U> int dispatchBuffer(int count, OfBuffer<U> handler, U user) {
+	public <U> long dispatchBuffer(long count, OfBuffer<U> handler, U user) {
 
 		ctx.user = user;
 

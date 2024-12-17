@@ -211,11 +211,11 @@ public abstract sealed class BaseNetPcap
 	 * @param cb
 	 * @param user
 	 * @return
-	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#dispatchArray(int,
+	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#dispatchArray(long,
 	 *      com.slytechs.jnet.jnetpcap.PacketHandler.OfArray, java.lang.Object)
 	 */
 	@Override
-	public <U> int dispatchArray(int count, com.slytechs.jnet.jnetpcap.PacketHandler.OfArray<U> cb, U user) {
+	public <U> long dispatchArray(long count, com.slytechs.jnet.jnetpcap.PacketHandler.OfArray<U> cb, U user) {
 		return getPacketDispatcher().dispatchArray(count, cb, user);
 	}
 
@@ -225,11 +225,11 @@ public abstract sealed class BaseNetPcap
 	 * @param cb
 	 * @param user
 	 * @return
-	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#dispatchBuffer(int,
+	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#dispatchBuffer(long,
 	 *      com.slytechs.jnet.jnetpcap.PacketHandler.OfBuffer, java.lang.Object)
 	 */
 	@Override
-	public <U> int dispatchBuffer(int count, OfBuffer<U> cb, U user) {
+	public <U> long dispatchBuffer(long count, OfBuffer<U> cb, U user) {
 		return getPacketDispatcher().dispatchBuffer(count, cb, user);
 	}
 
@@ -239,11 +239,11 @@ public abstract sealed class BaseNetPcap
 	 * @param memorySegmentHandler
 	 * @param user
 	 * @return
-	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#dispatchForeign(int,
+	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#dispatchForeign(long,
 	 *      com.slytechs.jnet.jnetpcap.PacketHandler.OfForeign, java.lang.Object)
 	 */
 	@Override
-	public <U> int dispatchForeign(int count, OfForeign<U> memorySegmentHandler, U user) {
+	public <U> long dispatchForeign(long count, OfForeign<U> memorySegmentHandler, U user) {
 		return getPacketDispatcher().dispatchForeign(count, memorySegmentHandler, user);
 	}
 
@@ -252,12 +252,12 @@ public abstract sealed class BaseNetPcap
 	 * @param handler
 	 * @param user
 	 * @return
-	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#dispatchNative(int,
+	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#dispatchNative(long,
 	 *      com.slytechs.jnet.jnetpcap.PacketHandler.OfNative,
 	 *      java.lang.foreign.MemorySegment)
 	 */
 	@Override
-	public int dispatchNative(int count, OfNative handler, MemorySegment user) {
+	public long dispatchNative(long count, OfNative handler, MemorySegment user) {
 		return getPacketDispatcher().dispatchNative(count, handler, user);
 	}
 
@@ -267,11 +267,11 @@ public abstract sealed class BaseNetPcap
 	 * @param cb
 	 * @param user
 	 * @return
-	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#dispatchPacket(int,
+	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#dispatchPacket(long,
 	 *      com.slytechs.jnet.jnetpcap.PacketHandler.OfPacket, java.lang.Object)
 	 */
 	@Override
-	public <U> int dispatchPacket(int count, OfPacket<U> cb, U user) {
+	public <U> long dispatchPacket(long count, OfPacket<U> cb, U user) {
 		return getPacketDispatcher().dispatchPacket(count, cb, user);
 	}
 
@@ -282,12 +282,12 @@ public abstract sealed class BaseNetPcap
 	 * @param user
 	 * @param packetFactory
 	 * @return
-	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#dispatchPacket(int,
+	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#dispatchPacket(long,
 	 *      com.slytechs.jnet.jnetpcap.PacketHandler.OfPacket, java.lang.Object,
 	 *      java.util.function.Supplier)
 	 */
 	@Override
-	public <U> int dispatchPacket(int count, OfPacket<U> cb, U user, Supplier<Packet> packetFactory) {
+	public <U> long dispatchPacket(long count, OfPacket<U> cb, U user, Supplier<Packet> packetFactory) {
 		return getPacketDispatcher().dispatchPacket(count, cb, user, packetFactory);
 	}
 
@@ -298,7 +298,7 @@ public abstract sealed class BaseNetPcap
 	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#dispatchPacket(com.slytechs.jnet.jnetpcap.PacketHandler.OfPacketConsumer)
 	 */
 	@Override
-	public <U> int dispatchPacket(OfPacketConsumer cb) {
+	public <U> long dispatchPacket(OfPacketConsumer cb) {
 		return getPacketDispatcher().dispatchPacket(cb);
 	}
 

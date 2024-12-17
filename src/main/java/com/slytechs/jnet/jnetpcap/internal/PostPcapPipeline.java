@@ -160,7 +160,7 @@ public class PostPcapPipeline
 	}
 
 	@SuppressWarnings("unchecked")
-	public <U> int dispatchPacket(int count, OfPacket<U> handler, U user, Supplier<Packet> packetFactory) {
+	public <U> long dispatchPacket(long count, OfPacket<U> handler, U user, Supplier<Packet> packetFactory) {
 
 		input.getContext().user = user;
 		input.getContext().packetFactory = packetFactory;
@@ -184,7 +184,7 @@ public class PostPcapPipeline
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
-	public <U> int dispatchPacket(int count, OfPacket<U> handler, U user) {
+	public <U> long dispatchPacket(long count, OfPacket<U> handler, U user) {
 		input.getContext().user = user;
 		input.getContext().packetFactory = input.getContext().defaultPacketFactory;
 
