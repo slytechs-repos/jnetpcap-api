@@ -21,104 +21,140 @@ import java.lang.foreign.MemorySegment;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
-import com.slytechs.jnet.jnetpcap.internal.PcapUtils;
 import com.slytechs.jnet.jnetpcap.internal.PrePcapPipeline.NativeContext;
 import com.slytechs.jnet.jnetpcap.processors.PreProcessors.PreProcessorData;
 import com.slytechs.jnet.jnetruntime.pipeline.Processor;
+import com.slytechs.jnet.jnetruntime.time.NanoTimes;
 
 /**
- * The Class PacketDelay.
+ * A packet processor that introduces configurable delays between packet
+ * processing operations. This processor can be used to simulate network
+ * conditions, control packet processing rates, or implement traffic shaping in
+ * packet processing pipelines.
+ * 
+ * <p>
+ * The delay can be specified using various time units through different
+ * constructor overloads and setter methods. The processor maintains the delay
+ * settings through an internal {@code PacketDelaySettings} instance.
+ * </p>
+ * 
+ * <p>
+ * This processor is part of the pre-processing pipeline and operates at the
+ * {@code PreProcessors.PACKET_DELAY_PRIORITY} priority level.
+ * </p>
  *
- * @author Mark Bednarczyk
+ * @author Mark Bednarczyk [mark@slytechs.com]
+ * @author Sly Technologies Inc.
  */
 public final class PacketDelay
 		extends Processor<PreProcessorData>
 		implements PreProcessorData {
 
-	private final PacketDelaySettings settings = new PacketDelaySettings();
-
-	/** The Constant NAME. */
+	/** The name identifier for this processor. */
 	public static final String NAME = "PacketDelay";
 
+	private final PacketDelaySettings settings = new PacketDelaySettings();
+
+	/**
+	 * Constructs a new PacketDelay processor with custom settings.
+	 *
+	 * @param settings the delay settings to be applied to this processor
+	 */
 	public PacketDelay(PacketDelaySettings settings) {
 		super(PreProcessors.PACKET_DELAY_PRIORITY, NAME);
-
 		this.settings.mergeValues(settings);
 	}
 
+	/**
+	 * Constructs a new PacketDelay processor with specified duration and time unit.
+	 *
+	 * @param duration the length of the delay
+	 * @param unit     the time unit of the delay duration
+	 */
 	public PacketDelay(long duration, TimeUnit unit) {
 		super(PreProcessors.PACKET_DELAY_PRIORITY, NAME);
-
 		setDelay(duration, unit);
 	}
 
+	/**
+	 * Constructs a new PacketDelay processor with a Java Duration object.
+	 *
+	 * @param duration the delay duration
+	 */
 	public PacketDelay(Duration duration) {
 		super(PreProcessors.PACKET_DELAY_PRIORITY, NAME);
-
 		setDelay(duration);
 	}
 
 	/**
-	 * Sets the delay.
+	 * Sets the packet processing delay using a Duration object.
 	 *
-	 * @param duration the duration
-	 * @param unit     the unit
-	 * @return the packet delay
+	 * @param duration the new delay duration
+	 * @return this PacketDelay instance for method chaining
 	 */
 	public PacketDelay setDelay(Duration duration) {
 		settings.DELAY_NANO.setLong(duration.toNanos());
-
 		return this;
 	}
 
 	/**
-	 * Sets the delay.
+	 * Sets the packet processing delay using a specific time unit.
 	 *
-	 * @param duration the duration
-	 * @param unit     the unit
-	 * @return the packet delay
+	 * @param duration the length of the delay
+	 * @param unit     the time unit of the delay duration
+	 * @return this PacketDelay instance for method chaining
 	 */
 	public PacketDelay setDelay(long duration, TimeUnit unit) {
 		settings.delayNano(unit.toNanos(duration));
-
 		return this;
 	}
 
 	/**
-	 * Gets the delay.
+	 * Retrieves the current delay value converted to the specified time unit.
 	 *
-	 * @param unit the unit
-	 * @return the delay
+	 * @param unit the time unit to convert the delay value to
+	 * @return the current delay value in the specified unit
 	 */
 	public long getDelay(TimeUnit unit) {
 		return unit.convert(settings.delayNano(), TimeUnit.NANOSECONDS);
 	}
 
 	/**
-	 * Gets the delay nano.
+	 * Retrieves the current delay value in nanoseconds.
 	 *
-	 * @return the delay nano
+	 * @return the current delay value in nanoseconds
 	 */
 	public long getDelayNano() {
 		return settings.delayNano();
 	}
 
 	/**
-	 * @see com.slytechs.jnet.jnetpcap.processors.PreProcessors.PreProcessorData#processNativePacket(java.lang.foreign.MemorySegment,
-	 *      java.lang.foreign.MemorySegment,
-	 *      com.slytechs.jnet.jnetpcap.internal.PrePcapPipeline.NativeContext)
+	 * Processes a native packet by introducing a configured delay before forwarding
+	 * the packet to the next processor in the pipeline.
+	 * 
+	 * <p>
+	 * This method uses {@link NanoTimes#delay(long)} to implement precise timing
+	 * control. If the thread is interrupted during the delay, the method will
+	 * return early with a status code of 0.
+	 * </p>
+	 *
+	 * @param header  the memory segment containing the packet header
+	 * @param packet  the memory segment containing the packet data
+	 * @param context the native context for packet processing
+	 * @return the result from the next processor in the pipeline, or 0 if
+	 *         interrupted
 	 */
 	@Override
 	public int processNativePacket(MemorySegment header, MemorySegment packet, NativeContext context) {
 		try {
 			long nanosDelay = settings.delayNano();
 
-			PcapUtils.delay(nanosDelay);
+			NanoTimes.delay(nanosDelay);
+
 		} catch (InterruptedException e) {
-			return 0;
+			super.handleError(e, outputData);
 		}
 
 		return getOutput().processNativePacket(header, packet, context);
 	}
-
 }

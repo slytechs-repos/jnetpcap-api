@@ -31,7 +31,7 @@ public class PacketDelaySettings extends Settings<PacketDelaySettings> {
 
 	private static final String PREFIX = "packet.delay";
 
-	public final BooleanProperty ENABLE = newBooleanProperty("enable", true);
+	public final BooleanProperty ENABLE = newBooleanProperty("enable", true).loadSystemProperty();
 	public final LongProperty DELAY_NANO = newLongProperty("delayNano", 0).loadSystemProperty();
 
 	/**
