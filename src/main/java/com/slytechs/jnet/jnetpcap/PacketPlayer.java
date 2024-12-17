@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 import org.jnetpcap.internal.PcapHeaderABI;
 
 import com.slytechs.jnet.jnetpcap.PrePcapPipeline.NativeContext;
-import com.slytechs.jnet.jnetpcap.PreProcessors.PreProcessor;
+import com.slytechs.jnet.jnetpcap.PreProcessors.PreProcessorData;
 import com.slytechs.jnet.jnetruntime.pipeline.Processor;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
 import com.slytechs.jnet.jnetruntime.util.config.SystemProperties;
@@ -34,8 +34,8 @@ import com.slytechs.jnet.jnetruntime.util.config.SystemProperties;
  * @author Mark Bednarczyk
  */
 public class PacketPlayer
-		extends Processor<PreProcessor>
-		implements PreProcessor {
+		extends Processor<PreProcessorData>
+		implements PreProcessorData {
 
 	/** The Constant PREFIX. */
 	private static final String PREFIX = "packet.player";
@@ -88,7 +88,7 @@ public class PacketPlayer
 	 * @param name
 	 * @param mapper
 	 */
-	public PacketPlayer(int priority, String name, ProcessorMapper<PreProcessor> mapper) {
+	public PacketPlayer(int priority, String name, ProcessorMapper<PreProcessorData> mapper) {
 		super(priority, name, mapper);
 		// TODO Auto-generated constructor stub
 	}
@@ -268,7 +268,7 @@ public class PacketPlayer
 	}
 
 	/**
-	 * @see com.slytechs.jnet.jnetpcap.PreProcessors.PreProcessor#processNativePacket(java.lang.foreign.MemorySegment,
+	 * @see com.slytechs.jnet.jnetpcap.PreProcessors.PreProcessorData#processNativePacket(java.lang.foreign.MemorySegment,
 	 *      java.lang.foreign.MemorySegment,
 	 *      com.slytechs.jnet.jnetpcap.PrePcapPipeline.NativeContext)
 	 */

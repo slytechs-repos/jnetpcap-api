@@ -26,7 +26,7 @@ import org.jnetpcap.PcapHeader;
 
 import com.slytechs.jnet.jnetpcap.PacketHandler.OfNative;
 import com.slytechs.jnet.jnetpcap.PostPcapPipeline.PostContext;
-import com.slytechs.jnet.jnetpcap.PostProcessors.PostData;
+import com.slytechs.jnet.jnetpcap.PostProcessors.PostProcessorData;
 import com.slytechs.jnet.jnetruntime.pipeline.InputTransformer;
 import com.slytechs.jnet.jnetruntime.pipeline.RawDataType;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
@@ -36,7 +36,7 @@ import com.slytechs.jnet.protocol.descriptor.PacketDissector;
 import com.slytechs.jnet.protocol.meta.PacketFormat;
 
 class InputPacketDissector
-		extends InputTransformer<OfNative, PostData>
+		extends InputTransformer<OfNative, PostProcessorData>
 		implements OfNative {
 
 	private static final long MAX_DESCRIPTOR_SIZE = MemoryUnit.BYTES.toBytes(256);
@@ -73,6 +73,7 @@ class InputPacketDissector
 		pcapBuffer.order(ctx.abi.order());
 
 		Packet goPacket = ctx.packetFactory.get();
+		goPacket.setFormatter(ctx.formatter);
 
 		ByteBuffer goBuffer = packet.asByteBuffer().order(ByteOrder.BIG_ENDIAN);
 		MemorySegment goSegment = packet;
@@ -98,6 +99,7 @@ class InputPacketDissector
 	 */
 	@Override
 	public void handleNative(MemorySegment user, MemorySegment header, MemorySegment packet) {
+		
 		var goPacket = dissectPacket(header, packet);
 
 		getOutput().processDissectedPacket(goPacket, ctx);

@@ -25,7 +25,7 @@ import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 
 import com.slytechs.jnet.jnetpcap.PrePcapPipeline.NativeContext;
-import com.slytechs.jnet.jnetpcap.PreProcessors.PreProcessor;
+import com.slytechs.jnet.jnetpcap.PreProcessors.PreProcessorData;
 import com.slytechs.jnet.jnetruntime.pipeline.Processor;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
 import com.slytechs.jnet.jnetruntime.util.config.SystemProperties;
@@ -44,8 +44,8 @@ import com.slytechs.jnet.jnetruntime.util.config.SystemProperties;
  * @author Mark Bednarczyk
  */
 public final class PacketRepeater
-		extends Processor<PreProcessor>
-		implements PreProcessor {
+		extends Processor<PreProcessorData>
+		implements PreProcessorData {
 
 	/** The Constant PREFIX. */
 	private static final String PREFIX = "packet.repeater";
@@ -296,7 +296,7 @@ public final class PacketRepeater
 	}
 
 	/**
-	 * @see com.slytechs.jnet.jnetpcap.PrePcapPipeline.PreProcessor#processNativePacket(java.lang.foreign.MemorySegment,
+	 * @see com.slytechs.jnet.jnetpcap.PrePcapPipeline.PreProcessorData#processNativePacket(java.lang.foreign.MemorySegment,
 	 *      java.lang.foreign.MemorySegment,
 	 *      com.slytechs.jnet.jnetpcap.PrePcapPipeline.NativeContext)
 	 */

@@ -101,6 +101,10 @@ public interface PacketDispatcher {
 
 	Packet getDefaultPacket();
 
+	default <U> int dispatchPacket(PacketHandler.OfPacketConsumer cb) {
+		return dispatchPacket(1, (user, packet) -> cb.accept(packet), null);
+	}
+
 	<U> int dispatchPacket(int count, PacketHandler.OfPacket<U> cb, U user);
 
 	<U> int dispatchPacket(int count, PacketHandler.OfPacket<U> cb, U user,

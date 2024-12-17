@@ -21,16 +21,16 @@ import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.nio.ByteBuffer;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.jnetpcap.internal.PcapHeaderABI;
 
 import com.slytechs.jnet.jnetpcap.PacketHandler.OfNative;
 import com.slytechs.jnet.jnetpcap.PacketHandler.OfPacket;
-import com.slytechs.jnet.jnetpcap.PostProcessors.PostData;
+import com.slytechs.jnet.jnetpcap.PostProcessors.PostProcessorData;
 import com.slytechs.jnet.jnetruntime.pipeline.DT;
-import com.slytechs.jnet.jnetruntime.pipeline.OutputSwitch;
+import com.slytechs.jnet.jnetruntime.pipeline.OutputStack;
+import com.slytechs.jnet.jnetruntime.pipeline.OutputTransformer;
 import com.slytechs.jnet.jnetruntime.pipeline.Pipeline;
 import com.slytechs.jnet.jnetruntime.pipeline.RawDataType;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
@@ -46,7 +46,7 @@ import com.slytechs.jnet.protocol.meta.PacketFormat;
  * @author Sly Technologies Inc.
  */
 class PostPcapPipeline
-		extends Pipeline<PostData>
+		extends Pipeline<PostProcessorData>
 		implements PostProcessors, Registration {
 
 	public static final String NAME = "PostPcapPipeline";
@@ -110,46 +110,40 @@ class PostPcapPipeline
 
 	}
 
-	private final OutputSwitch<PostData> cbSwitch;
 	private final Registration upstreamRegistration;
 
-	@SuppressWarnings("rawtypes")
-	private final Consumer<OfPacket> packetConnector;
-	private final PacketDispatcher dispatcher;
+	private final PacketDispatcherSource dispatcherSource;
 	private final InputPacketDissector input;
+
+	private final OutputStack<PostProcessorData> cbStack;
+	private final OutputTransformer<PostProcessorData, OfPacket<Object>> packetOutput;
 
 	/**
 	 * @param name
 	 * @param dataType
 	 */
-	@SuppressWarnings("unchecked")
-	public PostPcapPipeline(BiFunction<Object, OfNative, Registration> connectionPoint, PacketDispatcher dispatcher,
+	public PostPcapPipeline(BiFunction<Object, OfNative, Registration> connectionPoint,
+			PacketDispatcherSource source,
 			PcapHeaderABI abi) {
-		super(NAME, new RawDataType<>(PostData.class));
-		this.dispatcher = dispatcher;
+		super(NAME, new RawDataType<>(PostProcessorData.class));
+		this.dispatcherSource = source;
 
-		var defaultContext = new PostContext(abi, dispatcher::getDefaultPacket);
-		defaultContext.packetFactory = dispatcher::getDefaultPacket;
+		var defaultContext = new PostContext(abi, source::getDefaultPacket);
+		defaultContext.packetFactory = source::getDefaultPacket;
 
 		var descriptorType = defaultContext.defaultPacketFactory.get().descriptor().type();
 		defaultContext.dissector = PacketDissector.dissector(descriptorType);
 
-		this.input = new InputPacketDissector("OfNative", defaultContext);
+		this.input = new InputPacketDissector("PreProcessors", defaultContext);
 		head().addInput(input).getInputPerma();
 
-		/* Only 1 of the switch outputs can be selected at a time */
-		this.cbSwitch = tail().getOutputSwitch();
-		this.cbSwitch.setOutput(0, this::outputOfPacket, new DT<OfPacket<Object>>() {});
+		this.cbStack = tail().getOutputStack();
+		this.packetOutput = cbStack.createTransformer("OfPacket", this::outputOfPacket, new DT<OfPacket<Object>>() {});
 
-		this.upstreamRegistration = connectionPoint.apply("mainOutput", input);
-
-		var out1 = tail().addOutput(0, "OfPacket", this::outputOfPacket,
-				new DT<PacketHandler.OfPacket<Object>>() {});
-		this.packetConnector = cb -> out1.connect(cb);
-
+		this.upstreamRegistration = connectionPoint.apply("PostProcessors", input);
 	}
 
-	private final PostData outputOfPacket(Supplier<OfPacket<Object>> out) {
+	private final PostProcessorData outputOfPacket(Supplier<OfPacket<Object>> out) {
 		return (Packet packet, PostContext postContext) -> out.get().handlePacket(postContext.user, packet);
 	}
 
@@ -161,20 +155,19 @@ class PostPcapPipeline
 		upstreamRegistration.unregister();
 	}
 
-	private <U> void switchToPacketCallback(OfPacket<U> cb, U user, Supplier<Packet> packetFactory) {
-		cbSwitch.select(0);
+	@SuppressWarnings("unchecked")
+	public <U> int dispatchPacket(int count, OfPacket<U> handler, U user, Supplier<Packet> packetFactory) {
+
 		input.getContext().user = user;
 		input.getContext().packetFactory = packetFactory;
 
-		packetConnector.accept(cb);
-	}
+		packetOutput.connectNoRegistration((OfPacket<Object>) handler);
+		cbStack.push(packetOutput);
 
-	public <U> int dispatchPacket(int count, OfPacket<U> cb, U user, Supplier<Packet> packetFactory) {
-		this.switchToPacketCallback(cb, user, packetFactory);
+		dispatcherSource.captureFromSource(count);
 
-		dispatcher.capturePackets(count);
-
-		cbSwitch.reset();
+		cbStack.pop();
+		packetOutput.disconnect();
 
 		return 1;
 	}
@@ -186,12 +179,18 @@ class PostPcapPipeline
 	 * @param user
 	 * @return
 	 */
-	public <U> int dispatchPacket(int count, OfPacket<U> cb, U user) {
-		this.switchToPacketCallback(cb, user, input.getContext().defaultPacketFactory);
+	@SuppressWarnings("unchecked")
+	public <U> int dispatchPacket(int count, OfPacket<U> handler, U user) {
+		input.getContext().user = user;
+		input.getContext().packetFactory = input.getContext().defaultPacketFactory;
 
-		dispatcher.capturePackets(count);
+		packetOutput.connectNoRegistration((OfPacket<Object>) handler);
+		cbStack.push(packetOutput);
 
-		cbSwitch.reset();
+		dispatcherSource.captureFromSource(count);
+
+		cbStack.pop();
+		packetOutput.disconnect();
 
 		return 1;
 	}

@@ -98,7 +98,7 @@ public class TestPcapSyntax {
 			Ip4 ip4 = new Ip4();
 			Ip6 ip6 = new Ip6();
 
-			pcap.getPacketDispatcher().dispatchPacket(60, (u, packet) -> {
+			pcap.dispatchPacket(60, (u, packet) -> {
 
 				if (packet.hasHeader(ip6)) {
 					System.out.println("Source IP: " + ip4.srcAsAddress());

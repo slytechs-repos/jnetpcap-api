@@ -22,7 +22,7 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 import com.slytechs.jnet.jnetpcap.PrePcapPipeline.NativeContext;
-import com.slytechs.jnet.jnetpcap.PreProcessors.PreProcessor;
+import com.slytechs.jnet.jnetpcap.PreProcessors.PreProcessorData;
 import com.slytechs.jnet.jnetruntime.pipeline.Processor;
 
 /**
@@ -31,8 +31,8 @@ import com.slytechs.jnet.jnetruntime.pipeline.Processor;
  * @author Mark Bednarczyk
  */
 public final class PacketDelay
-		extends Processor<PreProcessor>
-		implements PreProcessor {
+		extends Processor<PreProcessorData>
+		implements PreProcessorData {
 
 	private final PacketDelaySettings settings = new PacketDelaySettings();
 
@@ -103,7 +103,7 @@ public final class PacketDelay
 	}
 
 	/**
-	 * @see com.slytechs.jnet.jnetpcap.PreProcessors.PreProcessor#processNativePacket(java.lang.foreign.MemorySegment,
+	 * @see com.slytechs.jnet.jnetpcap.PreProcessors.PreProcessorData#processNativePacket(java.lang.foreign.MemorySegment,
 	 *      java.lang.foreign.MemorySegment,
 	 *      com.slytechs.jnet.jnetpcap.PrePcapPipeline.NativeContext)
 	 */

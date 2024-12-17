@@ -20,32 +20,21 @@ package com.slytechs.jnet.jnetpcap;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.lang.foreign.MemorySegment;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 import org.jnetpcap.Pcap;
-import org.jnetpcap.Pcap0_4;
-import org.jnetpcap.Pcap0_6;
-import org.jnetpcap.Pcap1_0;
 import org.jnetpcap.PcapException;
 import org.jnetpcap.PcapIf;
 import org.jnetpcap.constant.PcapConstants;
 import org.jnetpcap.constant.PcapDlt;
-import org.jnetpcap.internal.NonSealedPcap;
-import org.jnetpcap.internal.PcapHeaderABI;
 
-import com.slytechs.jnet.jnetpcap.PacketHandler.OfArray;
-import com.slytechs.jnet.jnetpcap.PacketHandler.OfBuffer;
-import com.slytechs.jnet.jnetpcap.PacketHandler.OfForeign;
-import com.slytechs.jnet.jnetpcap.PacketHandler.OfNative;
 import com.slytechs.jnet.jnetpcap.PacketHandler.OfPacket;
 import com.slytechs.jnet.jnetruntime.NotFound;
-import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
 import com.slytechs.jnet.jnetruntime.util.Flags;
+import com.slytechs.jnet.jnetruntime.util.MemoryUnit;
 import com.slytechs.jnet.jnetruntime.util.Named;
 import com.slytechs.jnet.jnetruntime.util.Registration;
 import com.slytechs.jnet.protocol.Packet;
@@ -87,7 +76,7 @@ import com.slytechs.jnet.protocol.meta.PacketFormat;
  * 
  * @author Mark Bednarczyk
  */
-public class NetPcap extends NonSealedPcap implements Named, AutoCloseable {
+public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 
 	public static void main(String[] args) throws PcapException, NotFound, TimeoutException {
 		try (var pcap = NetPcap.live()) {
@@ -96,23 +85,21 @@ public class NetPcap extends NonSealedPcap implements Named, AutoCloseable {
 
 			pcap.activate();
 
-			PacketDispatcher dispatcher = pcap.getPacketDispatcher();
-
 			PreProcessors preProcessors = pcap.getPreProcessors();
 
 //			preProcessors.addProcessor(new PacketRepeater(2));
 //			preProcessors.addProcessor(21, new PacketRepeater(2));
 //			preProcessors.addProcessor(new PacketDelay(2, TimeUnit.MILLISECONDS));
-			preProcessors.addProcessor(new PacketPlayer());
+//			preProcessors.addProcessor(new PacketPlayer());
 
-			System.out.println(preProcessors.toString(true));
+			System.out.println(preProcessors.toStringInOut());
 
 			PostProcessors postProcessors = pcap.getPostProcessors();
-			System.out.println(postProcessors.toString(true));
+			System.out.println(postProcessors.toStringInOut());
 
 			int count = 0;
 
-			count += dispatcher.dispatchPacket(1, new OfPacket<String>() {
+			count += pcap.dispatchPacket(1, new OfPacket<String>() {
 
 				@Override
 				public void handlePacket(String user, Packet packet) {
@@ -120,8 +107,8 @@ public class NetPcap extends NonSealedPcap implements Named, AutoCloseable {
 				}
 			}, "");
 
-//			count += dispatcher.dispatchNative(1, (PacketHandler.OfNative) (user, header, packet) -> {
-//package
+//			count += pcap.dispatchNative(1, (PacketHandler.OfNative) (user, header, packet) -> {
+//
 //				System.out.println();
 //				System.out.println("---- NATIVE CB ----");
 //
@@ -131,9 +118,9 @@ public class NetPcap extends NonSealedPcap implements Named, AutoCloseable {
 //
 //				System.out.println("Caught packet " + hdr);
 //
-//			}, DEFAULT_USER_ARG);
+//			}, MemorySegment.NULL);
 
-//			count += preProcessors.dispatchBuffer(1, (OfByteBuffer<String>) (user, header, packet) -> {
+//			count += pcap.dispatchBuffer(1, (OfBuffer<String>) (user, header, packet) -> {
 //
 //				System.out.println();
 //				System.out.println("---- BYTE BUFFER CB ----");
@@ -142,8 +129,8 @@ public class NetPcap extends NonSealedPcap implements Named, AutoCloseable {
 //				System.out.println("User = " + user);
 //
 //			}, "OfByteBuffer callback");
-//
-//			count += preProcessors.dispatchArray(1, (OfArray<String>) (user, header, packet) -> {
+
+//			count += pcap.dispatchArray(1, (OfArray<String>) (user, header, packet) -> {
 //
 //				System.out.println("---- ARRAY CB ----");
 //
@@ -151,8 +138,8 @@ public class NetPcap extends NonSealedPcap implements Named, AutoCloseable {
 //				System.out.println("User = " + user);
 //
 //			}, "OfArray callback");
-//
-//			count += preProcessors.dispatchSegment(1, (OfMemorySegment<String>) (user, header, packet) -> {
+
+//			count += pcap.dispatchForeign(1, (OfForeign<String>) (user, header, packet) -> {
 //
 //				System.out.println();
 //				System.out.println("---- MEMORY SEGMENT CB ----");
@@ -165,9 +152,9 @@ public class NetPcap extends NonSealedPcap implements Named, AutoCloseable {
 //				System.out.println("User = " + user);
 //
 //			}, "OfMemorySegment callback");
-//
+
 //			Packet packet = new Packet(PacketDescriptorType.PCAP);
-//			preProcessors.nextPacket(packet);
+//			pcap.nextPacket(packet);
 //			count++;
 //			System.out.println("---- NEXT_PACKET CB ----");
 //			System.out.println("Caught packet " + packet);
@@ -310,9 +297,9 @@ public class NetPcap extends NonSealedPcap implements Named, AutoCloseable {
 	 */
 	public static NetPcap live() throws PcapException, NotFound {
 		var firstDevice = getDefaultDevice();
-		var pcap = Pcap1_0.create(NetPcap::new, firstDevice.name());
+		var pcap = Pcap.create(firstDevice.name());
 
-		return pcap;
+		return new NetPcap(pcap);
 	}
 
 	/**
@@ -325,9 +312,24 @@ public class NetPcap extends NonSealedPcap implements Named, AutoCloseable {
 	 * @throws PcapException If there's an error creating the Pcap instance
 	 */
 	public static NetPcap live(String deviceName) throws PcapException {
-		var pcap = Pcap1_0.create(NetPcap::new, deviceName);
+		var pcap = Pcap.create(deviceName);
 
-		return pcap;
+		return new NetPcap(pcap);
+	}
+
+	/**
+	 * Creates a NetPcap instance for live packet capture using a device name
+	 * string. This method requires NetPcap::activate to be called after creation to
+	 * start the capture.
+	 *
+	 * @param deviceName The name of the device to use for capture
+	 * @return A new NetPcap instance configured for live capture
+	 * @throws PcapException If there's an error creating the Pcap instance
+	 */
+	public static NetPcap live(PcapIf device) throws PcapException {
+		var pcap = Pcap.create(device.name());
+
+		return new NetPcap(pcap);
 	}
 
 	/**
@@ -344,9 +346,9 @@ public class NetPcap extends NonSealedPcap implements Named, AutoCloseable {
 	public static NetPcap offline(File file) throws PcapException, FileNotFoundException, IOException {
 		PcapUtils.checkFileCanRead(file);
 
-		var pcap = Pcap0_4.openOffline(NetPcap::new, file.getAbsolutePath());
+		var pcap = Pcap.openOffline(file.getAbsolutePath());
 
-		return pcap;
+		return new NetPcap(pcap);
 	}
 
 	/**
@@ -364,9 +366,9 @@ public class NetPcap extends NonSealedPcap implements Named, AutoCloseable {
 	public static NetPcap offline(String filename) throws PcapException, FileNotFoundException, IOException {
 		PcapUtils.checkFileCanRead(new File(filename));
 
-		var pcap = Pcap0_4.openOffline(NetPcap::new, filename);
+		var pcap = Pcap.openOffline(filename);
 
-		return pcap;
+		return new NetPcap(pcap);
 	}
 
 	/**
@@ -379,9 +381,9 @@ public class NetPcap extends NonSealedPcap implements Named, AutoCloseable {
 	 * @throws PcapException If there's an error creating the Pcap instance
 	 */
 	public static NetPcap dead() throws PcapException {
-		var pcap = Pcap0_6.openDead(NetPcap::new, PcapDlt.EN10MB, PcapConstants.MAX_SNAPLEN);
+		var pcap = Pcap.openDead(PcapDlt.EN10MB, PcapConstants.MAX_SNAPLEN);
 
-		return pcap;
+		return new NetPcap(pcap);
 	}
 
 	/**
@@ -395,9 +397,9 @@ public class NetPcap extends NonSealedPcap implements Named, AutoCloseable {
 	 * @throws PcapException If there's an error creating the Pcap instance
 	 */
 	public static NetPcap dead(PcapDlt dlt) throws PcapException {
-		var pcap = Pcap0_6.openDead(NetPcap::new, dlt, PcapConstants.MAX_SNAPLEN);
+		var pcap = Pcap.openDead(dlt, PcapConstants.MAX_SNAPLEN);
 
-		return pcap;
+		return new NetPcap(pcap);
 	}
 
 	/** Main native PCAP packet pipeline for packet dispatching */
@@ -405,70 +407,19 @@ public class NetPcap extends NonSealedPcap implements Named, AutoCloseable {
 
 	private final PostPcapPipeline postPipeline;
 
-	private final PacketDispatcher packetDispatcher = new PacketDispatcher() {
+	private final PacketDispatcher packetDispatcher;
 
-		final Packet defaultPacket = new Packet(PacketDescriptorType.TYPE2);
-
-		{
-			defaultPacket.descriptor().timestampUnit(TimestampUnit.EPOCH_MICRO);
-			defaultPacket.setFormatter(new PacketFormat());
-		}
-
-		@Override
-		public boolean nextPacket(Packet packet) {
-			return prePipeline.nextPacket(packet);
-		}
-
-		@Override
-		public int dispatchNative(int count, OfNative handler, MemorySegment user) {
-			return prePipeline.dispatchNative(count, handler, user);
-		}
-
-		@Override
-		public <U> int dispatchForeign(int count, OfForeign<U> memorySegmentHandler, U user) {
-			return prePipeline.dispatchForeign(count, null, user);
-		}
-
-		@Override
-		public <U> int dispatchBuffer(int count, OfBuffer<U> cb, U user) {
-			return prePipeline.dispatchBuffer(count, cb, user);
-		}
-
-		@Override
-		public <U> int dispatchArray(int count, OfArray<U> cb, U user) {
-			return prePipeline.dispatchArray(count, cb, user);
-		}
-
-		@Override
-		public Packet getDefaultPacket() {
-			return defaultPacket;
-		}
-
-		@Override
-		public <U> int dispatchPacket(int count, OfPacket<U> cb, U user, Supplier<Packet> packetFactory) {
-			return postPipeline.dispatchPacket(count, cb, user, packetFactory);
-		}
-
-		@Override
-		public long capturePackets(long count) {
-			return prePipeline.capturePackets(count);
-		}
-
-		@Override
-		public <U> int dispatchPacket(int count, OfPacket<U> cb, U user) {
-			return postPipeline.dispatchPacket(count, cb, user);
-		}
-	};
-
-	private NetPcap(MemorySegment handle, String name, PcapHeaderABI abi) {
-		super(handle, name, abi);
+	private NetPcap(Pcap pcap) {
+		super(pcap);
 
 		this.prePipeline = new PrePcapPipeline(PcapUtils.shortName(name()), this);
-		this.postPipeline = new PostPcapPipeline(prePipeline::out, packetDispatcher, getPcapHeaderABI());
-
+		this.postPipeline = new PostPcapPipeline(prePipeline::addOutput, prePipeline::capturePackets,
+				getPcapHeaderABI());
+		this.packetDispatcher = new PipelinePacketDispatcher(prePipeline, postPipeline);
 	}
 
-	public PacketDispatcher getPacketDispatcher() {
+	@Override
+	protected PacketDispatcher getPacketDispatcher() {
 		return packetDispatcher;
 	}
 
@@ -497,5 +448,36 @@ public class NetPcap extends NonSealedPcap implements Named, AutoCloseable {
 	@Override
 	public String name() {
 		return getName();
+	}
+
+	/**
+	 * @param type2
+	 * @return
+	 */
+	public NetPcap setDescriptorType(PacketDescriptorType type) {
+
+		return this;
+	}
+
+	/**
+	 * @param packetFormat
+	 * @return
+	 */
+	public NetPcap setPacketFormatter(PacketFormat packetFormat) {
+		PacketDispatcher.DEFAULT_PACKET.setFormatter(packetFormat);
+
+		return this;
+	}
+
+	/**
+	 * @param i
+	 * @param kilobytes
+	 * @return
+	 * @throws PcapException
+	 */
+	public NetPcap setBufferSize(int size, MemoryUnit unit) throws PcapException {
+		super.setBufferSize(unit.toBytesAsInt(size));
+
+		return this;
 	}
 }

@@ -17,7 +17,8 @@
  */
 package com.slytechs.jnet.jnetpcap;
 
-import com.slytechs.jnet.jnetpcap.PostPcapPipeline.PostContext;
+import java.util.function.LongUnaryOperator;
+
 import com.slytechs.jnet.protocol.Packet;
 
 /**
@@ -26,14 +27,24 @@ import com.slytechs.jnet.protocol.Packet;
  * @author Mark Bednarczyk [mark@slytechs.com]
  * @author Sly Technologies Inc.
  */
-public interface PostProcessors {
+public interface PacketDispatcherSource extends LongUnaryOperator {
+	Packet DEFAULT_PACKET = new Packet();
 
-	int IPF_REASSEMBLER_PRIORITY = 0;
-
-	/** Internal pipeline data handling interface, not ment to be used externally */
-	public interface PostProcessorData {
-		void processDissectedPacket(Packet packet, PostContext postContext);
+	static PacketDispatcherSource from(LongUnaryOperator src) {
+		return cnt -> src.applyAsLong(cnt);
 	}
 
-	String toStringInOut();
+	default Packet getDefaultPacket() {
+		return DEFAULT_PACKET;
+	}
+
+	long captureFromSource(long packetCount);
+
+	/**
+	 * @see java.util.function.LongUnaryOperator#applyAsLong(long)
+	 */
+	@Override
+	default long applyAsLong(long packetCount) {
+		return captureFromSource(packetCount);
+	}
 }
