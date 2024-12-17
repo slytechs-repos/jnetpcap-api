@@ -15,20 +15,22 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.slytechs.jnet.jnetpcap;
+package com.slytechs.jnet.jnetpcap.internal;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.nio.ByteBuffer;
-import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 import org.jnetpcap.internal.PcapHeaderABI;
 
+import com.slytechs.jnet.jnetpcap.PacketDispatcherSource;
 import com.slytechs.jnet.jnetpcap.PacketHandler.OfNative;
 import com.slytechs.jnet.jnetpcap.PacketHandler.OfPacket;
-import com.slytechs.jnet.jnetpcap.PostProcessors.PostProcessorData;
+import com.slytechs.jnet.jnetpcap.processors.PostProcessors;
+import com.slytechs.jnet.jnetpcap.processors.PostProcessors.PostProcessorData;
 import com.slytechs.jnet.jnetruntime.pipeline.DT;
+import com.slytechs.jnet.jnetruntime.pipeline.OutputConnector;
 import com.slytechs.jnet.jnetruntime.pipeline.OutputStack;
 import com.slytechs.jnet.jnetruntime.pipeline.OutputTransformer;
 import com.slytechs.jnet.jnetruntime.pipeline.Pipeline;
@@ -45,7 +47,7 @@ import com.slytechs.jnet.protocol.meta.PacketFormat;
  * @author Mark Bednarczyk [mark@slytechs.com]
  * @author Sly Technologies Inc.
  */
-class PostPcapPipeline
+public class PostPcapPipeline
 		extends Pipeline<PostProcessorData>
 		implements PostProcessors, Registration {
 
@@ -122,10 +124,12 @@ class PostPcapPipeline
 	 * @param name
 	 * @param dataType
 	 */
-	public PostPcapPipeline(BiFunction<Object, OfNative, Registration> connectionPoint,
+	public PostPcapPipeline(
+			OutputConnector<OfNative> connectionPoint,
 			PacketDispatcherSource source,
 			PcapHeaderABI abi) {
 		super(NAME, new RawDataType<>(PostProcessorData.class));
+
 		this.dispatcherSource = source;
 
 		var defaultContext = new PostContext(abi, source::getDefaultPacket);
@@ -140,7 +144,7 @@ class PostPcapPipeline
 		this.cbStack = tail().getOutputStack();
 		this.packetOutput = cbStack.createTransformer("OfPacket", this::outputOfPacket, new DT<OfPacket<Object>>() {});
 
-		this.upstreamRegistration = connectionPoint.apply("PostProcessors", input);
+		this.upstreamRegistration = connectionPoint.connectToOutput("PostProcessors", input);
 	}
 
 	private final PostProcessorData outputOfPacket(Supplier<OfPacket<Object>> out) {

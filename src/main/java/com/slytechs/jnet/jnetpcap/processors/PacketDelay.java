@@ -15,14 +15,15 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.slytechs.jnet.jnetpcap;
+package com.slytechs.jnet.jnetpcap.processors;
 
 import java.lang.foreign.MemorySegment;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
-import com.slytechs.jnet.jnetpcap.PrePcapPipeline.NativeContext;
-import com.slytechs.jnet.jnetpcap.PreProcessors.PreProcessorData;
+import com.slytechs.jnet.jnetpcap.internal.PcapUtils;
+import com.slytechs.jnet.jnetpcap.internal.PrePcapPipeline.NativeContext;
+import com.slytechs.jnet.jnetpcap.processors.PreProcessors.PreProcessorData;
 import com.slytechs.jnet.jnetruntime.pipeline.Processor;
 
 /**
@@ -103,9 +104,9 @@ public final class PacketDelay
 	}
 
 	/**
-	 * @see com.slytechs.jnet.jnetpcap.PreProcessors.PreProcessorData#processNativePacket(java.lang.foreign.MemorySegment,
+	 * @see com.slytechs.jnet.jnetpcap.processors.PreProcessors.PreProcessorData#processNativePacket(java.lang.foreign.MemorySegment,
 	 *      java.lang.foreign.MemorySegment,
-	 *      com.slytechs.jnet.jnetpcap.PrePcapPipeline.NativeContext)
+	 *      com.slytechs.jnet.jnetpcap.internal.PrePcapPipeline.NativeContext)
 	 */
 	@Override
 	public int processNativePacket(MemorySegment header, MemorySegment packet, NativeContext context) {

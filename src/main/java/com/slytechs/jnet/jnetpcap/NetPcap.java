@@ -30,9 +30,18 @@ import org.jnetpcap.PcapException;
 import org.jnetpcap.PcapIf;
 import org.jnetpcap.constant.PcapConstants;
 import org.jnetpcap.constant.PcapDlt;
+import org.jnetpcap.internal.PcapHeaderABI;
 
+import com.slytechs.jnet.jnetpcap.PacketHandler.OfNative;
 import com.slytechs.jnet.jnetpcap.PacketHandler.OfPacket;
+import com.slytechs.jnet.jnetpcap.internal.PcapSource;
+import com.slytechs.jnet.jnetpcap.internal.PcapUtils;
+import com.slytechs.jnet.jnetpcap.internal.PostPcapPipeline;
+import com.slytechs.jnet.jnetpcap.internal.PrePcapPipeline;
+import com.slytechs.jnet.jnetpcap.processors.PostProcessors;
+import com.slytechs.jnet.jnetpcap.processors.PreProcessors;
 import com.slytechs.jnet.jnetruntime.NotFound;
+import com.slytechs.jnet.jnetruntime.pipeline.OutputConnector;
 import com.slytechs.jnet.jnetruntime.util.Flags;
 import com.slytechs.jnet.jnetruntime.util.MemoryUnit;
 import com.slytechs.jnet.jnetruntime.util.Named;
@@ -412,9 +421,16 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 	private NetPcap(Pcap pcap) {
 		super(pcap);
 
-		this.prePipeline = new PrePcapPipeline(PcapUtils.shortName(name()), this);
-		this.postPipeline = new PostPcapPipeline(prePipeline::addOutput, prePipeline::capturePackets,
-				getPcapHeaderABI());
+		PcapSource pcapSource = super::dispatch; // Make sure to use Pcap.dispatch, not NetPcap.dispatchNative
+		PcapHeaderABI abi = pcap.getPcapHeaderABI();
+		String shortName = PcapUtils.shortName(name());
+
+		this.prePipeline = new PrePcapPipeline(shortName, this, abi, pcapSource);
+
+		OutputConnector<OfNative> outputConnector = prePipeline::addOutput;
+		PacketDispatcherSource source = prePipeline::capturePackets;
+
+		this.postPipeline = new PostPcapPipeline(outputConnector, source, abi);
 		this.packetDispatcher = new PipelinePacketDispatcher(prePipeline, postPipeline);
 	}
 

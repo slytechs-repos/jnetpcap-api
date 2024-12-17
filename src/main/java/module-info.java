@@ -23,7 +23,7 @@
  */
 module com.slytechs.jnet.jnetpcap {
 	exports com.slytechs.jnet.jnetpcap;
-//	exports com.slytechs.jnet.jnetpcap.processor;
+	exports com.slytechs.jnet.jnetpcap.processors;
 //	exports com.slytechs.jnet.jnetpcap.processor.packet;
 //	exports com.slytechs.jnet.jnetpcap.processor.protocol;
 

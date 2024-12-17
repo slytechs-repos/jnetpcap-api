@@ -25,6 +25,8 @@ import com.slytechs.jnet.jnetpcap.PacketHandler.OfBuffer;
 import com.slytechs.jnet.jnetpcap.PacketHandler.OfForeign;
 import com.slytechs.jnet.jnetpcap.PacketHandler.OfNative;
 import com.slytechs.jnet.jnetpcap.PacketHandler.OfPacket;
+import com.slytechs.jnet.jnetpcap.internal.PostPcapPipeline;
+import com.slytechs.jnet.jnetpcap.internal.PrePcapPipeline;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
 import com.slytechs.jnet.protocol.Packet;
 import com.slytechs.jnet.protocol.core.constants.PacketDescriptorType;

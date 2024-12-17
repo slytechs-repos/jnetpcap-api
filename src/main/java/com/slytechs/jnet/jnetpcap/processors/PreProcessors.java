@@ -15,11 +15,11 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.slytechs.jnet.jnetpcap;
+package com.slytechs.jnet.jnetpcap.processors;
 
 import java.lang.foreign.MemorySegment;
 
-import com.slytechs.jnet.jnetpcap.PrePcapPipeline.NativeContext;
+import com.slytechs.jnet.jnetpcap.internal.PrePcapPipeline.NativeContext;
 import com.slytechs.jnet.jnetruntime.pipeline.Processor;
 
 /**
@@ -42,8 +42,7 @@ public interface PreProcessors {
 	int PACKET_DELAY_PRIORITY = 100;
 
 	/** Internal pipeline data handling interface, not ment to be used externally */
-	public interface PreProcessorData {
-		@SuppressWarnings("exports")
+	interface PreProcessorData {
 		int processNativePacket(MemorySegment header, MemorySegment packet, NativeContext context);
 	}
 

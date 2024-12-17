@@ -15,7 +15,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.slytechs.jnet.jnetpcap;
+package com.slytechs.jnet.jnetpcap.processors;
 
 import java.lang.foreign.MemorySegment;
 import java.util.Objects;
@@ -24,8 +24,8 @@ import java.util.function.BooleanSupplier;
 import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 
-import com.slytechs.jnet.jnetpcap.PrePcapPipeline.NativeContext;
-import com.slytechs.jnet.jnetpcap.PreProcessors.PreProcessorData;
+import com.slytechs.jnet.jnetpcap.internal.PrePcapPipeline.NativeContext;
+import com.slytechs.jnet.jnetpcap.processors.PreProcessors.PreProcessorData;
 import com.slytechs.jnet.jnetruntime.pipeline.Processor;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
 import com.slytechs.jnet.jnetruntime.util.config.SystemProperties;
@@ -298,7 +298,7 @@ public final class PacketRepeater
 	/**
 	 * @see com.slytechs.jnet.jnetpcap.PrePcapPipeline.PreProcessorData#processNativePacket(java.lang.foreign.MemorySegment,
 	 *      java.lang.foreign.MemorySegment,
-	 *      com.slytechs.jnet.jnetpcap.PrePcapPipeline.NativeContext)
+	 *      com.slytechs.jnet.jnetpcap.internal.PrePcapPipeline.NativeContext)
 	 */
 	@SuppressWarnings("exports")
 	@Override

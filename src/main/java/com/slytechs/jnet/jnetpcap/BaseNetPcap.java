@@ -60,141 +60,12 @@ public abstract sealed class BaseNetPcap
 		implements PacketDispatcher
 		permits NetPcap {
 
-	protected abstract PacketDispatcher getPacketDispatcher();
-
 	private final NetPcap us = (NetPcap) this;
-
-	/**
-	 * @param packet
-	 * @return
-	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#nextPacket(com.slytechs.jnet.protocol.Packet)
-	 */
-	@Override
-	public boolean nextPacket(Packet packet) {
-		return getPacketDispatcher().nextPacket(packet);
-	}
-
-	/**
-	 * @param <U>
-	 * @param count
-	 * @param cb
-	 * @param user
-	 * @return
-	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#dispatchBuffer(int,
-	 *      com.slytechs.jnet.jnetpcap.PacketHandler.OfBuffer, java.lang.Object)
-	 */
-	@Override
-	public <U> int dispatchBuffer(int count, OfBuffer<U> cb, U user) {
-		return getPacketDispatcher().dispatchBuffer(count, cb, user);
-	}
-
-	/**
-	 * @param <U>
-	 * @param count
-	 * @param cb
-	 * @param user
-	 * @return
-	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#dispatchArray(int,
-	 *      com.slytechs.jnet.jnetpcap.PacketHandler.OfArray, java.lang.Object)
-	 */
-	@Override
-	public <U> int dispatchArray(int count, com.slytechs.jnet.jnetpcap.PacketHandler.OfArray<U> cb, U user) {
-		return getPacketDispatcher().dispatchArray(count, cb, user);
-	}
-
-	/**
-	 * @param count
-	 * @param handler
-	 * @param user
-	 * @return
-	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#dispatchNative(int,
-	 *      com.slytechs.jnet.jnetpcap.PacketHandler.OfNative,
-	 *      java.lang.foreign.MemorySegment)
-	 */
-	@Override
-	public int dispatchNative(int count, OfNative handler, MemorySegment user) {
-		return getPacketDispatcher().dispatchNative(count, handler, user);
-	}
-
-	/**
-	 * @param <U>
-	 * @param count
-	 * @param memorySegmentHandler
-	 * @param user
-	 * @return
-	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#dispatchForeign(int,
-	 *      com.slytechs.jnet.jnetpcap.PacketHandler.OfForeign, java.lang.Object)
-	 */
-	@Override
-	public <U> int dispatchForeign(int count, OfForeign<U> memorySegmentHandler, U user) {
-		return getPacketDispatcher().dispatchForeign(count, memorySegmentHandler, user);
-	}
-
-	/**
-	 * @return
-	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#getDefaultPacket()
-	 */
-	@Override
-	public Packet getDefaultPacket() {
-		return getPacketDispatcher().getDefaultPacket();
-	}
-
-	/**
-	 * @param <U>
-	 * @param cb
-	 * @return
-	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#dispatchPacket(com.slytechs.jnet.jnetpcap.PacketHandler.OfPacketConsumer)
-	 */
-	@Override
-	public <U> int dispatchPacket(OfPacketConsumer cb) {
-		return getPacketDispatcher().dispatchPacket(cb);
-	}
-
-	/**
-	 * @param <U>
-	 * @param count
-	 * @param cb
-	 * @param user
-	 * @return
-	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#dispatchPacket(int,
-	 *      com.slytechs.jnet.jnetpcap.PacketHandler.OfPacket, java.lang.Object)
-	 */
-	@Override
-	public <U> int dispatchPacket(int count, OfPacket<U> cb, U user) {
-		return getPacketDispatcher().dispatchPacket(count, cb, user);
-	}
-
-	/**
-	 * @param <U>
-	 * @param count
-	 * @param cb
-	 * @param user
-	 * @param packetFactory
-	 * @return
-	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#dispatchPacket(int,
-	 *      com.slytechs.jnet.jnetpcap.PacketHandler.OfPacket, java.lang.Object,
-	 *      java.util.function.Supplier)
-	 */
-	@Override
-	public <U> int dispatchPacket(int count, OfPacket<U> cb, U user, Supplier<Packet> packetFactory) {
-		return getPacketDispatcher().dispatchPacket(count, cb, user, packetFactory);
-	}
-
-	/**
-	 * @param count
-	 * @return
-	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#capturePackets(long)
-	 */
-	@Override
-	public long capturePackets(long count) {
-		return getPacketDispatcher().capturePackets(count);
-	}
 
 	private final Pcap pcap;
 
 	protected BaseNetPcap(Pcap pcap) {
 		this.pcap = pcap;
-
 	}
 
 	/**
@@ -221,6 +92,16 @@ public abstract sealed class BaseNetPcap
 	 */
 	public boolean canSetRfmon() throws PcapException {
 		return pcap.canSetRfmon();
+	}
+
+	/**
+	 * @param count
+	 * @return
+	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#capturePackets(long)
+	 */
+	@Override
+	public long capturePackets(long count) {
+		return getPacketDispatcher().capturePackets(count);
 	}
 
 	/**
@@ -325,6 +206,103 @@ public abstract sealed class BaseNetPcap
 	}
 
 	/**
+	 * @param <U>
+	 * @param count
+	 * @param cb
+	 * @param user
+	 * @return
+	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#dispatchArray(int,
+	 *      com.slytechs.jnet.jnetpcap.PacketHandler.OfArray, java.lang.Object)
+	 */
+	@Override
+	public <U> int dispatchArray(int count, com.slytechs.jnet.jnetpcap.PacketHandler.OfArray<U> cb, U user) {
+		return getPacketDispatcher().dispatchArray(count, cb, user);
+	}
+
+	/**
+	 * @param <U>
+	 * @param count
+	 * @param cb
+	 * @param user
+	 * @return
+	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#dispatchBuffer(int,
+	 *      com.slytechs.jnet.jnetpcap.PacketHandler.OfBuffer, java.lang.Object)
+	 */
+	@Override
+	public <U> int dispatchBuffer(int count, OfBuffer<U> cb, U user) {
+		return getPacketDispatcher().dispatchBuffer(count, cb, user);
+	}
+
+	/**
+	 * @param <U>
+	 * @param count
+	 * @param memorySegmentHandler
+	 * @param user
+	 * @return
+	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#dispatchForeign(int,
+	 *      com.slytechs.jnet.jnetpcap.PacketHandler.OfForeign, java.lang.Object)
+	 */
+	@Override
+	public <U> int dispatchForeign(int count, OfForeign<U> memorySegmentHandler, U user) {
+		return getPacketDispatcher().dispatchForeign(count, memorySegmentHandler, user);
+	}
+
+	/**
+	 * @param count
+	 * @param handler
+	 * @param user
+	 * @return
+	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#dispatchNative(int,
+	 *      com.slytechs.jnet.jnetpcap.PacketHandler.OfNative,
+	 *      java.lang.foreign.MemorySegment)
+	 */
+	@Override
+	public int dispatchNative(int count, OfNative handler, MemorySegment user) {
+		return getPacketDispatcher().dispatchNative(count, handler, user);
+	}
+
+	/**
+	 * @param <U>
+	 * @param count
+	 * @param cb
+	 * @param user
+	 * @return
+	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#dispatchPacket(int,
+	 *      com.slytechs.jnet.jnetpcap.PacketHandler.OfPacket, java.lang.Object)
+	 */
+	@Override
+	public <U> int dispatchPacket(int count, OfPacket<U> cb, U user) {
+		return getPacketDispatcher().dispatchPacket(count, cb, user);
+	}
+
+	/**
+	 * @param <U>
+	 * @param count
+	 * @param cb
+	 * @param user
+	 * @param packetFactory
+	 * @return
+	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#dispatchPacket(int,
+	 *      com.slytechs.jnet.jnetpcap.PacketHandler.OfPacket, java.lang.Object,
+	 *      java.util.function.Supplier)
+	 */
+	@Override
+	public <U> int dispatchPacket(int count, OfPacket<U> cb, U user, Supplier<Packet> packetFactory) {
+		return getPacketDispatcher().dispatchPacket(count, cb, user, packetFactory);
+	}
+
+	/**
+	 * @param <U>
+	 * @param cb
+	 * @return
+	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#dispatchPacket(com.slytechs.jnet.jnetpcap.PacketHandler.OfPacketConsumer)
+	 */
+	@Override
+	public <U> int dispatchPacket(OfPacketConsumer cb) {
+		return getPacketDispatcher().dispatchPacket(cb);
+	}
+
+	/**
 	 * @param fname
 	 * @return
 	 * @throws PcapException
@@ -332,6 +310,15 @@ public abstract sealed class BaseNetPcap
 	 */
 	protected PcapDumper dumpOpen(String fname) throws PcapException {
 		return pcap.dumpOpen(fname);
+	}
+
+	/**
+	 * @return
+	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#getDefaultPacket()
+	 */
+	@Override
+	public Packet getDefaultPacket() {
+		return getPacketDispatcher().getDefaultPacket();
 	}
 
 	/**
@@ -358,6 +345,8 @@ public abstract sealed class BaseNetPcap
 	protected boolean getNonBlock() throws PcapException {
 		return pcap.getNonBlock();
 	}
+
+	protected abstract PacketDispatcher getPacketDispatcher();
 
 	/**
 	 * @return
@@ -533,6 +522,16 @@ public abstract sealed class BaseNetPcap
 	 */
 	protected PcapPacketRef nextEx() throws PcapException, TimeoutException {
 		return pcap.nextEx();
+	}
+
+	/**
+	 * @param packet
+	 * @return
+	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#nextPacket(com.slytechs.jnet.protocol.Packet)
+	 */
+	@Override
+	public boolean nextPacket(Packet packet) {
+		return getPacketDispatcher().nextPacket(packet);
 	}
 
 	/**

@@ -15,7 +15,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.slytechs.jnet.jnetpcap;
+package com.slytechs.jnet.jnetpcap.internal;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
@@ -25,11 +25,14 @@ import java.util.function.Supplier;
 import org.jnetpcap.PcapHeader;
 import org.jnetpcap.internal.PcapHeaderABI;
 
+import com.slytechs.jnet.jnetpcap.NetPcap;
+import com.slytechs.jnet.jnetpcap.PacketHandler;
 import com.slytechs.jnet.jnetpcap.PacketHandler.OfArray;
 import com.slytechs.jnet.jnetpcap.PacketHandler.OfBuffer;
 import com.slytechs.jnet.jnetpcap.PacketHandler.OfForeign;
 import com.slytechs.jnet.jnetpcap.PacketHandler.OfNative;
-import com.slytechs.jnet.jnetpcap.PreProcessors.PreProcessorData;
+import com.slytechs.jnet.jnetpcap.processors.PreProcessors;
+import com.slytechs.jnet.jnetpcap.processors.PreProcessors.PreProcessorData;
 import com.slytechs.jnet.jnetruntime.pipeline.DT;
 import com.slytechs.jnet.jnetruntime.pipeline.InputTransformer;
 import com.slytechs.jnet.jnetruntime.pipeline.OutputStack;
@@ -45,7 +48,7 @@ import com.slytechs.jnet.protocol.descriptor.PcapDescriptor;
 /**
  * @author Mark Bednarczyk
  */
-final class PrePcapPipeline
+public final class PrePcapPipeline
 		extends Pipeline<PreProcessorData>
 		implements PreProcessors {
 
@@ -53,7 +56,7 @@ final class PrePcapPipeline
 	 * @author Mark Bednarczyk [mark@slytechs.com]
 	 * @author Sly Technologies Inc.
 	 */
-	static class NativeContext {
+	public static class NativeContext {
 		public Object user;
 		public int packetCount;
 
@@ -66,11 +69,6 @@ final class PrePcapPipeline
 	private final OfNative mainInput;
 	private final NativeContext ctx = new NativeContext();
 
-	private final int NATIVE_CB = 0;
-	private final int BUFFER_CB = 1;
-	private final int ARRAY_CB = 2;
-	private final int FOREIGN_CB = 3;
-	private final NetPcap pcap;
 	private final PcapDescriptor pcapDescriptorReusable = new PcapDescriptor();
 	private final PcapHeaderABI PCAP_ABI;
 	private final OutputStack<PreProcessorData> cbStack;
@@ -78,15 +76,16 @@ final class PrePcapPipeline
 	private final OutputTransformer<PreProcessorData, OfArray<Object>> arrayOutput;
 	private final OutputTransformer<PreProcessorData, OfBuffer<Object>> bufferOutput;
 	private final OutputTransformer<PreProcessorData, OfForeign<Object>> foreignOutput;
+	private final PcapSource pcapSource;
 
 	/**
 	 * @param name
 	 * @param reducer
 	 */
-	public PrePcapPipeline(String deviceName, NetPcap pcap) {
+	public PrePcapPipeline(String deviceName, NetPcap pcap, PcapHeaderABI abi, PcapSource source) {
 		super(deviceName, new RawDataType<>(PreProcessorData.class));
-		this.pcap = pcap;
-		this.PCAP_ABI = pcap.getPcapHeaderABI();
+		this.PCAP_ABI = abi;
+		this.pcapSource = source;
 
 		var mseg = Arena.ofAuto().allocate(PcapDescriptor.PCAP_DESCRIPTOR_LENGTH);
 		this.pcapDescriptorReusable.bind(mseg.asByteBuffer(), mseg);
@@ -248,7 +247,7 @@ final class PrePcapPipeline
 				};
 			}
 		}, new RawDataType<OfNative>(OfNative.class));
-		
+
 		output.connect(handler);
 
 		cbStack.push(output);
@@ -284,13 +283,9 @@ final class PrePcapPipeline
 		return ctx.packetCount > 0;
 	}
 
-	/**
-	 * @param count
-	 * @return
-	 */
 	public long capturePackets(long count) {
 		if (count == 0)
-			pcap.dispatch(0, this.getOfNativeInput(), MemorySegment.NULL);
+			pcapSource.dispatchNative(0, getOfNativeInput(), MemorySegment.NULL);
 
 		else {
 			while (count > 0) {
@@ -298,7 +293,7 @@ final class PrePcapPipeline
 						? Integer.MAX_VALUE
 						: (int) count;
 
-				int r = pcap.dispatch(count32, this.getOfNativeInput(), MemorySegment.NULL);
+				int r = pcapSource.dispatchNative(count32, getOfNativeInput(), MemorySegment.NULL);
 				if (r < 0)
 					break;
 

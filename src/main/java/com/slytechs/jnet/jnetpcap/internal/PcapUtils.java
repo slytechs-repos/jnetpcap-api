@@ -15,7 +15,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.slytechs.jnet.jnetpcap;
+package com.slytechs.jnet.jnetpcap.internal;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * @author Mark Bednarczyk
  */
-class PcapUtils {
+public class PcapUtils {
 
 	public static void checkFileExists(File file) throws FileNotFoundException {
 		if (!file.exists())
