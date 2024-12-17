@@ -19,14 +19,8 @@ package com.slytechs.jnet.jnetpcap;
 
 import java.lang.foreign.MemorySegment;
 
-import org.jnetpcap.PcapHandler.NativeCallback;
-import org.jnetpcap.PcapHandler.OfArray;
-import org.jnetpcap.PcapHandler.OfByteBuffer;
-import org.jnetpcap.PcapHandler.OfMemorySegment;
-
-import com.slytechs.jnet.jnetpcap.NativePacketPipeline.NativeContext;
+import com.slytechs.jnet.jnetpcap.PrePcapPipeline.NativeContext;
 import com.slytechs.jnet.jnetruntime.pipeline.Processor;
-import com.slytechs.jnet.protocol.Packet;
 
 /**
  * 
@@ -48,24 +42,14 @@ public interface PreProcessors {
 	int PACKET_DELAY_PRIORITY = 100;
 
 	/** Internal pipeline data handling interface, not ment to be used externally */
-	public interface NativePacketProcessor {
+	public interface PreProcessor {
 		@SuppressWarnings("exports")
 		int processNativePacket(MemorySegment header, MemorySegment packet, NativeContext context);
 	}
 
-	boolean nextPacket(Packet packet);
+	Processor<PreProcessor> addProcessor(Processor<PreProcessor> newProcessor);
 
-	<U> int dispatchBuffer(int count, OfByteBuffer<U> cb, U user);
-
-	<U> int dispatchArray(int count, OfArray<U> cb, U user);
-
-	int dispatchNative(int count, NativeCallback handler, MemorySegment user);
-
-	<U> int dispatchSegment(int count, OfMemorySegment<U> memorySegmentHandler, U user);
-
-	Processor<NativePacketProcessor> addProcessor(Processor<NativePacketProcessor> newProcessor);
-
-	default Processor<NativePacketProcessor> addProcessor(int priority, Processor<NativePacketProcessor> newProcessor) {
+	default Processor<PreProcessor> addProcessor(int priority, Processor<PreProcessor> newProcessor) {
 		return addProcessor(newProcessor.setPriority(priority));
 	}
 

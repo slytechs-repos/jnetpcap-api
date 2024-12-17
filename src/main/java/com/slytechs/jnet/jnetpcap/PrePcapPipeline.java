@@ -23,14 +23,14 @@ import java.lang.foreign.ValueLayout;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import org.jnetpcap.PcapHandler.NativeCallback;
-import org.jnetpcap.PcapHandler.OfArray;
-import org.jnetpcap.PcapHandler.OfByteBuffer;
-import org.jnetpcap.PcapHandler.OfMemorySegment;
 import org.jnetpcap.PcapHeader;
 import org.jnetpcap.internal.PcapHeaderABI;
 
-import com.slytechs.jnet.jnetpcap.PreProcessors.NativePacketProcessor;
+import com.slytechs.jnet.jnetpcap.PacketHandler.OfArray;
+import com.slytechs.jnet.jnetpcap.PacketHandler.OfBuffer;
+import com.slytechs.jnet.jnetpcap.PacketHandler.OfForeign;
+import com.slytechs.jnet.jnetpcap.PacketHandler.OfNative;
+import com.slytechs.jnet.jnetpcap.PreProcessors.PreProcessor;
 import com.slytechs.jnet.jnetruntime.pipeline.DT;
 import com.slytechs.jnet.jnetruntime.pipeline.InputTransformer;
 import com.slytechs.jnet.jnetruntime.pipeline.OutputSwitch;
@@ -44,8 +44,8 @@ import com.slytechs.jnet.protocol.descriptor.PcapDescriptor;
 /**
  * @author Mark Bednarczyk
  */
-final class NativePacketPipeline
-		extends Pipeline<NativePacketProcessor>
+final class PrePcapPipeline
+		extends Pipeline<PreProcessor>
 		implements PreProcessors {
 
 	/**
@@ -62,22 +62,22 @@ final class NativePacketPipeline
 		}
 	}
 
-	private final NativeCallback inputNativeCallback;
+	private final OfNative mainInput;
 	private final NativeContext ctx = new NativeContext();
 
-	private final OutputSwitch<NativePacketProcessor> cbSwitch;
-	private final Consumer<NativeCallback> cbSwitchNativeCallback;
+	private final OutputSwitch<PreProcessor> cbSwitch;
+	private final Consumer<OfNative> cbSwitchOfNative;
 	@SuppressWarnings("rawtypes")
-	private final Consumer<OfByteBuffer> cbSwitchOfByteBuffer;
+	private final Consumer<OfBuffer> cbSwitchOfBuffer;
 	@SuppressWarnings("rawtypes")
 	private final Consumer<OfArray> cbSwitchOfArray;
 	@SuppressWarnings("rawtypes")
-	private final Consumer<OfMemorySegment> cbSwitchOfMemorySegment;
+	private final Consumer<OfForeign> cbSwitchOfForeign;
 
 	private final int NATIVE_CB = 0;
 	private final int BUFFER_CB = 1;
 	private final int ARRAY_CB = 2;
-	private final int MEMORY_SEGMENT_CB = 3;
+	private final int FOREIGN_CB = 3;
 	private final NetPcap pcap;
 	private final PcapDescriptor pcapDescriptorReusable = new PcapDescriptor();
 	private final PcapHeaderABI PCAP_ABI;
@@ -87,48 +87,50 @@ final class NativePacketPipeline
 	 * @param reducer
 	 */
 	@SuppressWarnings("unchecked")
-	public NativePacketPipeline(String deviceName, NetPcap pcap) {
-		super(deviceName, new RawDataType<>(NativePacketProcessor.class));
+	public PrePcapPipeline(String deviceName, NetPcap pcap) {
+		super(deviceName, new RawDataType<>(PreProcessor.class));
 		this.pcap = pcap;
 		this.PCAP_ABI = pcap.getPcapHeaderABI();
 
 		var mseg = Arena.ofAuto().allocate(PcapDescriptor.PCAP_DESCRIPTOR_LENGTH);
 		this.pcapDescriptorReusable.bind(mseg.asByteBuffer(), mseg);
 
-		this.inputNativeCallback = head()
-				.addInput("NativeCallback", this::inputNativeCallback, new RawDataType<>(NativeCallback.class))
+		this.mainInput = head()
+				.addInput("OfNative", this::inputOfNative, new RawDataType<>(OfNative.class))
 				.getInputPerma(); // Guaranteed it will never change
+
+		tail().addOutput(0, "mainOutput", this::outputOfNative, new RawDataType<>(OfNative.class));
 
 		/* Only 1 of the switch outputs can be selected at a time */
 		this.cbSwitch = tail().getOutputSwitch();
 
 		var out1 = cbSwitch
-				.setOutput(NATIVE_CB, this::outputNativeCallback, new RawDataType<>(NativeCallback.class));
-		this.cbSwitchNativeCallback = cb -> out1.connect(cb);
+				.setOutput(NATIVE_CB, this::outputOfNative, new RawDataType<>(OfNative.class));
+		this.cbSwitchOfNative = cb -> out1.connect(cb);
 
 		var out2 = cbSwitch
-				.setOutput(BUFFER_CB, this::outputOfByteBuffer, new DT<OfByteBuffer<Object>>() {});
-		this.cbSwitchOfByteBuffer = cb -> out2.connect(cb);
+				.setOutput(BUFFER_CB, this::outputOfBuffer, new DT<OfBuffer<Object>>() {});
+		this.cbSwitchOfBuffer = cb -> out2.connect(cb);
 
 		var out3 = cbSwitch
-				.setOutput(ARRAY_CB, this::outputOfArray, new DT<OfArray<Object>>() {});
+				.setOutput(ARRAY_CB, this::outputOfArray, new DT<PacketHandler.OfArray<Object>>() {});
 		this.cbSwitchOfArray = cb -> out3.connect(cb);
 
 		var out4 = cbSwitch
-				.setOutput(MEMORY_SEGMENT_CB, this::outputOfMemorySegment, new DT<OfMemorySegment<Object>>() {});
-		this.cbSwitchOfMemorySegment = cb -> out4.connect(cb);
+				.setOutput(FOREIGN_CB, this::outputOfForeign, new DT<OfForeign<Object>>() {});
+		this.cbSwitchOfForeign = cb -> out4.connect(cb);
 	}
 
-	private final NativePacketProcessor outputOfMemorySegment(Supplier<OfMemorySegment<Object>> out) {
+	private final PreProcessor outputOfForeign(Supplier<OfForeign<Object>> out) {
 		return (header, packet, ctx) -> {
 			var cb = out.get();
-			cb.handleSegment(ctx.user, header, packet);
+			cb.handleForeign(ctx.user, header, packet);
 
 			return 1;
 		};
 	}
 
-	private final NativePacketProcessor outputOfArray(Supplier<OfArray<Object>> out) {
+	private final PreProcessor outputOfArray(Supplier<PacketHandler.OfArray<Object>> out) {
 		return (header, packet, ctx) -> {
 			var hdr = new PcapHeader(header);
 			var buf = packet.toArray(ValueLayout.JAVA_BYTE);
@@ -140,29 +142,29 @@ final class NativePacketPipeline
 		};
 	}
 
-	private final NativePacketProcessor outputOfByteBuffer(Supplier<OfByteBuffer<Object>> out) {
+	private final PreProcessor outputOfBuffer(Supplier<OfBuffer<Object>> out) {
 		return (header, packet, ctx) -> {
 			var hdr = new PcapHeader(header);
 			var buf = packet.asByteBuffer();
 
 			var cb = out.get();
-			cb.handleByteBuffer(ctx.user, hdr, buf);
+			cb.handleBuffer(ctx.user, hdr, buf);
 
 			return 1;
 		};
 	}
 
-	private final NativePacketProcessor outputNativeCallback(Supplier<NativeCallback> out,
+	private final PreProcessor outputOfNative(Supplier<OfNative> out,
 			OutputTransformer<?, ?> output) {
 		return (header, packet, ctx) -> {
 			var cb = out.get();
-			cb.nativeCallback((MemorySegment) ctx.user, header, packet);
+			cb.handleNative((MemorySegment) ctx.user, header, packet);
 
 			return 1;
 		};
 	}
 
-	private final NativeCallback inputNativeCallback(Supplier<NativePacketProcessor> out,
+	private final OfNative inputOfNative(Supplier<PreProcessor> out,
 			InputTransformer<?, ?> input) {
 		return (_, header, packet) -> {
 			if (header.byteSize() == 0)
@@ -180,98 +182,93 @@ final class NativePacketPipeline
 		};
 	}
 
-	private NativeCallback getNativeCallbackInput() {
-		return this.inputNativeCallback;
+	private OfNative getOfNativeInput() {
+		return this.mainInput;
 	}
 
-	private <U> void switchToByteBufferCallback(OfByteBuffer<U> cb, U user) {
+	private <U> void switchToBuffer(OfBuffer<U> cb, U user) {
 		cbSwitch.select(BUFFER_CB);
 		ctx.user = user;
 
-		cbSwitchOfByteBuffer.accept(cb);
+		cbSwitchOfBuffer.accept(cb);
 	}
 
-	private <U> void switchToArrayCallback(OfArray<U> cb, U user) {
+	private <U> void switchToArrayCallback(PacketHandler.OfArray<U> cb, U user) {
 		cbSwitch.select(ARRAY_CB);
 		ctx.user = user;
 
 		cbSwitchOfArray.accept(cb);
 	}
 
-	private void switchToNativeCallback(NativeCallback cb, MemorySegment user) {
+	private void switchToOfNative(OfNative cb, MemorySegment user) {
 		cbSwitch.select(NATIVE_CB);
 		ctx.user = user;
 
-		cbSwitchNativeCallback.accept(cb);;
+		cbSwitchOfNative.accept(cb);;
 	}
 
-	private <U> void switchToMemoryCallback(OfMemorySegment<U> cb, U user) {
-		cbSwitch.select(MEMORY_SEGMENT_CB);
+	private <U> void switchToMemoryCallback(OfForeign<U> cb, U user) {
+		cbSwitch.select(FOREIGN_CB);
 		ctx.user = user;
 
-		cbSwitchOfMemorySegment.accept(cb);
+		cbSwitchOfForeign.accept(cb);
 	}
 
 	private void resetSwitch() {
 		cbSwitch.reset();
 	}
 
-	@Override
-	public <U> int dispatchSegment(int count, OfMemorySegment<U> memorySegmentHandler, U user) {
+	public <U> int dispatchForeign(int count, OfForeign<U> memorySegmentHandler, U user) {
 
 		this.switchToMemoryCallback(memorySegmentHandler, user);
 
-		pcap.dispatch(count, this.getNativeCallbackInput(), MemorySegment.NULL);
+		capturePackets(count);
 
 		this.resetSwitch();
 
 		return ctx.packetCount;
 	}
 
-	@Override
-	public int dispatchNative(int count, NativeCallback handler, MemorySegment user) {
+	public int dispatchNative(int count, OfNative handler, MemorySegment user) {
 
-		this.switchToNativeCallback(handler, user);
+		this.switchToOfNative(handler, user);
 
-		pcap.dispatch(count, this.getNativeCallbackInput(), MemorySegment.NULL);
+		capturePackets(count);
 
 		this.resetSwitch();
 
 		return ctx.packetCount;
 	}
 
-	@Override
-	public <U> int dispatchArray(int count, OfArray<U> cb, U user) {
+	public <U> int dispatchArray(int count, PacketHandler.OfArray<U> cb, U user) {
 		this.switchToArrayCallback(cb, user);
 
-		pcap.dispatch(count, this.getNativeCallbackInput(), MemorySegment.NULL);
+		capturePackets(count);
 
 		this.resetSwitch();
 
 		return ctx.packetCount;
 	}
 
-	@Override
-	public <U> int dispatchBuffer(int count, OfByteBuffer<U> cb, U user) {
+	public <U> int dispatchBuffer(int count, OfBuffer<U> cb, U user) {
 
-		this.switchToByteBufferCallback(cb, user);
+		this.switchToBuffer(cb, user);
 
-		pcap.dispatch(count, this.getNativeCallbackInput(), MemorySegment.NULL);
+		capturePackets(count);
 
 		this.resetSwitch();
 
 		return ctx.packetCount;
 	}
 
-	@Override
 	public boolean nextPacket(Packet packetReference) {
 		assert packetReference.descriptor().type() == PacketDescriptorType.PCAP
 				: "packet descriptor must be PcapDescriptor type";
 
-		int count = dispatchNative(1, new NativeCallback() {
+		int count = dispatchNative(1, new OfNative() {
 
 			@Override
-			public void nativeCallback(MemorySegment user, MemorySegment header, MemorySegment packet) {
+			public void handleNative(MemorySegment user, MemorySegment header, MemorySegment packet) {
 				PcapHeader pcapHeader = new PcapHeader(header);
 				long timestamp = pcapHeader.timestamp();
 				int caplen = pcapHeader.captureLength();
@@ -290,5 +287,30 @@ final class NativePacketPipeline
 		}, MemorySegment.NULL);
 
 		return ctx.packetCount > 0;
+	}
+
+	/**
+	 * @param count
+	 * @return
+	 */
+	public long capturePackets(long count) {
+		if (count == 0)
+			pcap.dispatch(0, this.getOfNativeInput(), MemorySegment.NULL);
+
+		else {
+			while (count > 0) {
+				int count32 = (count > Integer.MAX_VALUE)
+						? Integer.MAX_VALUE
+						: (int) count;
+
+				int r = pcap.dispatch(count32, this.getOfNativeInput(), MemorySegment.NULL);
+				if (r < 0)
+					break;
+
+				count -= count32;
+			}
+		}
+
+		return ctx.packetCount;
 	}
 }

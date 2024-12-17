@@ -15,13 +15,15 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.slytechs.jnet.jnetpcap;
+package com.slytechs.jnet.jnetpcap.processor;
 
 import java.io.File;
 import java.io.IOException;
 
 import org.jnetpcap.PcapException;
+import org.junit.jupiter.api.Test;
 
+import com.slytechs.jnet.jnetpcap.NetPcap;
 import com.slytechs.jnet.jnetruntime.NotFound;
 import com.slytechs.jnet.jnetruntime.util.HexStrings;
 import com.slytechs.jnet.protocol.core.link.Ppp;
@@ -51,10 +53,8 @@ import com.slytechs.jnet.protocol.meta.PacketFormat;
  */
 public class TestPcapSyntax {
 
-	public TestPcapSyntax() {
-	}
-
-	public static void main(String[] args) throws NotFound, IOException, PcapException {
+	@Test
+	void test(String[] args) throws NotFound, IOException, PcapException {
 		final File FILE = new File("pcaps/HTTP.cap");
 
 //		Pack.listAllDeclaredPacks().forEach(System.out::println);
@@ -98,7 +98,7 @@ public class TestPcapSyntax {
 			Ip4 ip4 = new Ip4();
 			Ip6 ip6 = new Ip6();
 
-			pcap.dispatchPacket(1, (u, packet) -> {
+			pcap.getPacketDispatcher().dispatchPacket(60, (u, packet) -> {
 
 				if (packet.hasHeader(ip6)) {
 					System.out.println("Source IP: " + ip4.srcAsAddress());

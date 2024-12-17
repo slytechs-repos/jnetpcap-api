@@ -17,23 +17,12 @@
  */
 package com.slytechs.jnet.jnetpcap;
 
-import com.slytechs.jnet.jnetpcap.internal.CaptureStatisticsImpl;
-
 /**
  * The Interface CaptureStatistics.
  *
  * @author Mark Bednarczyk
  */
 public interface CaptureStatistics {
-
-	/**
-	 * New instance.
-	 *
-	 * @return the capture statistics
-	 */
-	public static CaptureStatistics newInstance() {
-		return new CaptureStatisticsImpl();
-	}
 
 	/**
 	 * Number of bytes that were dropped due to errors while receiving packets. If

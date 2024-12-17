@@ -21,8 +21,8 @@ import java.lang.foreign.MemorySegment;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
-import com.slytechs.jnet.jnetpcap.NativePacketPipeline.NativeContext;
-import com.slytechs.jnet.jnetpcap.PreProcessors.NativePacketProcessor;
+import com.slytechs.jnet.jnetpcap.PrePcapPipeline.NativeContext;
+import com.slytechs.jnet.jnetpcap.PreProcessors.PreProcessor;
 import com.slytechs.jnet.jnetruntime.pipeline.Processor;
 
 /**
@@ -31,8 +31,8 @@ import com.slytechs.jnet.jnetruntime.pipeline.Processor;
  * @author Mark Bednarczyk
  */
 public final class PacketDelay
-		extends Processor<NativePacketProcessor>
-		implements NativePacketProcessor {
+		extends Processor<PreProcessor>
+		implements PreProcessor {
 
 	private final PacketDelaySettings settings = new PacketDelaySettings();
 
@@ -103,9 +103,9 @@ public final class PacketDelay
 	}
 
 	/**
-	 * @see com.slytechs.jnet.jnetpcap.PreProcessors.NativePacketProcessor#processNativePacket(java.lang.foreign.MemorySegment,
+	 * @see com.slytechs.jnet.jnetpcap.PreProcessors.PreProcessor#processNativePacket(java.lang.foreign.MemorySegment,
 	 *      java.lang.foreign.MemorySegment,
-	 *      com.slytechs.jnet.jnetpcap.NativePacketPipeline.NativeContext)
+	 *      com.slytechs.jnet.jnetpcap.PrePcapPipeline.NativeContext)
 	 */
 	@Override
 	public int processNativePacket(MemorySegment header, MemorySegment packet, NativeContext context) {

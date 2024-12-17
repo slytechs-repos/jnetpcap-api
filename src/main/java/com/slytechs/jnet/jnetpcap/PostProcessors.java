@@ -15,18 +15,25 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.slytechs.jnet.jnetpcap.processor;
+package com.slytechs.jnet.jnetpcap;
+
+import com.slytechs.jnet.jnetpcap.PostPcapPipeline.PostContext;
+import com.slytechs.jnet.protocol.Packet;
 
 /**
- * The Enum ProcessorType.
+ * 
  *
- * @author Mark Bednarczyk
+ * @author Mark Bednarczyk [mark@slytechs.com]
+ * @author Sly Technologies Inc.
  */
-public enum ProcessorType {
+public interface PostProcessors {
 
-	/** The packet. */
-	PACKET,
-	
-	/** The protocol. */
-	PROTOCOL
+	int PACKET_PLAYER_PRIORITY = 0;
+
+	/** Internal pipeline data handling interface, not ment to be used externally */
+	public interface PostData {
+		void processDissectedPacket(Packet packet, PostContext postContext);
+	}
+
+	String toString(boolean includeHeadAndTail);
 }

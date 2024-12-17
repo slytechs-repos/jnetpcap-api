@@ -20,11 +20,11 @@ package com.slytechs.jnet.jnetpcap;
 import java.lang.foreign.MemorySegment;
 import java.util.concurrent.TimeUnit;
 
-import org.jnetpcap.PcapHandler.OfMemorySegment;
 import org.jnetpcap.internal.PcapHeaderABI;
 
-import com.slytechs.jnet.jnetruntime.pipeline.AbstractProcessor;
-import com.slytechs.jnet.jnetruntime.pipeline.Pipeline;
+import com.slytechs.jnet.jnetpcap.PrePcapPipeline.NativeContext;
+import com.slytechs.jnet.jnetpcap.PreProcessors.PreProcessor;
+import com.slytechs.jnet.jnetruntime.pipeline.Processor;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
 import com.slytechs.jnet.jnetruntime.util.config.SystemProperties;
 
@@ -34,8 +34,8 @@ import com.slytechs.jnet.jnetruntime.util.config.SystemProperties;
  * @author Mark Bednarczyk
  */
 public class PacketPlayer
-		extends AbstractProcessor<OfMemorySegment<Object>, PacketPlayer>
-		implements OfMemorySegment<Object> {
+		extends Processor<PreProcessor>
+		implements PreProcessor {
 
 	/** The Constant PREFIX. */
 	private static final String PREFIX = "packet.player";
@@ -71,7 +71,7 @@ public class PacketPlayer
 	private long maxIfgNano = Long.MAX_VALUE;
 
 	/** The Constant NAME. */
-	public static final String NAME = "packet-player";
+	public static final String NAME = "PacketPlayer";
 
 	/**
 	 * Instantiates a new packet player.
@@ -79,8 +79,27 @@ public class PacketPlayer
 	 * @param pipeline the pipeline
 	 * @param priority the priority
 	 */
-	public PacketPlayer(Pipeline<OfMemorySegment<Object>, ?> pipeline, int priority) {
-		super(pipeline, priority, NAME, PcapDataType.PCAP_RAW_PACKET);
+	public PacketPlayer() {
+		super(PreProcessors.PACKET_PLAYER_PRIORITY, NAME);
+	}
+
+	/**
+	 * @param priority
+	 * @param name
+	 * @param mapper
+	 */
+	public PacketPlayer(int priority, String name, ProcessorMapper<PreProcessor> mapper) {
+		super(priority, name, mapper);
+		// TODO Auto-generated constructor stub
+	}
+
+	/**
+	 * @param priority
+	 * @param name
+	 */
+	public PacketPlayer(int priority, String name) {
+		super(priority, name);
+		// TODO Auto-generated constructor stub
 	}
 
 	/**
@@ -249,17 +268,13 @@ public class PacketPlayer
 	}
 
 	/**
-	 * Handle segment.
-	 *
-	 * @param user   the user
-	 * @param header the header
-	 * @param Packet the packet
-	 * @see org.jnetpcap.PcapHandler.OfMemorySegment#handleSegment(java.lang.Object,
-	 *      java.lang.foreign.MemorySegment, java.lang.foreign.MemorySegment)
+	 * @see com.slytechs.jnet.jnetpcap.PreProcessors.PreProcessor#processNativePacket(java.lang.foreign.MemorySegment,
+	 *      java.lang.foreign.MemorySegment,
+	 *      com.slytechs.jnet.jnetpcap.PrePcapPipeline.NativeContext)
 	 */
 	@Override
-	public void handleSegment(Object user, MemorySegment header, MemorySegment Packet) {
-		outputData().handleSegment(user, header, Packet);
+	public int processNativePacket(MemorySegment header, MemorySegment packet, NativeContext context) {
+		return getOutput().processNativePacket(header, packet, context);
 	}
 
 }

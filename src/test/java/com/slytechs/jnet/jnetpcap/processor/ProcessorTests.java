@@ -17,11 +17,13 @@
  */
 package com.slytechs.jnet.jnetpcap.processor;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+
 import org.jnetpcap.PcapException;
-import org.jnetpcap.windows.WinPcap;
 import org.junit.jupiter.api.Test;
 
-import com.slytechs.jnet.jnetpcap.NetPcapDeprecated;
+import com.slytechs.jnet.jnetpcap.NetPcap;
 
 /**
  * The Class ProcessorTests.
@@ -36,18 +38,20 @@ class ProcessorTests {
 	/**
 	 * Test base processor setup.
 	 *
-	 * @throws PcapException the pcap exception
+	 * @throws PcapException         the pcap exception
+	 * @throws IOException
+	 * @throws FileNotFoundException
 	 */
 	@Test
-	void testBaseProcessorSetup() throws PcapException {
+	void testBaseProcessorSetup() throws PcapException, FileNotFoundException, IOException {
 		final String FILE = RESOURCES_DIR + "/HTTP.cap";
 
-		try (var pcap = NetPcapDeprecated.openOffline(WinPcap::openOffline, FILE)) {
+		try (var pcap = NetPcap.offline(FILE)) {
 
 			/**
 			 * <pre>
-			 * + NativePacketPipeline
-			 * 	 + ProtocolPipeline
+			 * +PrePcapPipeline
+			 * 		+ ProtocolPipeline
 			 * 		+ TcpIpProtocolFamily
 			 * 		+ QuicProtocolFamily
 			 * 		+ HttpProtocolFamily
