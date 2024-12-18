@@ -15,7 +15,13 @@ import com.slytechs.jnet.protocol.Packet;
  * packet handlers that can process packets in different formats (array, buffer,
  * native memory) and with different safety guarantees.
  */
-public interface PacketHandler {
+public sealed interface PacketHandler
+		permits PacketHandler.OfArray,
+		PacketHandler.OfBuffer,
+		PacketHandler.OfNative,
+		PacketHandler.OfForeign,
+		PacketHandler.OfPacket,
+		PacketHandler.OfPacketConsumer {
 
 	/**
 	 * Provides a safe packet handling mechanism using byte arrays. Each packet is
@@ -25,7 +31,7 @@ public interface PacketHandler {
 	 * @param <U> The type of user-defined data to be passed through the handler
 	 */
 	@FunctionalInterface
-	interface OfArray<U> extends PacketHandler {
+	non-sealed interface OfArray<U> extends PacketHandler {
 
 		/**
 		 * Handles a packet received as a byte array.
@@ -45,7 +51,7 @@ public interface PacketHandler {
 	 * @param <U> The type of user-defined data to be passed through the handler
 	 */
 	@FunctionalInterface
-	interface OfBuffer<U> extends PacketHandler {
+	non-sealed interface OfBuffer<U> extends PacketHandler {
 
 		/**
 		 * Handles a packet received as a ByteBuffer.
@@ -65,7 +71,7 @@ public interface PacketHandler {
 	 * @param <U> The type of user-defined data to be passed through the handler
 	 */
 	@FunctionalInterface
-	interface OfForeign<U> extends PacketHandler {
+	non-sealed interface OfForeign<U> extends PacketHandler {
 
 		/**
 		 * Handles a packet using foreign memory segments. Note: The memory segments are
@@ -84,7 +90,7 @@ public interface PacketHandler {
 	 * to the handleNative method.
 	 */
 	@FunctionalInterface
-	interface OfNative extends NativeCallback, PacketHandler {
+	non-sealed interface OfNative extends NativeCallback, PacketHandler {
 
 		/**
 		 * Handles packets using native memory segments. This method provides direct
@@ -109,7 +115,7 @@ public interface PacketHandler {
 	 * @param <U> The type of user-defined data to be passed through the handler
 	 */
 	@FunctionalInterface
-	interface OfPacket<U> extends PacketHandler {
+	non-sealed interface OfPacket<U> extends PacketHandler {
 
 		/**
 		 * Handles a parsed packet object.
@@ -125,7 +131,7 @@ public interface PacketHandler {
 	 * implements the standard Java Consumer interface, allowing it to be used in
 	 * streaming operations.
 	 */
-	interface OfPacketConsumer extends PacketHandler, Consumer<Packet> {
+	non-sealed interface OfPacketConsumer extends PacketHandler, Consumer<Packet> {
 
 		/**
 		 * Consumes a packet object. This method adheres to the Consumer interface
