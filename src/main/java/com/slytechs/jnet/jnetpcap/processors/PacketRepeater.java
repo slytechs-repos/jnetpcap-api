@@ -24,11 +24,13 @@ import java.util.function.BooleanSupplier;
 import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 
-import com.slytechs.jnet.jnetpcap.internal.PrePcapPipeline.NativeContext;
+import org.jnetpcap.internal.PcapHeaderABI;
+
+import com.slytechs.jnet.jnetpcap.internal.PrePcapPipeline.PreContext;
 import com.slytechs.jnet.jnetpcap.processors.PreProcessors.PreProcessorData;
 import com.slytechs.jnet.jnetruntime.pipeline.Processor;
+import com.slytechs.jnet.jnetruntime.time.NanoTimes;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
-import com.slytechs.jnet.jnetruntime.util.config.SystemProperties;
 
 /**
  * A packet repeater pre-processor. The repeater is able to repeat, or reinsert
@@ -47,35 +49,16 @@ public final class PacketRepeater
 		extends Processor<PreProcessorData>
 		implements PreProcessorData {
 
-	/** The Constant PREFIX. */
-	private static final String PREFIX = "packet.repeater";
-
-	/** The Constant PROPERTY_PACKET_REPEATER_ENABLE. */
-	public static final String PROPERTY_PACKET_REPEATER_ENABLE = PREFIX + ".enable";
-
-	/** The Constant PROPERTY_PACKET_REPEATER_REPEAT_COUNT. */
-	public static final String PROPERTY_PACKET_REPEATER_REPEAT_COUNT = PREFIX + ".repeatCout";
-
-	/** The Constant PROPERTY_PACKET_REPEATER_DELAY_NANO. */
-	public static final String PROPERTY_PACKET_REPEATER_DELAY_NANO = PREFIX + ".delayNano";
-
-	/** The repeat count. */
-	private long repeatCount = SystemProperties.longValue(PROPERTY_PACKET_REPEATER_REPEAT_COUNT, 1);
-
-	/** The delay nano. */
-	private long ifgForRepeatedNano = SystemProperties.longValue(PROPERTY_PACKET_REPEATER_DELAY_NANO, 1000);
-
-	/** The rewrite timestamp. */
-	private boolean rewriteTimestamp;
-
-	/** The min ifg nano. */
-	private long minIfgNano;
-
-	/** The timestamp unit. */
-	private TimestampUnit timestampUnit = TimestampUnit.PCAP_MICRO;
-
 	/** The Constant NAME. */
 	public static final String NAME = "PacketRepeater";
+
+	private PacketRepeaterSettings settings = new PacketRepeaterSettings();
+
+	public PacketRepeater(PacketRepeaterSettings settings) {
+		super(PreProcessors.PACKET_REPEATER_PRIORITY, NAME);
+
+		this.settings.mergeValues(settings);
+	}
 
 	/**
 	 * @param priority
@@ -109,7 +92,7 @@ public final class PacketRepeater
 	 */
 	public PacketRepeater discardAllPackets(boolean discard) {
 		if (discard)
-			this.repeatCount = -1;
+			settings.REPEAT_COUNT.setValue(-1L, this);
 
 		return this;
 	}
@@ -132,7 +115,7 @@ public final class PacketRepeater
 	 * @return the delay
 	 */
 	public long getIfgForRepeated(TimeUnit unit) {
-		return unit.convert(ifgForRepeatedNano, TimeUnit.NANOSECONDS);
+		return unit.convert(settings.IFG.getLong(), TimeUnit.NANOSECONDS);
 	}
 
 	/**
@@ -142,7 +125,7 @@ public final class PacketRepeater
 	 * @return the delay nano
 	 */
 	public long getIfgForRepeatedNano() {
-		return ifgForRepeatedNano;
+		return settings.IFG.getLong();
 	}
 
 	/**
@@ -151,7 +134,7 @@ public final class PacketRepeater
 	 * @return the repeat count
 	 */
 	public long getRepeatCount() {
-		return repeatCount;
+		return settings.REPEAT_COUNT.getLong();
 	}
 
 	/**
@@ -160,7 +143,7 @@ public final class PacketRepeater
 	 * @return true, if is rewrite timestamp
 	 */
 	public boolean isRewriteTimestamp() {
-		return this.rewriteTimestamp;
+		return settings.REWRITE_TIMESTAMP.getBoolean();
 	}
 
 	/**
@@ -177,7 +160,7 @@ public final class PacketRepeater
 	 * @return this packet repeater
 	 */
 	public PacketRepeater rewriteTimestamp(boolean enable) {
-		this.rewriteTimestamp = enable;
+		settings.REWRITE_TIMESTAMP.setValue(enable, this);
 
 		return this;
 	}
@@ -191,7 +174,7 @@ public final class PacketRepeater
 	 * @return this packet repeater
 	 */
 	public PacketRepeater setIfgForRepeated(long duration, TimeUnit unit) {
-		this.ifgForRepeatedNano = unit.toNanos(duration);
+		settings.IFG.setValue(unit.toNanos(duration), this);
 
 		return this;
 	}
@@ -230,7 +213,7 @@ public final class PacketRepeater
 		if (count < 0)
 			throw new IllegalArgumentException("repeat count can not be negative");
 
-		this.repeatCount = count;
+		settings.REPEAT_COUNT.setValue(count, this);
 
 		return this;
 	}
@@ -243,7 +226,9 @@ public final class PacketRepeater
 	 * @return the packet repeater
 	 */
 	public PacketRepeater setMinimumIfg(long ifg, TimeUnit unit) {
-		this.minIfgNano = Objects.requireNonNull(unit, "unit").toNanos(ifg);
+		Objects.requireNonNull(unit, "unit").toNanos(ifg);
+
+		settings.IFG_MIN.setValue(unit.toNanos(ifg), this);
 
 		return this;
 	}
@@ -255,7 +240,7 @@ public final class PacketRepeater
 	 * @return the packet repeater
 	 */
 	public PacketRepeater setTimestampUnit(TimestampUnit unit) {
-		this.timestampUnit = Objects.requireNonNull(unit, "unit");
+		settings.TS_UNIT.setValue(Objects.requireNonNull(unit, "unit"), this);
 
 		return this;
 	}
@@ -283,7 +268,7 @@ public final class PacketRepeater
 	 * @return the minIfgNano
 	 */
 	public long getMinimumIfgNano() {
-		return minIfgNano;
+		return settings.IFG_MIN.getLong();
 	}
 
 	/**
@@ -292,26 +277,72 @@ public final class PacketRepeater
 	 * @return the timestampUnit
 	 */
 	public TimestampUnit getTimestampUnit() {
-		return timestampUnit;
+		return settings.TS_UNIT.getEnum();
 	}
 
 	/**
-	 * @see com.slytechs.jnet.jnetpcap.PrePcapPipeline.PreProcessorData#processNativePacket(java.lang.foreign.MemorySegment,
+	 * @see com.slytechs.jnet.jnetpcap.processors.PreProcessors.PreProcessorData#processNativePacket(java.lang.foreign.MemorySegment,
 	 *      java.lang.foreign.MemorySegment,
-	 *      com.slytechs.jnet.jnetpcap.internal.PrePcapPipeline.NativeContext)
+	 *      com.slytechs.jnet.jnetpcap.internal.PrePcapPipeline.PreContext)
 	 */
 	@SuppressWarnings("exports")
 	@Override
-	public int processNativePacket(MemorySegment header, MemorySegment packet, NativeContext context) {
+	public long processNativePacket(MemorySegment header, MemorySegment packet, PreContext ctx) {
 		int count = 0;
 
-		for (long c = 0; c < repeatCount; c++) {
-//			PcapUtils.delay(minIfgNano);
+		try {
+			long repeatCount = settings.REPEAT_COUNT.getLong();
+			long ifg = getIfgForRepeatedNano();
+			long minIfg = getMinimumIfgNano();
+			final long snapTs = System.nanoTime();
+			long currentTs = ctx.pcapHeader.timestamp() * 1000; // EPOC_MICROS to EPOC_NANOS
+			
+			boolean rewrite = isRewriteTimestamp();
 
-			count += getOutput().processNativePacket(header, packet, context);
+			long lastTs = ctx.lastPacketTs;
+			long firstIfg = currentTs - lastTs;
+
+
+			if (repeatCount > 0 && firstIfg < minIfg)
+				NanoTimes.delay(minIfg - firstIfg);
+
+			for (long c = 0; c < repeatCount; c++) {
+
+				if (c > 0 && ifg > 0)
+					NanoTimes.delay(ifg);
+
+				// Write actual timestamp when packet transmitted
+				if (rewrite) {
+					ctx.lastPacketTs = rewriteTimestamp(
+							currentTs + (System.nanoTime() - snapTs),
+							header,
+							ctx.pcapSegment, ctx.abi);
+				}
+
+				count += getOutput().processNativePacket(header, packet, ctx);
+			}
+
+		} catch (InterruptedException e) {
+			super.handleError(e, outputData);
+			e.printStackTrace();
 		}
 
 		return count;
+	}
+
+	private long rewriteTimestamp(long newTs, MemorySegment hdr1, MemorySegment hdr2, PcapHeaderABI abi) {
+		newTs /= 1000; // Back to EPOC_MICROS
+
+		long tvSec = TimestampUnit.EPOCH_MICRO.toEpochSecond(newTs);
+		long tvUsec = TimestampUnit.EPOCH_MICRO.toMicroAdjustment(newTs);
+
+		abi.tvSec(hdr1, tvSec);
+		abi.tvUsec(hdr1, tvUsec);
+
+		abi.tvSec(hdr2, tvSec);
+		abi.tvUsec(hdr2, tvUsec);
+
+		return newTs;
 	}
 
 }

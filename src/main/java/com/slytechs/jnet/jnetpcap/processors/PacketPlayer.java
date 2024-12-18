@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.jnetpcap.internal.PcapHeaderABI;
 
-import com.slytechs.jnet.jnetpcap.internal.PrePcapPipeline.NativeContext;
+import com.slytechs.jnet.jnetpcap.internal.PrePcapPipeline.PreContext;
 import com.slytechs.jnet.jnetpcap.processors.PreProcessors.PreProcessorData;
 import com.slytechs.jnet.jnetruntime.pipeline.Processor;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
@@ -270,11 +270,11 @@ public class PacketPlayer
 	/**
 	 * @see com.slytechs.jnet.jnetpcap.processors.PreProcessors.PreProcessorData#processNativePacket(java.lang.foreign.MemorySegment,
 	 *      java.lang.foreign.MemorySegment,
-	 *      com.slytechs.jnet.jnetpcap.internal.PrePcapPipeline.NativeContext)
+	 *      com.slytechs.jnet.jnetpcap.internal.PrePcapPipeline.PreContext)
 	 */
 	@Override
-	public int processNativePacket(MemorySegment header, MemorySegment packet, NativeContext context) {
-		return getOutput().processNativePacket(header, packet, context);
+	public long processNativePacket(MemorySegment header, MemorySegment packet, PreContext preContext) {
+		return getOutput().processNativePacket(header, packet, preContext);
 	}
 
 }

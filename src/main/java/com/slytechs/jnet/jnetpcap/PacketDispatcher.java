@@ -60,7 +60,7 @@ public interface PacketDispatcher {
 	 * @param user  User-defined data to be passed to the handler
 	 * @return The number of packets actually dispatched
 	 */
-	<U> int dispatchBuffer(int count, PacketHandler.OfBuffer<U> cb, U user);
+	<U> long dispatchBuffer(long count, PacketHandler.OfBuffer<U> cb, U user);
 
 	/**
 	 * Dispatches packets using byte array-based handlers.
@@ -71,7 +71,7 @@ public interface PacketDispatcher {
 	 * @param user  User-defined data to be passed to the handler
 	 * @return The number of packets actually dispatched
 	 */
-	<U> int dispatchArray(int count, PacketHandler.OfArray<U> cb, U user);
+	<U> long dispatchArray(long count, PacketHandler.OfArray<U> cb, U user);
 
 	/**
 	 * Dispatches packets using native memory handlers. This method provides direct
@@ -82,7 +82,7 @@ public interface PacketDispatcher {
 	 * @param user    User data as a memory segment
 	 * @return The number of packets actually dispatched
 	 */
-	int dispatchNative(int count, PacketHandler.OfNative handler, MemorySegment user);
+	long dispatchNative(long count, PacketHandler.OfNative handler, MemorySegment user);
 
 	/**
 	 * Dispatches packets using foreign memory segment handlers. This method
@@ -95,19 +95,19 @@ public interface PacketDispatcher {
 	 * @param user                 User-defined data to be passed to the handler
 	 * @return The number of packets actually dispatched
 	 */
-	<U> int dispatchForeign(int count, PacketHandler.OfForeign<U> memorySegmentHandler, U user);
+	<U> long dispatchForeign(long count, PacketHandler.OfForeign<U> memorySegmentHandler, U user);
 
 	Packet DEFAULT_PACKET = new Packet(PacketDescriptorType.TYPE2);
 
 	Packet getDefaultPacket();
 
-	default <U> int dispatchPacket(PacketHandler.OfPacketConsumer cb) {
+	default <U> long dispatchPacket(PacketHandler.OfPacketConsumer cb) {
 		return dispatchPacket(1, (user, packet) -> cb.accept(packet), null);
 	}
 
-	<U> int dispatchPacket(int count, PacketHandler.OfPacket<U> cb, U user);
+	<U> long dispatchPacket(long count, PacketHandler.OfPacket<U> cb, U user);
 
-	<U> int dispatchPacket(int count, PacketHandler.OfPacket<U> cb, U user,
+	<U> long dispatchPacket(long count, PacketHandler.OfPacket<U> cb, U user,
 			Supplier<Packet> packetFactory);
 
 	long capturePackets(long count);

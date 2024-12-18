@@ -100,7 +100,6 @@ public class PostPcapPipeline
 		public final MemorySegment descriptorSegment = Arena.ofAuto().allocate(1024);
 		public final ByteBuffer descriptorBuffer = descriptorSegment.asByteBuffer();
 
-		@SuppressWarnings("exports")
 		@Override
 		public PostContext clone() {
 			try {
@@ -117,7 +116,7 @@ public class PostPcapPipeline
 	private final PacketDispatcherSource dispatcherSource;
 	private final InputPacketDissector input;
 
-	private final OutputStack<PostProcessorData> cbStack;
+	private final OutputStack<PostProcessorData> outputStack;
 	private final OutputTransformer<PostProcessorData, OfPacket<Object>> packetOutput;
 
 	/**
@@ -139,10 +138,11 @@ public class PostPcapPipeline
 		defaultContext.dissector = PacketDissector.dissector(descriptorType);
 
 		this.input = new InputPacketDissector("PreProcessors", defaultContext);
-		head().addInput(input).getInputPerma();
+		head().addInput(input);
 
-		this.cbStack = tail().getOutputStack();
-		this.packetOutput = cbStack.createTransformer("OfPacket", this::outputOfPacket, new DT<OfPacket<Object>>() {});
+		this.outputStack = tail().getOutputStack();
+		this.packetOutput = outputStack.createTransformer("OfPacket", this::outputOfPacket,
+				new DT<OfPacket<Object>>() {});
 
 		this.upstreamRegistration = connectionPoint.connectToOutput("PostProcessors", input);
 	}
@@ -166,11 +166,11 @@ public class PostPcapPipeline
 		input.getContext().packetFactory = packetFactory;
 
 		packetOutput.connectNoRegistration((OfPacket<Object>) handler);
-		cbStack.push(packetOutput);
+		outputStack.push(packetOutput);
 
 		dispatcherSource.captureFromSource(count);
 
-		cbStack.pop();
+		outputStack.pop();
 		packetOutput.disconnect();
 
 		return 1;
@@ -189,11 +189,11 @@ public class PostPcapPipeline
 		input.getContext().packetFactory = input.getContext().defaultPacketFactory;
 
 		packetOutput.connectNoRegistration((OfPacket<Object>) handler);
-		cbStack.push(packetOutput);
+		outputStack.push(packetOutput);
 
 		dispatcherSource.captureFromSource(count);
 
-		cbStack.pop();
+		outputStack.pop();
 		packetOutput.disconnect();
 
 		return 1;

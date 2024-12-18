@@ -21,7 +21,7 @@ import java.lang.foreign.MemorySegment;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
-import com.slytechs.jnet.jnetpcap.internal.PrePcapPipeline.NativeContext;
+import com.slytechs.jnet.jnetpcap.internal.PrePcapPipeline.PreContext;
 import com.slytechs.jnet.jnetpcap.processors.PreProcessors.PreProcessorData;
 import com.slytechs.jnet.jnetruntime.pipeline.Processor;
 import com.slytechs.jnet.jnetruntime.time.NanoTimes;
@@ -140,12 +140,12 @@ public final class PacketDelay
 	 *
 	 * @param header  the memory segment containing the packet header
 	 * @param packet  the memory segment containing the packet data
-	 * @param context the native context for packet processing
+	 * @param preContext the native context for packet processing
 	 * @return the result from the next processor in the pipeline, or 0 if
 	 *         interrupted
 	 */
 	@Override
-	public int processNativePacket(MemorySegment header, MemorySegment packet, NativeContext context) {
+	public long processNativePacket(MemorySegment header, MemorySegment packet, PreContext preContext) {
 		try {
 			long nanosDelay = settings.delayNano();
 
@@ -155,6 +155,6 @@ public final class PacketDelay
 			super.handleError(e, outputData);
 		}
 
-		return getOutput().processNativePacket(header, packet, context);
+		return getOutput().processNativePacket(header, packet, preContext);
 	}
 }

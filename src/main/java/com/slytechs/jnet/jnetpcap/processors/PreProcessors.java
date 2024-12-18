@@ -19,7 +19,7 @@ package com.slytechs.jnet.jnetpcap.processors;
 
 import java.lang.foreign.MemorySegment;
 
-import com.slytechs.jnet.jnetpcap.internal.PrePcapPipeline.NativeContext;
+import com.slytechs.jnet.jnetpcap.internal.PrePcapPipeline.PreContext;
 import com.slytechs.jnet.jnetruntime.pipeline.Processor;
 
 /**
@@ -43,7 +43,7 @@ public interface PreProcessors {
 
 	/** Internal pipeline data handling interface, not ment to be used externally */
 	interface PreProcessorData {
-		long processNativePacket(MemorySegment header, MemorySegment packet, NativeContext context);
+		long processNativePacket(MemorySegment header, MemorySegment packet, PreContext preContext);
 	}
 
 	Processor<PreProcessorData> addProcessor(Processor<PreProcessorData> newProcessor);

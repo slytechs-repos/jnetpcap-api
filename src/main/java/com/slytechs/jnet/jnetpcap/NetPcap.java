@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.lang.foreign.MemorySegment;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
@@ -40,13 +39,12 @@ import com.slytechs.jnet.jnetpcap.internal.PcapSource;
 import com.slytechs.jnet.jnetpcap.internal.PcapUtils;
 import com.slytechs.jnet.jnetpcap.internal.PostPcapPipeline;
 import com.slytechs.jnet.jnetpcap.internal.PrePcapPipeline;
-import com.slytechs.jnet.jnetpcap.processors.PacketDelay;
+import com.slytechs.jnet.jnetpcap.processors.PacketRepeater;
 import com.slytechs.jnet.jnetpcap.processors.PostProcessors;
 import com.slytechs.jnet.jnetpcap.processors.PreProcessors;
 import com.slytechs.jnet.jnetruntime.NotFound;
 import com.slytechs.jnet.jnetruntime.pipeline.OutputConnector;
 import com.slytechs.jnet.jnetruntime.util.Flags;
-import com.slytechs.jnet.jnetruntime.util.HexStrings;
 import com.slytechs.jnet.jnetruntime.util.MemoryUnit;
 import com.slytechs.jnet.jnetruntime.util.Named;
 import com.slytechs.jnet.jnetruntime.util.Registration;
@@ -90,6 +88,31 @@ import com.slytechs.jnet.protocol.meta.PacketFormat;
  */
 public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 
+	/**
+	 * Represents the maximum snapshot length for packet capture.
+	 * 
+	 * <p>
+	 * This constant defines the maximum number of bytes that will be captured for
+	 * each packet. It is set to the value of {@link PcapConstants#MAX_SNAPLEN},
+	 * which typically corresponds to the maximum possible packet size for most
+	 * network types.
+	 * </p>
+	 * 
+	 * <p>
+	 * Using this constant ensures consistency with the underlying libpcap library's
+	 * maximum snapshot length. It's particularly useful when creating pcap handles
+	 * or configuring capture parameters.
+	 * </p>
+	 * 
+	 * <p>
+	 * Note: While this value represents the maximum possible snapshot length, it's
+	 * often advisable to use a smaller value in practice to optimize performance
+	 * and reduce storage requirements, especially if you're only interested in
+	 * specific parts of each packet.
+	 * </p>
+	 */
+	public static final int MAX_SNAPLEN = PcapConstants.MAX_SNAPLEN;
+
 	public static void main(String[] args) throws PcapException, NotFound, TimeoutException {
 		try (var pcap = NetPcap.live()) {
 
@@ -99,10 +122,11 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 
 			PreProcessors preProcessors = pcap.getPreProcessors();
 
-//			preProcessors.addProcessor(new PacketRepeater(2));
-//			preProcessors.addProcessor(21, new PacketRepeater(2));
-			preProcessors.addProcessor(new PacketDelay(100, TimeUnit.MILLISECONDS));
-//			preProcessors.addProcessor(new PacketPlayer());
+			preProcessors.addProcessor(new PacketRepeater(80)
+					.rewriteTimestamp(true));
+			// preProcessors.addProcessor(21, new PacketRepeater(2));
+//				preProcessors.addProcessor(new PacketDelay(100, TimeUnit.MILLISECONDS));
+			// preProcessors.addProcessor(new PacketPlayer());
 
 			System.out.println(preProcessors.toStringInOut());
 
@@ -111,20 +135,20 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 
 			int count = 0;
 
-//			count += pcap.dispatchPacket(1, new OfPacket<String>() {
-//
-//				@Override
-//				public void handlePacket(String user, Packet packet) {
-//					System.out.println(packet);
-//				}
-//			}, "");
+			// count += pcap.dispatchPacket(1, new OfPacket<String>() {
+			//
+			// @Override
+			// public void handlePacket(String user, Packet packet) {
+			// System.out.println(packet);
+			// }
+			// }, "");
 
 			count += pcap.dispatchNative(1, (PacketHandler.OfNative) (user, header, packet) -> {
 
-				System.out.println();
-				System.out.println("---- NATIVE CB ----");
+//				System.out.println();
+//				System.out.println("---- NATIVE CB ----");
 
-				System.out.print(HexStrings.toHexDump(header.asByteBuffer()));
+//				System.out.print(HexStrings.toHexDump(header.asByteBuffer()));
 
 				var hdr = new PcapHeader(header);
 
@@ -132,49 +156,82 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 
 			}, MemorySegment.NULL);
 
-//			count += pcap.dispatchBuffer(1, (OfBuffer<String>) (user, header, packet) -> {
-//
-//				System.out.println();
-//				System.out.println("---- BYTE BUFFER CB ----");
-//
-//				System.out.println("Caught packet " + header);
-//				System.out.println("User = " + user);
-//
-//			}, "OfByteBuffer callback");
+			// count += pcap.dispatchBuffer(1, (OfBuffer<String>) (user, header, packet) ->
+			// {
+			//
+			// System.out.println();
+			// System.out.println("---- BYTE BUFFER CB ----");
+			//
+			// System.out.println("Caught packet " + header);
+			// System.out.println("User = " + user);
+			//
+			// }, "OfByteBuffer callback");
 
-//			count += pcap.dispatchArray(1, (OfArray<String>) (user, header, packet) -> {
-//
-//				System.out.println("---- ARRAY CB ----");
-//
-//				System.out.println("Caught packet " + header);
-//				System.out.println("User = " + user);
-//
-//			}, "OfArray callback");
+			// count += pcap.dispatchArray(1, (OfArray<String>) (user, header, packet) -> {
+			//
+			// System.out.println("---- ARRAY CB ----");
+			//
+			// System.out.println("Caught packet " + header);
+			// System.out.println("User = " + user);
+			//
+			// }, "OfArray callback");
 
-//			count += pcap.dispatchForeign(1, (OfForeign<String>) (user, header, packet) -> {
-//
-//				System.out.println();
-//				System.out.println("---- MEMORY SEGMENT CB ----");
-//
-//				System.out.println(HexStrings.toHexDump(header.asByteBuffer()));
-//
-//				var hdr = new PcapHeader(header);
-//
-//				System.out.println("Caught packet " + hdr);
-//				System.out.println("User = " + user);
-//
-//			}, "OfMemorySegment callback");
+			// count += pcap.dispatchForeign(1, (OfForeign<String>) (user, header, packet)
+			// -> {
+			//
+			// System.out.println();
+			// System.out.println("---- MEMORY SEGMENT CB ----");
+			//
+			// System.out.println(HexStrings.toHexDump(header.asByteBuffer()));
+			//
+			// var hdr = new PcapHeader(header);
+			//
+			// System.out.println("Caught packet " + hdr);
+			// System.out.println("User = " + user);
+			//
+			// }, "OfMemorySegment callback");
 
-//			Packet packet = new Packet(PacketDescriptorType.PCAP);
-//			pcap.nextPacket(packet);
-//			count++;
-//			System.out.println("---- NEXT_PACKET CB ----");
-//			System.out.println("Caught packet " + packet);
+			// Packet packet = new Packet(PacketDescriptorType.PCAP);
+			// pcap.nextPacket(packet);
+			// count++;
+			// System.out.println("---- NEXT_PACKET CB ----");
+			// System.out.println("Caught packet " + packet);
 
 			System.out.println();
 			System.out.printf("processed %d packets%n", count);
 		}
 
+	}
+
+	/**
+	 * Creates a NetPcap instance with a "dead" capture handle using default
+	 * link-layer type and snapshot length. Unlike pcap_open_dead, this method
+	 * requires NetPcap::activate to be called after creation to allow for
+	 * additional configuration before finalizing the dead handle.
+	 *
+	 * @return A new NetPcap instance with a dead capture handle
+	 * @throws PcapException If there's an error creating the Pcap instance
+	 */
+	public static NetPcap dead() throws PcapException {
+		var pcap = Pcap.openDead(PcapDlt.EN10MB, PcapConstants.MAX_SNAPLEN);
+
+		return new NetPcap(pcap);
+	}
+
+	/**
+	 * Creates a NetPcap instance with a "dead" capture handle using specified
+	 * link-layer type and default snapshot length. Unlike pcap_open_dead, this
+	 * method requires NetPcap::activate to be called after creation to allow for
+	 * additional configuration before finalizing the dead handle.
+	 *
+	 * @param dlt The data link type (PcapDlt) to use for the dead handle
+	 * @return A new NetPcap instance with a dead capture handle
+	 * @throws PcapException If there's an error creating the Pcap instance
+	 */
+	public static NetPcap dead(PcapDlt dlt) throws PcapException {
+		var pcap = Pcap.openDead(dlt, PcapConstants.MAX_SNAPLEN);
+
+		return new NetPcap(pcap);
 	}
 
 	/**
@@ -273,31 +330,6 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 	}
 
 	/**
-	 * Represents the maximum snapshot length for packet capture.
-	 * 
-	 * <p>
-	 * This constant defines the maximum number of bytes that will be captured for
-	 * each packet. It is set to the value of {@link PcapConstants#MAX_SNAPLEN},
-	 * which typically corresponds to the maximum possible packet size for most
-	 * network types.
-	 * </p>
-	 * 
-	 * <p>
-	 * Using this constant ensures consistency with the underlying libpcap library's
-	 * maximum snapshot length. It's particularly useful when creating pcap handles
-	 * or configuring capture parameters.
-	 * </p>
-	 * 
-	 * <p>
-	 * Note: While this value represents the maximum possible snapshot length, it's
-	 * often advisable to use a smaller value in practice to optimize performance
-	 * and reduce storage requirements, especially if you're only interested in
-	 * specific parts of each packet.
-	 * </p>
-	 */
-	public static final int MAX_SNAPLEN = PcapConstants.MAX_SNAPLEN;
-
-	/**
 	 * Creates a NetPcap instance for live packet capture using a device name
 	 * string. This method requires NetPcap::activate to be called after creation to
 	 * start the capture.
@@ -323,8 +355,8 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 	 * @return A new NetPcap instance configured for live capture
 	 * @throws PcapException If there's an error creating the Pcap instance
 	 */
-	public static NetPcap live(String deviceName) throws PcapException {
-		var pcap = Pcap.create(deviceName);
+	public static NetPcap live(PcapIf device) throws PcapException {
+		var pcap = Pcap.create(device.name());
 
 		return new NetPcap(pcap);
 	}
@@ -338,8 +370,8 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 	 * @return A new NetPcap instance configured for live capture
 	 * @throws PcapException If there's an error creating the Pcap instance
 	 */
-	public static NetPcap live(PcapIf device) throws PcapException {
-		var pcap = Pcap.create(device.name());
+	public static NetPcap live(String deviceName) throws PcapException {
+		var pcap = Pcap.create(deviceName);
 
 		return new NetPcap(pcap);
 	}
@@ -383,37 +415,6 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 		return new NetPcap(pcap);
 	}
 
-	/**
-	 * Creates a NetPcap instance with a "dead" capture handle using default
-	 * link-layer type and snapshot length. Unlike pcap_open_dead, this method
-	 * requires NetPcap::activate to be called after creation to allow for
-	 * additional configuration before finalizing the dead handle.
-	 *
-	 * @return A new NetPcap instance with a dead capture handle
-	 * @throws PcapException If there's an error creating the Pcap instance
-	 */
-	public static NetPcap dead() throws PcapException {
-		var pcap = Pcap.openDead(PcapDlt.EN10MB, PcapConstants.MAX_SNAPLEN);
-
-		return new NetPcap(pcap);
-	}
-
-	/**
-	 * Creates a NetPcap instance with a "dead" capture handle using specified
-	 * link-layer type and default snapshot length. Unlike pcap_open_dead, this
-	 * method requires NetPcap::activate to be called after creation to allow for
-	 * additional configuration before finalizing the dead handle.
-	 *
-	 * @param dlt The data link type (PcapDlt) to use for the dead handle
-	 * @return A new NetPcap instance with a dead capture handle
-	 * @throws PcapException If there's an error creating the Pcap instance
-	 */
-	public static NetPcap dead(PcapDlt dlt) throws PcapException {
-		var pcap = Pcap.openDead(dlt, PcapConstants.MAX_SNAPLEN);
-
-		return new NetPcap(pcap);
-	}
-
 	/** Main native PCAP packet pipeline for packet dispatching */
 	private final PrePcapPipeline prePipeline;
 
@@ -437,28 +438,21 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 		this.packetDispatcher = new PipelinePacketDispatcher(prePipeline, postPipeline);
 	}
 
-	@Override
-	protected PacketDispatcher getPacketDispatcher() {
-		return packetDispatcher;
-	}
-
 	public Registration addErrorListener(Consumer<Throwable> listener) {
 		return prePipeline.addPipelineErrorConsumer(listener);
 	}
 
-	public PreProcessors getPreProcessors() {
-		return prePipeline;
+	@Override
+	protected PacketDispatcher getPacketDispatcher() {
+		return packetDispatcher;
 	}
 
 	public PostProcessors getPostProcessors() {
 		return postPipeline;
 	}
 
-	/**
-	 * @param ipConfig
-	 */
-	public NetPcap setIpReassembler(IpReassembly reassembler) {
-		throw new UnsupportedOperationException("not implemented yet");
+	public PreProcessors getPreProcessors() {
+		return prePipeline;
 	}
 
 	/**
@@ -467,6 +461,18 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 	@Override
 	public String name() {
 		return getName();
+	}
+
+	/**
+	 * @param i
+	 * @param kilobytes
+	 * @return
+	 * @throws PcapException
+	 */
+	public NetPcap setBufferSize(int size, MemoryUnit unit) throws PcapException {
+		super.setBufferSize(unit.toBytesAsInt(size));
+
+		return this;
 	}
 
 	/**
@@ -479,23 +485,18 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 	}
 
 	/**
+	 * @param ipConfig
+	 */
+	public NetPcap setIpReassembler(IpReassembly reassembler) {
+		throw new UnsupportedOperationException("not implemented yet");
+	}
+
+	/**
 	 * @param packetFormat
 	 * @return
 	 */
 	public NetPcap setPacketFormatter(PacketFormat packetFormat) {
 		PacketDispatcher.DEFAULT_PACKET.setFormatter(packetFormat);
-
-		return this;
-	}
-
-	/**
-	 * @param i
-	 * @param kilobytes
-	 * @return
-	 * @throws PcapException
-	 */
-	public NetPcap setBufferSize(int size, MemoryUnit unit) throws PcapException {
-		super.setBufferSize(unit.toBytesAsInt(size));
 
 		return this;
 	}

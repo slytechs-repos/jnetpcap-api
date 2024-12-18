@@ -20,6 +20,7 @@ package com.slytechs.jnet.jnetpcap.internal;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
+import java.nio.ByteBuffer;
 import java.util.function.Supplier;
 
 import org.jnetpcap.PcapHeader;
@@ -56,9 +57,22 @@ public final class PrePcapPipeline
 	 * @author Mark Bednarczyk [mark@slytechs.com]
 	 * @author Sly Technologies Inc.
 	 */
-	public static class NativeContext {
+	public static class PreContext {
+		public final PcapHeader pcapHeader;
+		public final MemorySegment pcapSegment;
+		public final ByteBuffer pcapBuffer;
+
 		public Object user;
 		public long packetCount;
+		public long lastPacketTs;
+		public final PcapHeaderABI abi;
+
+		public PreContext(PcapHeaderABI abi) {
+			this.abi = abi;
+			this.pcapHeader = new PcapHeader(abi);
+			this.pcapSegment = pcapHeader.asMemorySegment();
+			this.pcapBuffer = pcapHeader.asByteBuffer();
+		}
 
 		public void reset() {
 			this.packetCount = 0;
@@ -67,7 +81,7 @@ public final class PrePcapPipeline
 	}
 
 	private final OfNative mainInput;
-	private final NativeContext ctx = new NativeContext();
+	private final PreContext ctx;
 
 	private final PcapDescriptor pcapDescriptorReusable = new PcapDescriptor();
 	private final PcapHeaderABI PCAP_ABI;
@@ -86,6 +100,8 @@ public final class PrePcapPipeline
 		super(deviceName, new RawDataType<>(PreProcessorData.class));
 		this.PCAP_ABI = abi;
 		this.pcapSource = source;
+
+		this.ctx = new PreContext(abi);
 
 		var mseg = Arena.ofAuto().allocate(PcapDescriptor.PCAP_DESCRIPTOR_LENGTH);
 		this.pcapDescriptorReusable.bind(mseg.asByteBuffer(), mseg);
@@ -159,6 +175,8 @@ public final class PrePcapPipeline
 				packet = packet.reinterpret(PCAP_ABI.captureLength(header));
 
 			ctx.reset();
+
+			ctx.pcapSegment.copyFrom(header);
 
 			var np = out.get();
 			long count = np.processNativePacket(header, packet, ctx);
@@ -284,8 +302,13 @@ public final class PrePcapPipeline
 	}
 
 	public long capturePackets(long count) {
-		if (count == 0)
-			pcapSource.dispatchNative(0, getOfNativeInput(), MemorySegment.NULL);
+		/*
+		 * The value 0 has a different meaning - it indicates to process all packets
+		 * currently in the buffer (for offline captures) or to wait for and process
+		 * packets until a read timeout occurs (for live captures).
+		 */
+		if (count == -1 || count == 0)
+			pcapSource.dispatchNative((int) count, getOfNativeInput(), MemorySegment.NULL);
 
 		else {
 			while (count > 0) {
