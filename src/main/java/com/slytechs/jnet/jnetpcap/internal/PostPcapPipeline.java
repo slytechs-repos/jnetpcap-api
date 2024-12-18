@@ -165,13 +165,11 @@ public class PostPcapPipeline
 		input.getContext().user = user;
 		input.getContext().packetFactory = packetFactory;
 
-		packetOutput.connectNoRegistration((OfPacket<Object>) handler);
-		outputStack.push(packetOutput);
+		try (var _ = packetOutput.connect((OfPacket<Object>) handler);
+				var _ = outputStack.push(packetOutput)) {
 
-		dispatcherSource.captureFromSource(count);
-
-		outputStack.pop();
-		packetOutput.disconnect();
+			dispatcherSource.captureFromSource(count);
+		}
 
 		return 1;
 	}
@@ -188,13 +186,11 @@ public class PostPcapPipeline
 		input.getContext().user = user;
 		input.getContext().packetFactory = input.getContext().defaultPacketFactory;
 
-		packetOutput.connectNoRegistration((OfPacket<Object>) handler);
-		outputStack.push(packetOutput);
+		try (var _ = packetOutput.connect((OfPacket<Object>) handler);
+				var _ = outputStack.push(packetOutput)) {
 
-		dispatcherSource.captureFromSource(count);
-
-		outputStack.pop();
-		packetOutput.disconnect();
+			dispatcherSource.captureFromSource(count);
+		}
 
 		return 1;
 	}

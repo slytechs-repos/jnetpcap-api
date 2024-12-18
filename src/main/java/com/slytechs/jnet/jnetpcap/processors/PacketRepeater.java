@@ -24,12 +24,9 @@ import java.util.function.BooleanSupplier;
 import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 
-import org.jnetpcap.internal.PcapHeaderABI;
-
 import com.slytechs.jnet.jnetpcap.internal.PrePcapPipeline.PreContext;
 import com.slytechs.jnet.jnetpcap.processors.PreProcessors.PreProcessorData;
 import com.slytechs.jnet.jnetruntime.pipeline.Processor;
-import com.slytechs.jnet.jnetruntime.time.NanoTime;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
 
 /**
@@ -54,12 +51,6 @@ public final class PacketRepeater
 
 	private PacketRepeaterSettings settings = new PacketRepeaterSettings();
 
-	public PacketRepeater(PacketRepeaterSettings settings) {
-		super(PreProcessors.PACKET_REPEATER_PRIORITY, NAME);
-
-		this.settings.mergeValues(settings);
-	}
-
 	/**
 	 * @param priority
 	 * @param name
@@ -68,6 +59,12 @@ public final class PacketRepeater
 		super(PreProcessors.PACKET_REPEATER_PRIORITY, NAME);
 
 		repeatCount(repeatCount);
+	}
+
+	public PacketRepeater(PacketRepeaterSettings settings) {
+		super(PreProcessors.PACKET_REPEATER_PRIORITY, NAME);
+
+		this.settings.mergeValues(settings);
 	}
 
 	/**
@@ -92,7 +89,7 @@ public final class PacketRepeater
 	 */
 	public PacketRepeater discardAllPackets(boolean discard) {
 		if (discard)
-			settings.REPEAT_COUNT.setValue(-1L, this);
+			rwGuard.writeLocked(() -> settings.REPEAT_COUNT.setValue(-1L, this));
 
 		return this;
 	}
@@ -105,7 +102,7 @@ public final class PacketRepeater
 	 * @return this packet repeater
 	 */
 	public PacketRepeater discardAllPackets(BooleanSupplier discard) {
-		return discardAllPackets(discard.getAsBoolean());
+		return rwGuard.writeLocked(() -> discardAllPackets(discard.getAsBoolean()));
 	}
 
 	/**
@@ -115,7 +112,7 @@ public final class PacketRepeater
 	 * @return the delay
 	 */
 	public long getIfgForRepeated(TimeUnit unit) {
-		return unit.convert(settings.IFG.getLong(), TimeUnit.NANOSECONDS);
+		return rwGuard.readLocked(() -> unit.convert(settings.IFG.getLong(), TimeUnit.NANOSECONDS));
 	}
 
 	/**
@@ -125,7 +122,16 @@ public final class PacketRepeater
 	 * @return the delay nano
 	 */
 	public long getIfgForRepeatedNano() {
-		return settings.IFG.getLong();
+		return rwGuard.readLocked(() -> settings.IFG.getLong());
+	}
+
+	/**
+	 * Gets the minimum ifg nano.
+	 *
+	 * @return the minIfgNano
+	 */
+	public long getMinimumIfgNano() {
+		return rwGuard.readLocked(() -> settings.IFG_MIN.getLong());
 	}
 
 	/**
@@ -134,7 +140,16 @@ public final class PacketRepeater
 	 * @return the repeat count
 	 */
 	public long getRepeatCount() {
-		return settings.REPEAT_COUNT.getLong();
+		return rwGuard.readLocked(() -> settings.REPEAT_COUNT.getLong());
+	}
+
+	/**
+	 * Gets the timestamp unit.
+	 *
+	 * @return the timestampUnit
+	 */
+	public TimestampUnit getTimestampUnit() {
+		return rwGuard.readLocked(() -> settings.TS_UNIT.getEnum());
 	}
 
 	/**
@@ -143,57 +158,42 @@ public final class PacketRepeater
 	 * @return true, if is rewrite timestamp
 	 */
 	public boolean isRewriteTimestamp() {
-		return settings.REWRITE_TIMESTAMP.getBoolean();
+		return rwGuard.readLocked(() -> settings.REWRITE_TIMESTAMP.getBoolean());
 	}
 
-	/**
-	 * Rewrite timestamp flag. The rewrite timestamp flag, will rewrite the
-	 * timestamp in the pcap header for all repeated packets to reflect the
-	 * calculated timestamp based on the timestamp of the original packet and how
-	 * much delay was used before the repeated packet is sent.
-	 * <p>
-	 * This flag has no effect on the original packet. Its timestamp is never
-	 * modified, only the repeated packets.
-	 * </p>
-	 *
-	 * @param enable enables the rewrite timestamp flag
-	 * @return this packet repeater
-	 */
-	public PacketRepeater rewriteTimestamp(boolean enable) {
-		settings.REWRITE_TIMESTAMP.setValue(enable, this);
+	@Override
+	public long processNativePacket(MemorySegment header, MemorySegment packet,
+			@SuppressWarnings("exports") PreContext ctx) {
+		long count = 0;
+		long repeatCount = settings.REPEAT_COUNT.getLong();
+		long minIfg = settings.IFG_MIN.getLong();
+		long ifg = settings.IFG.getLong();
+		boolean delay = ifg > 0 || minIfg > 0;
+		boolean rewrite = settings.REWRITE_TIMESTAMP.getBoolean();
+		var stopWatch = ctx.frameStopwatch;
+		var frameHdr = ctx.pcapHeader;
 
-		return this;
-	}
+		try {
+			for (long c = 0; c < repeatCount; c++) {
 
-	/**
-	 * Sets the delay or inter-frame-gap between the original packet and all of
-	 * subsequent repeated packets.
-	 *
-	 * @param duration the duration or inter-frame-gap
-	 * @param unit     the time unit for the delay
-	 * @return this packet repeater
-	 */
-	public PacketRepeater setIfgForRepeated(long duration, TimeUnit unit) {
-		settings.IFG.setValue(unit.toNanos(duration), this);
+				try (var _ = stopWatch.start(frameHdr)) {
 
-		return this;
-	}
+					if (delay)
+						stopWatch.delayIfg(c == 0 ? minIfg : ifg);
 
-	/**
-	 * Sets the repeat count using a supplier. Each packet captured by pcap is
-	 * repeated, not duplicated. The exact original packet is repeatedly sent into
-	 * the pcap packet stream. Each of the repeated packets, will be identical to
-	 * the original packet being repeated, including its memory addresses for header
-	 * and packet data pointers.
-	 *
-	 * @param count how many times to repeat the original packet, where 0 means 0
-	 *              times so only the original packet will be sent, a 1 means 1
-	 *              repeat resulting in 2 packets (the original + 1 repeated) will
-	 *              be sent, etc.
-	 * @return this packet repeater
-	 */
-	public PacketRepeater setRepeatCount(IntSupplier count) {
-		return repeatCount(count.getAsInt());
+					if (rewrite && delay)
+						frameHdr.timestamp(stopWatch.newTsNanos(), TimestampUnit.EPOCH_NANO);
+
+					count += getOutput().processNativePacket(header, packet, ctx);
+
+				}
+			}
+
+		} catch (InterruptedException e) {
+
+		}
+
+		return count;
 	}
 
 	/**
@@ -210,37 +210,14 @@ public final class PacketRepeater
 	 * @return this packet repeater
 	 */
 	public PacketRepeater repeatCount(long count) {
-		if (count < 0)
-			throw new IllegalArgumentException("repeat count can not be negative");
 
-		settings.REPEAT_COUNT.setValue(count, this);
+		rwGuard.writeLocked(() -> {
+			if (count < 0)
+				throw new IllegalArgumentException("repeat count can not be negative");
 
-		return this;
-	}
-
-	/**
-	 * Sets the minimum ifg.
-	 *
-	 * @param ifg  the ifg
-	 * @param unit the unit
-	 * @return the packet repeater
-	 */
-	public PacketRepeater setMinimumIfg(long ifg, TimeUnit unit) {
-		Objects.requireNonNull(unit, "unit").toNanos(ifg);
-
-		settings.IFG_MIN.setValue(unit.toNanos(ifg), this);
-
-		return this;
-	}
-
-	/**
-	 * Sets the timestamp unit.
-	 *
-	 * @param unit the unit
-	 * @return the packet repeater
-	 */
-	public PacketRepeater setTimestampUnit(TimestampUnit unit) {
-		settings.TS_UNIT.setValue(Objects.requireNonNull(unit, "unit"), this);
+			settings.REPEAT_COUNT.setValue(count, this);
+			return null;
+		}, IllegalArgumentException.class);
 
 		return this;
 	}
@@ -263,86 +240,80 @@ public final class PacketRepeater
 	}
 
 	/**
-	 * Gets the minimum ifg nano.
+	 * Rewrite timestamp flag. The rewrite timestamp flag, will rewrite the
+	 * timestamp in the pcap header for all repeated packets to reflect the
+	 * calculated timestamp based on the timestamp of the original packet and how
+	 * much delay was used before the repeated packet is sent.
+	 * <p>
+	 * This flag has no effect on the original packet. Its timestamp is never
+	 * modified, only the repeated packets.
+	 * </p>
 	 *
-	 * @return the minIfgNano
+	 * @param enable enables the rewrite timestamp flag
+	 * @return this packet repeater
 	 */
-	public long getMinimumIfgNano() {
-		return settings.IFG_MIN.getLong();
+	public PacketRepeater rewriteTimestamp(boolean enable) {
+		rwGuard.writeLocked(() -> settings.REWRITE_TIMESTAMP.setValue(enable, this));
+
+		return this;
 	}
 
 	/**
-	 * Gets the timestamp unit.
+	 * Sets the delay or inter-frame-gap between the original packet and all of
+	 * subsequent repeated packets.
 	 *
-	 * @return the timestampUnit
+	 * @param duration the duration or inter-frame-gap
+	 * @param unit     the time unit for the delay
+	 * @return this packet repeater
 	 */
-	public TimestampUnit getTimestampUnit() {
-		return settings.TS_UNIT.getEnum();
+	public PacketRepeater setIfgForRepeated(long duration, TimeUnit unit) {
+		rwGuard.writeLocked(() -> settings.IFG.setValue(unit.toNanos(duration), this));
+
+		return this;
 	}
 
 	/**
-	 * @see com.slytechs.jnet.jnetpcap.processors.PreProcessors.PreProcessorData#processNativePacket(java.lang.foreign.MemorySegment,
-	 *      java.lang.foreign.MemorySegment,
-	 *      com.slytechs.jnet.jnetpcap.internal.PrePcapPipeline.PreContext)
+	 * Sets the minimum ifg.
+	 *
+	 * @param ifg  the ifg
+	 * @param unit the unit
+	 * @return the packet repeater
 	 */
-	@SuppressWarnings("exports")
-	@Override
-	public long processNativePacket(MemorySegment header, MemorySegment packet, PreContext ctx) {
-		int count = 0;
+	public PacketRepeater setMinimumIfg(long ifg, TimeUnit unit) {
+		Objects.requireNonNull(unit, "unit").toNanos(ifg);
 
-		try {
-			long repeatCount = settings.REPEAT_COUNT.getLong();
-			long ifg = getIfgForRepeatedNano();
-			long minIfg = getMinimumIfgNano();
-			final long snapTs = System.nanoTime();
-			long currentTs = ctx.pcapHeader.timestamp() * 1000; // EPOC_MICROS to EPOC_NANOS
-			
-			boolean rewrite = isRewriteTimestamp();
+		rwGuard.writeLocked(() -> settings.IFG_MIN.setValue(unit.toNanos(ifg), this));
 
-			long lastTs = ctx.lastPacketTs;
-			long firstIfg = currentTs - lastTs;
-
-
-			if (repeatCount > 0 && firstIfg < minIfg)
-				NanoTime.delay(minIfg - firstIfg);
-
-			for (long c = 0; c < repeatCount; c++) {
-
-				if (c > 0 && ifg > 0)
-					NanoTime.delay(ifg);
-
-				// Write actual timestamp when packet transmitted
-				if (rewrite) {
-					ctx.lastPacketTs = rewriteTimestamp(
-							currentTs + (System.nanoTime() - snapTs),
-							header,
-							ctx.pcapSegment, ctx.abi);
-				}
-
-				count += getOutput().processNativePacket(header, packet, ctx);
-			}
-
-		} catch (InterruptedException e) {
-			super.handleError(e, outputData);
-			e.printStackTrace();
-		}
-
-		return count;
+		return this;
 	}
 
-	private long rewriteTimestamp(long newTs, MemorySegment hdr1, MemorySegment hdr2, PcapHeaderABI abi) {
-		newTs /= 1000; // Back to EPOC_MICROS
+	/**
+	 * Sets the repeat count using a supplier. Each packet captured by pcap is
+	 * repeated, not duplicated. The exact original packet is repeatedly sent into
+	 * the pcap packet stream. Each of the repeated packets, will be identical to
+	 * the original packet being repeated, including its memory addresses for header
+	 * and packet data pointers.
+	 *
+	 * @param count how many times to repeat the original packet, where 0 means 0
+	 *              times so only the original packet will be sent, a 1 means 1
+	 *              repeat resulting in 2 packets (the original + 1 repeated) will
+	 *              be sent, etc.
+	 * @return this packet repeater
+	 */
+	public PacketRepeater setRepeatCount(IntSupplier count) {
+		return repeatCount(count.getAsInt());
+	}
 
-		long tvSec = TimestampUnit.EPOCH_MICRO.toEpochSecond(newTs);
-		long tvUsec = TimestampUnit.EPOCH_MICRO.toMicroAdjustment(newTs);
+	/**
+	 * Sets the timestamp unit.
+	 *
+	 * @param unit the unit
+	 * @return the packet repeater
+	 */
+	public PacketRepeater setTimestampUnit(TimestampUnit unit) {
+		rwGuard.writeLocked(() -> settings.TS_UNIT.setValue(Objects.requireNonNull(unit, "unit"), this));
 
-		abi.tvSec(hdr1, tvSec);
-		abi.tvUsec(hdr1, tvUsec);
-
-		abi.tvSec(hdr2, tvSec);
-		abi.tvUsec(hdr2, tvUsec);
-
-		return newTs;
+		return this;
 	}
 
 }

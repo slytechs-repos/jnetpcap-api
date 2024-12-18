@@ -93,7 +93,8 @@ public final class PacketDelay
 	 * @return this PacketDelay instance for method chaining
 	 */
 	public PacketDelay setDelay(Duration duration) {
-		settings.DELAY_NANO.setLong(duration.toNanos());
+		rwGuard.writeLocked(() -> settings.DELAY_NANO.setLong(duration.toNanos()));
+
 		return this;
 	}
 
@@ -105,7 +106,8 @@ public final class PacketDelay
 	 * @return this PacketDelay instance for method chaining
 	 */
 	public PacketDelay setDelay(long duration, TimeUnit unit) {
-		settings.delayNano(unit.toNanos(duration));
+		rwGuard.writeLocked(() -> settings.delayNano(unit.toNanos(duration)));
+
 		return this;
 	}
 
@@ -116,7 +118,7 @@ public final class PacketDelay
 	 * @return the current delay value in the specified unit
 	 */
 	public long getDelay(TimeUnit unit) {
-		return unit.convert(settings.delayNano(), TimeUnit.NANOSECONDS);
+		return rwGuard.readLocked(() -> unit.convert(settings.delayNano(), TimeUnit.NANOSECONDS));
 	}
 
 	/**
@@ -125,7 +127,7 @@ public final class PacketDelay
 	 * @return the current delay value in nanoseconds
 	 */
 	public long getDelayNano() {
-		return settings.delayNano();
+		return rwGuard.readLocked(() -> settings.delayNano());
 	}
 
 	/**
@@ -138,14 +140,15 @@ public final class PacketDelay
 	 * return early with a status code of 0.
 	 * </p>
 	 *
-	 * @param header  the memory segment containing the packet header
-	 * @param packet  the memory segment containing the packet data
+	 * @param header     the memory segment containing the packet header
+	 * @param packet     the memory segment containing the packet data
 	 * @param preContext the native context for packet processing
 	 * @return the result from the next processor in the pipeline, or 0 if
 	 *         interrupted
 	 */
 	@Override
-	public long processNativePacket(MemorySegment header, MemorySegment packet, @SuppressWarnings("exports") PreContext preContext) {
+	public long processNativePacket(MemorySegment header, MemorySegment packet,
+			@SuppressWarnings("exports") PreContext preContext) {
 		try {
 			long nanosDelay = settings.delayNano();
 
@@ -153,6 +156,8 @@ public final class PacketDelay
 
 		} catch (InterruptedException e) {
 			super.handleError(e, outputData);
+
+			return 0;
 		}
 
 		return getOutput().processNativePacket(header, packet, preContext);

@@ -34,6 +34,8 @@ import com.slytechs.jnet.jnetpcap.PacketHandler.OfForeign;
 import com.slytechs.jnet.jnetpcap.PacketHandler.OfNative;
 import com.slytechs.jnet.jnetpcap.processors.PreProcessors;
 import com.slytechs.jnet.jnetpcap.processors.PreProcessors.PreProcessorData;
+import com.slytechs.jnet.jnetruntime.frame.FrameABI;
+import com.slytechs.jnet.jnetruntime.frame.PcapFrameHeader;
 import com.slytechs.jnet.jnetruntime.pipeline.DT;
 import com.slytechs.jnet.jnetruntime.pipeline.InputTransformer;
 import com.slytechs.jnet.jnetruntime.pipeline.OutputStack;
@@ -41,6 +43,8 @@ import com.slytechs.jnet.jnetruntime.pipeline.OutputTransformer;
 import com.slytechs.jnet.jnetruntime.pipeline.OutputTransformer.OutputMapper;
 import com.slytechs.jnet.jnetruntime.pipeline.Pipeline;
 import com.slytechs.jnet.jnetruntime.pipeline.RawDataType;
+import com.slytechs.jnet.jnetruntime.time.FrameStopwatch;
+import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
 import com.slytechs.jnet.jnetruntime.util.Registration;
 import com.slytechs.jnet.protocol.Packet;
 import com.slytechs.jnet.protocol.core.constants.PacketDescriptorType;
@@ -58,20 +62,23 @@ public final class PrePcapPipeline
 	 * @author Sly Technologies Inc.
 	 */
 	public static class PreContext {
-		public final PcapHeader pcapHeader;
-		public final MemorySegment pcapSegment;
-		public final ByteBuffer pcapBuffer;
+		public final PcapFrameHeader pcapHeader;
+		public MemorySegment pcapSegment;
+		public ByteBuffer pcapBuffer;
+		public final TimestampUnit pcapTsUnit;
 
 		public Object user;
 		public long packetCount;
 		public long lastPacketTs;
-		public final PcapHeaderABI abi;
+		public final FrameABI abi;
 
-		public PreContext(PcapHeaderABI abi) {
-			this.abi = abi;
-			this.pcapHeader = new PcapHeader(abi);
-			this.pcapSegment = pcapHeader.asMemorySegment();
-			this.pcapBuffer = pcapHeader.asByteBuffer();
+		public final FrameStopwatch frameStopwatch = new FrameStopwatch();
+
+		public PreContext(FrameABI frameABI, TimestampUnit pcapTsUnit) {
+			this.pcapTsUnit = pcapTsUnit;
+			this.abi = frameABI;
+
+			this.pcapHeader = new PcapFrameHeader(frameABI, pcapTsUnit);
 		}
 
 		public void reset() {
@@ -84,7 +91,6 @@ public final class PrePcapPipeline
 	private final PreContext ctx;
 
 	private final PcapDescriptor pcapDescriptorReusable = new PcapDescriptor();
-	private final PcapHeaderABI PCAP_ABI;
 	private final OutputStack<PreProcessorData> cbStack;
 	private final OutputTransformer<PreProcessorData, OfNative> nativeOutput;
 	private final OutputTransformer<PreProcessorData, OfArray<Object>> arrayOutput;
@@ -96,12 +102,12 @@ public final class PrePcapPipeline
 	 * @param name
 	 * @param reducer
 	 */
-	public PrePcapPipeline(String deviceName, NetPcap pcap, PcapHeaderABI abi, PcapSource source) {
+	public PrePcapPipeline(String deviceName, NetPcap pcap, PcapHeaderABI headerABI, PcapSource source) {
 		super(deviceName, new RawDataType<>(PreProcessorData.class));
-		this.PCAP_ABI = abi;
 		this.pcapSource = source;
 
-		this.ctx = new PreContext(abi);
+		var frameABI = FrameABI.valueOf(headerABI.isCompact(), headerABI.order());
+		this.ctx = new PreContext(frameABI, TimestampUnit.PCAP_MICRO);
 
 		var mseg = Arena.ofAuto().allocate(PcapDescriptor.PCAP_DESCRIPTOR_LENGTH);
 		this.pcapDescriptorReusable.bind(mseg.asByteBuffer(), mseg);
@@ -122,136 +128,6 @@ public final class PrePcapPipeline
 
 	}
 
-	private final PreProcessorData outputOfForeign(Supplier<OfForeign<Object>> out) {
-		return (header, packet, ctx) -> {
-			var cb = out.get();
-			cb.handleForeign(ctx.user, header, packet);
-
-			return 1;
-		};
-	}
-
-	private final PreProcessorData outputOfArray(Supplier<PacketHandler.OfArray<Object>> out) {
-		return (header, packet, ctx) -> {
-			var hdr = new PcapHeader(header);
-			var buf = packet.toArray(ValueLayout.JAVA_BYTE);
-
-			var cb = out.get();
-			cb.handleArray(ctx.user, hdr, buf);
-
-			return 1;
-		};
-	}
-
-	private final PreProcessorData outputOfBuffer(Supplier<OfBuffer<Object>> out) {
-		return (header, packet, ctx) -> {
-			var hdr = new PcapHeader(header);
-			var buf = packet.asByteBuffer();
-
-			var cb = out.get();
-			cb.handleBuffer(ctx.user, hdr, buf);
-
-			return 1;
-		};
-	}
-
-	private final PreProcessorData outputOfNative(Supplier<OfNative> out,
-			OutputTransformer<?, ?> output) {
-		return (header, packet, ctx) -> {
-			var cb = out.get();
-			cb.handleNative((MemorySegment) ctx.user, header, packet);
-
-			return 1;
-		};
-	}
-
-	private final OfNative inputOfNative(Supplier<PreProcessorData> out,
-			InputTransformer<?, ?> input) {
-		return (_, header, packet) -> {
-			if (header.byteSize() == 0)
-				header = header.reinterpret(24);
-
-			if (packet.byteSize() == 0)
-				packet = packet.reinterpret(PCAP_ABI.captureLength(header));
-
-			ctx.reset();
-
-			ctx.pcapSegment.copyFrom(header);
-
-			var np = out.get();
-			long count = np.processNativePacket(header, packet, ctx);
-			ctx.packetCount = count;
-
-		};
-	}
-
-	private OfNative getOfNativeInput() {
-		return this.mainInput;
-	}
-
-	@SuppressWarnings("unchecked")
-	public <U> long dispatchForeign(long count, OfForeign<U> handler, U user) {
-
-		ctx.user = user;
-
-		foreignOutput.connectNoRegistration((OfForeign<Object>) handler);
-		cbStack.push(foreignOutput);
-
-		capturePackets(count);
-
-		cbStack.pop();
-		foreignOutput.disconnect();
-
-		return ctx.packetCount;
-	}
-
-	public long dispatchNative(long count, OfNative handler, MemorySegment user) {
-
-		ctx.user = user;
-
-		nativeOutput.connectNoRegistration(handler);
-		cbStack.push(nativeOutput);
-
-		capturePackets(count);
-
-		cbStack.pop();
-		nativeOutput.disconnect();
-
-		return ctx.packetCount;
-	}
-
-	@SuppressWarnings("unchecked")
-	public <U> long dispatchArray(long count, PacketHandler.OfArray<U> handler, U user) {
-
-		ctx.user = user;
-
-		arrayOutput.connectNoRegistration((OfArray<Object>) handler);
-		cbStack.push(arrayOutput);
-
-		capturePackets(count);
-
-		cbStack.pop();
-		foreignOutput.disconnect();
-
-		return ctx.packetCount;
-	}
-
-	@SuppressWarnings("unchecked")
-	public <U> long dispatchBuffer(long count, OfBuffer<U> handler, U user) {
-
-		ctx.user = user;
-
-		bufferOutput.connectNoRegistration((OfBuffer<Object>) handler);
-		cbStack.push(bufferOutput);
-
-		capturePackets(count);
-
-		cbStack.pop();
-		foreignOutput.disconnect();
-
-		return ctx.packetCount;
-	}
-
 	public Registration addOutput(Object id, OfNative handler) {
 		var output = cbStack.createTransformer(id, new OutputMapper<PreProcessorData, OfNative>() {
 
@@ -270,7 +146,116 @@ public final class PrePcapPipeline
 
 		cbStack.push(output);
 
-		return () -> cbStack.remove(output);
+		return () -> {
+			output.disconnect();
+			cbStack.remove(output);
+		};
+	}
+
+	public long capturePackets(long count) {
+		/*
+		 * The value 0 has a different meaning - it indicates to process all packets
+		 * currently in the buffer (for offline captures) or to wait for and process
+		 * packets until a read timeout occurs (for live captures).
+		 */
+		if (count == -1 || count == 0)
+			pcapSource.dispatchNative((int) count, getOfNativeInput(), MemorySegment.NULL);
+
+		else {
+			while (count > 0) {
+				int count32 = (count > Integer.MAX_VALUE)
+						? Integer.MAX_VALUE
+						: (int) count;
+
+				int r = pcapSource.dispatchNative(count32, getOfNativeInput(), MemorySegment.NULL);
+				if (r < 0)
+					break;
+
+				count -= count32;
+			}
+		}
+
+		return ctx.packetCount;
+	}
+
+	@SuppressWarnings("unchecked")
+	public <U> long dispatchArray(long count, PacketHandler.OfArray<U> handler, U user) {
+
+		ctx.user = user;
+
+		try (var _ = arrayOutput.connect((OfArray<Object>) handler);
+				var _ = cbStack.push(arrayOutput)) {
+
+			capturePackets(count);
+		}
+
+		return ctx.packetCount;
+	}
+
+	@SuppressWarnings("unchecked")
+	public <U> long dispatchBuffer(long count, OfBuffer<U> handler, U user) {
+
+		ctx.user = user;
+
+		try (var _ = bufferOutput.connect((OfBuffer<Object>) handler);
+				var _ = cbStack.push(bufferOutput)) {
+
+			capturePackets(count);
+		}
+		return ctx.packetCount;
+	}
+
+	@SuppressWarnings("unchecked")
+	public <U> long dispatchForeign(long count, OfForeign<U> handler, U user) {
+
+		ctx.user = user;
+
+		try (var _ = foreignOutput.connect((OfForeign<Object>) handler);
+				var _ = cbStack.push(foreignOutput)) {
+
+			capturePackets(count);
+		}
+
+		return ctx.packetCount;
+	}
+
+	public long dispatchNative(long count, OfNative handler, MemorySegment user) {
+
+		ctx.user = user;
+
+		try (var _ = nativeOutput.connect(handler);
+				var _ = cbStack.push(nativeOutput)) {
+
+			capturePackets(count);
+		}
+
+		return ctx.packetCount;
+	}
+
+	private OfNative getOfNativeInput() {
+		return this.mainInput;
+	}
+
+	private final OfNative inputOfNative(Supplier<PreProcessorData> out,
+			InputTransformer<?, ?> input) {
+		return (_, header, packet) -> {
+			ctx.reset();
+
+			// Setup the PcapHeader so we can read the fields
+			ctx.pcapSegment = header;
+			ctx.pcapBuffer = header.asByteBuffer();
+			ctx.pcapHeader.withBinding(ctx.pcapBuffer, ctx.pcapSegment);
+
+			// Setup IFG frame tracking, auto-closeable but reusing the same stopwatch
+			try (var sw = ctx.frameStopwatch.start(ctx.pcapHeader)) {
+
+				var nextProcessor = out.get();
+				long pktsProcessedInPipe = nextProcessor.processNativePacket(header, packet, ctx);
+
+				ctx.packetCount = pktsProcessedInPipe;
+			}
+
+		};
 	}
 
 	public boolean nextPacket(Packet packetReference) {
@@ -301,29 +286,44 @@ public final class PrePcapPipeline
 		return ctx.packetCount > 0;
 	}
 
-	public long capturePackets(long count) {
-		/*
-		 * The value 0 has a different meaning - it indicates to process all packets
-		 * currently in the buffer (for offline captures) or to wait for and process
-		 * packets until a read timeout occurs (for live captures).
-		 */
-		if (count == -1 || count == 0)
-			pcapSource.dispatchNative((int) count, getOfNativeInput(), MemorySegment.NULL);
+	private final PreProcessorData outputOfArray(Supplier<PacketHandler.OfArray<Object>> out) {
+		return (header, packet, ctx) -> {
+			var array = packet.toArray(ValueLayout.JAVA_BYTE);
 
-		else {
-			while (count > 0) {
-				int count32 = (count > Integer.MAX_VALUE)
-						? Integer.MAX_VALUE
-						: (int) count;
+			var cb = out.get();
+			cb.handleArray(ctx.user, ctx.pcapHeader, array);
 
-				int r = pcapSource.dispatchNative(count32, getOfNativeInput(), MemorySegment.NULL);
-				if (r < 0)
-					break;
+			return 1;
+		};
+	}
 
-				count -= count32;
-			}
-		}
+	private final PreProcessorData outputOfBuffer(Supplier<OfBuffer<Object>> out) {
+		return (header, packet, ctx) -> {
+			var buf = packet.asByteBuffer();
 
-		return ctx.packetCount;
+			var cb = out.get();
+			cb.handleBuffer(ctx.user, ctx.pcapHeader, buf);
+
+			return 1;
+		};
+	}
+
+	private final PreProcessorData outputOfForeign(Supplier<OfForeign<Object>> out) {
+		return (header, packet, ctx) -> {
+			var cb = out.get();
+			cb.handleForeign(ctx.user, ctx.pcapHeader, packet);
+
+			return 1;
+		};
+	}
+
+	private final PreProcessorData outputOfNative(Supplier<OfNative> out,
+			OutputTransformer<?, ?> output) {
+		return (header, packet, ctx) -> {
+			var cb = out.get();
+			cb.handleNative((MemorySegment) ctx.user, header, packet);
+
+			return 1;
+		};
 	}
 }

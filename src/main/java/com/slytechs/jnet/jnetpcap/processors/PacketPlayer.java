@@ -20,13 +20,10 @@ package com.slytechs.jnet.jnetpcap.processors;
 import java.lang.foreign.MemorySegment;
 import java.util.concurrent.TimeUnit;
 
-import org.jnetpcap.internal.PcapHeaderABI;
-
 import com.slytechs.jnet.jnetpcap.internal.PrePcapPipeline.PreContext;
 import com.slytechs.jnet.jnetpcap.processors.PreProcessors.PreProcessorData;
 import com.slytechs.jnet.jnetruntime.pipeline.Processor;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
-import com.slytechs.jnet.jnetruntime.util.config.SystemProperties;
 
 /**
  * The Class PacketPlayer.
@@ -37,38 +34,13 @@ public class PacketPlayer
 		extends Processor<PreProcessorData>
 		implements PreProcessorData {
 
-	/** The Constant PREFIX. */
-	private static final String PREFIX = "packet.player";
+	private PacketPlayerSettings settings = new PacketPlayerSettings();
+	{
+		// Link settings to certain actions
+		settings.ENABLE.on(newValue -> setEnable(newValue));
+	}
 
-	/** The Constant PROPERTY_PACKET_PLAYER_ENABLE. */
-	public static final String PROPERTY_PACKET_PLAYER_ENABLE = PREFIX + ".enable";
-
-	/** The Constant PROPERTY_PACKET_PLAYER_SYNC. */
-	public static final String PROPERTY_PACKET_PLAYER_SYNC = PREFIX + ".sync";
-
-	/** The Constant PROPERTY_PACKET_PLAYER_SPEED. */
-	public static final String PROPERTY_PACKET_PLAYER_SPEED = PREFIX + ".speed";
-
-	/** The sync. */
-	private boolean sync = SystemProperties.boolValue(PROPERTY_PACKET_PLAYER_SYNC, true);
-
-	/** The speed. */
-	private double speed = SystemProperties.doubleValue(PROPERTY_PACKET_PLAYER_SPEED, 1.0);
-
-	/** The reference time nano. */
 	private long referenceTimeNano;
-
-	/** The timestamp unit. */
-	private TimestampUnit timestampUnit = TimestampUnit.PCAP_MICRO;
-
-	/** The abi. */
-	private PcapHeaderABI abi = PcapHeaderABI.selectOfflineAbi(false);
-
-	/** The min ifg nano. */
-	private long minIfgNano = 0;
-
-	/** The max ifg nano. */
-	private long maxIfgNano = Long.MAX_VALUE;
 
 	/** The Constant NAME. */
 	public static final String NAME = "PacketPlayer";
@@ -84,22 +56,15 @@ public class PacketPlayer
 	}
 
 	/**
-	 * @param priority
-	 * @param name
-	 * @param mapper
+	 * Instantiates a new packet player.
+	 *
+	 * @param pipeline the pipeline
+	 * @param priority the priority
 	 */
-	public PacketPlayer(int priority, String name, ProcessorMapper<PreProcessorData> mapper) {
-		super(priority, name, mapper);
-		// TODO Auto-generated constructor stub
-	}
+	public PacketPlayer(PacketPlayerSettings settings) {
+		super(PreProcessors.PACKET_PLAYER_PRIORITY, NAME);
 
-	/**
-	 * @param priority
-	 * @param name
-	 */
-	public PacketPlayer(int priority, String name) {
-		super(priority, name);
-		// TODO Auto-generated constructor stub
+		this.settings.mergeValues(settings);
 	}
 
 	/**
@@ -108,7 +73,7 @@ public class PacketPlayer
 	 * @return the packet player
 	 */
 	public PacketPlayer useCurrentTime() {
-		setReferenceTime(System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+		rwGuard.writeLocked(() -> setReferenceTime(System.currentTimeMillis(), TimeUnit.MILLISECONDS));
 
 		return this;
 	}
@@ -120,7 +85,7 @@ public class PacketPlayer
 	 * @return the packet player
 	 */
 	public PacketPlayer setReferenceTimeNano(long timeNano) {
-		this.referenceTimeNano = timeNano;
+		rwGuard.writeLocked(() -> this.referenceTimeNano = timeNano);
 
 		return this;
 	}
@@ -133,7 +98,7 @@ public class PacketPlayer
 	 * @return the packet player
 	 */
 	public PacketPlayer setReferenceTime(long time, TimeUnit unit) {
-		this.referenceTimeNano = unit.toNanos(time);
+		rwGuard.writeLocked(() -> this.referenceTimeNano = unit.toNanos(time));
 
 		return this;
 	}
@@ -145,7 +110,7 @@ public class PacketPlayer
 	 * @return the packet player
 	 */
 	public PacketPlayer setTimestampUnit(TimestampUnit unit) {
-		this.timestampUnit = unit;
+		rwGuard.writeLocked(() -> settings.TS_UNIT.setValue(unit, PacketPlayer.this));
 
 		return this;
 	}
@@ -156,7 +121,7 @@ public class PacketPlayer
 	 * @return the reference time nano
 	 */
 	public long getReferenceTimeNano() {
-		return referenceTimeNano;
+		return rwGuard.readLocked(() -> referenceTimeNano);
 	}
 
 	/**
@@ -166,7 +131,7 @@ public class PacketPlayer
 	 * @return the packet player
 	 */
 	public PacketPlayer syncTimestamp(boolean sync) {
-		this.sync = sync;
+		rwGuard.writeLocked(() -> settings.SYNC.setValue(sync, PacketPlayer.this));
 
 		return this;
 	}
@@ -178,7 +143,7 @@ public class PacketPlayer
 	 * @return the packet player
 	 */
 	public PacketPlayer preserveIfg(boolean sync) {
-		this.sync = sync;
+		rwGuard.writeLocked(() -> settings.IFG_PRESERVE.setValue(sync, PacketPlayer.this));
 
 		return this;
 	}
@@ -191,7 +156,7 @@ public class PacketPlayer
 	 * @return the packet player
 	 */
 	public PacketPlayer setMinIfg(long duration, TimeUnit unit) {
-		this.minIfgNano = unit.toNanos(duration);
+		rwGuard.writeLocked(() -> settings.IFG_MIN.setValue(unit.toNanos(duration), PacketPlayer.this));
 		return this;
 	}
 
@@ -203,7 +168,17 @@ public class PacketPlayer
 	 * @return the packet player
 	 */
 	public PacketPlayer setMaxIfg(long duration, TimeUnit unit) {
-		this.maxIfgNano = unit.toNanos(duration);
+		rwGuard.writeLocked(() -> settings.IFG_MAX.setValue(unit.toNanos(duration), PacketPlayer.this));
+
+		return this;
+	}
+
+	public boolean hasRewriteTimestamp() {
+		return rwGuard.readLocked(() -> settings.REWRITE_TIMESTAMP.getBoolean());
+	}
+
+	public PacketPlayer setRewriteTimestamp(boolean state) {
+		rwGuard.writeLocked(() -> settings.REWRITE_TIMESTAMP.setValue(state, PacketPlayer.this));
 
 		return this;
 	}
@@ -214,11 +189,19 @@ public class PacketPlayer
 	 * @param speed the speed
 	 * @return the packet player
 	 */
-	public PacketPlayer play(double speed) {
-		if (speed < 0) // Playing backwards not supported
-			throw new IllegalArgumentException("negative speed not allowed, playback backwards not supported");
+	public PacketPlayer setSpeed(double speed) throws IllegalArgumentException {
+
+		rwGuard.writeLocked(() -> {
+			if (speed < 0) // Playing backwards not supported
+				throw new IllegalArgumentException("negative speed not allowed, playback backwards not supported");
+
+			settings.SPEED.setValue(speed, this);
+
+			return null;
+		}, IllegalArgumentException.class);
 
 		return this;
+
 	}
 
 	/**
@@ -227,7 +210,7 @@ public class PacketPlayer
 	 * @return the speed
 	 */
 	public double getSpeed() {
-		return speed;
+		return rwGuard.readLocked(() -> settings.SPEED.getDouble());
 	}
 
 	/**
@@ -236,7 +219,7 @@ public class PacketPlayer
 	 * @return true, if is sync
 	 */
 	public boolean isSync() {
-		return sync;
+		return rwGuard.readLocked(() -> settings.SYNC.getBoolean());
 	}
 
 	/**
@@ -245,26 +228,7 @@ public class PacketPlayer
 	 * @return the timestampUnit
 	 */
 	public TimestampUnit getTimestampUnit() {
-		return timestampUnit;
-	}
-
-	/**
-	 * Gets the abi.
-	 *
-	 * @return the abi
-	 */
-	public PcapHeaderABI getAbi() {
-		return abi;
-	}
-
-	/**
-	 * Emulate real time.
-	 *
-	 * @param b the b
-	 * @return the packet player
-	 */
-	public PacketPlayer emulateRealTime(boolean b) {
-		throw new UnsupportedOperationException("not implemented yet");
+		return rwGuard.readLocked(() -> settings.TS_UNIT.getEnum());
 	}
 
 	/**
@@ -273,8 +237,32 @@ public class PacketPlayer
 	 *      com.slytechs.jnet.jnetpcap.internal.PrePcapPipeline.PreContext)
 	 */
 	@Override
-	public long processNativePacket(MemorySegment header, MemorySegment packet, @SuppressWarnings("exports") PreContext preContext) {
-		return getOutput().processNativePacket(header, packet, preContext);
+	public long processNativePacket(MemorySegment header, MemorySegment packet,
+			@SuppressWarnings("exports") PreContext ctx) {
+
+		try {
+
+			boolean rewrite = settings.REWRITE_TIMESTAMP.getBoolean();
+			long ifg = settings.IFG.toOptionalLong().orElse(0);
+			double speed = settings.SPEED.getDouble();
+
+			var stopWatch = ctx.frameStopwatch;
+			var frameHdr = ctx.pcapHeader;
+
+			if (ifg > 0)
+				stopWatch.delayIfg((long) (ifg * speed));
+
+			if (rewrite && ifg > 0)
+				frameHdr.timestamp(stopWatch.newTsNanos(), TimestampUnit.EPOCH_NANO);
+
+			return getOutput().processNativePacket(header, packet, ctx);
+
+		} catch (InterruptedException e) {
+			handleError(e, this);
+
+			return 0;
+		}
+
 	}
 
 }

@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.lang.foreign.MemorySegment;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
@@ -39,6 +40,7 @@ import com.slytechs.jnet.jnetpcap.internal.PcapSource;
 import com.slytechs.jnet.jnetpcap.internal.PcapUtils;
 import com.slytechs.jnet.jnetpcap.internal.PostPcapPipeline;
 import com.slytechs.jnet.jnetpcap.internal.PrePcapPipeline;
+import com.slytechs.jnet.jnetpcap.processors.PacketPlayer;
 import com.slytechs.jnet.jnetpcap.processors.PacketRepeater;
 import com.slytechs.jnet.jnetpcap.processors.PostProcessors;
 import com.slytechs.jnet.jnetpcap.processors.PreProcessors;
@@ -123,10 +125,15 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 			PreProcessors preProcessors = pcap.getPreProcessors();
 
 			preProcessors.addProcessor(new PacketRepeater(80)
-					.rewriteTimestamp(true));
+					.rewriteTimestamp(true)
+					.setIfgForRepeated(100, TimeUnit.MILLISECONDS));
+			
 			// preProcessors.addProcessor(21, new PacketRepeater(2));
 //				preProcessors.addProcessor(new PacketDelay(100, TimeUnit.MILLISECONDS));
-			// preProcessors.addProcessor(new PacketPlayer());
+
+			preProcessors.addProcessor(25, new PacketPlayer()
+					.setSpeed(2)
+					.setMinIfg(100, TimeUnit.MILLISECONDS));
 
 			System.out.println(preProcessors.toStringInOut());
 
