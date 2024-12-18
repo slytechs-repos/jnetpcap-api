@@ -35,8 +35,8 @@ public class PacketRepeaterSettings extends Settings<PacketRepeaterSettings> {
 	public final BooleanProperty ENABLE = newBooleanProperty("enable", true).loadSystemProperty();
 	public final BooleanProperty REWRITE_TIMESTAMP = newBooleanProperty("rewriteTs", true).loadSystemProperty();
 	public final LongProperty REPEAT_COUNT = newLongProperty("repeatCount", 1).loadSystemProperty();
-	public final LongProperty IFG = newLongProperty("ifg", 100_000_000).loadSystemProperty();
-	public final LongProperty IFG_MIN = newLongProperty("ifgMin", 100_000).loadSystemProperty();
+	public final LongProperty IFG = newLongProperty("ifg", 0).loadSystemProperty();
+	public final LongProperty IFG_MIN = newLongProperty("ifgMin", 0).loadSystemProperty();
 	public final EnumProperty<TimestampUnit> TS_UNIT = newEnumProperty("tsUnit", TimestampUnit.EPOCH_MICRO)
 			.loadSystemProperty();
 
