@@ -273,7 +273,7 @@ public class PacketPlayer
 	 *      com.slytechs.jnet.jnetpcap.internal.PrePcapPipeline.PreContext)
 	 */
 	@Override
-	public long processNativePacket(MemorySegment header, MemorySegment packet, PreContext preContext) {
+	public long processNativePacket(MemorySegment header, MemorySegment packet, @SuppressWarnings("exports") PreContext preContext) {
 		return getOutput().processNativePacket(header, packet, preContext);
 	}
 

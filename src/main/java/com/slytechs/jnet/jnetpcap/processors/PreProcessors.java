@@ -43,7 +43,7 @@ public interface PreProcessors {
 
 	/** Internal pipeline data handling interface, not ment to be used externally */
 	interface PreProcessorData {
-		long processNativePacket(MemorySegment header, MemorySegment packet, PreContext preContext);
+		long processNativePacket(MemorySegment header, MemorySegment packet, @SuppressWarnings("exports") PreContext preContext);
 	}
 
 	Processor<PreProcessorData> addProcessor(Processor<PreProcessorData> newProcessor);

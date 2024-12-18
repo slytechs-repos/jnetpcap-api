@@ -145,7 +145,7 @@ public final class PacketDelay
 	 *         interrupted
 	 */
 	@Override
-	public long processNativePacket(MemorySegment header, MemorySegment packet, PreContext preContext) {
+	public long processNativePacket(MemorySegment header, MemorySegment packet, @SuppressWarnings("exports") PreContext preContext) {
 		try {
 			long nanosDelay = settings.delayNano();
 

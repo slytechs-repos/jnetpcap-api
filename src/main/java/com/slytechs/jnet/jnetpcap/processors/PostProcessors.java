@@ -17,7 +17,6 @@
  */
 package com.slytechs.jnet.jnetpcap.processors;
 
-import com.slytechs.jnet.jnetpcap.internal.PostPcapPipeline;
 import com.slytechs.jnet.jnetpcap.internal.PostPcapPipeline.PostContext;
 import com.slytechs.jnet.protocol.Packet;
 
@@ -33,7 +32,7 @@ public interface PostProcessors {
 
 	/** Internal pipeline data handling interface, not ment to be used externally */
 	public interface PostProcessorData {
-		void processDissectedPacket(Packet packet, PostContext postContext);
+		void processDissectedPacket(Packet packet, @SuppressWarnings("exports") PostContext postContext);
 	}
 
 	String toStringInOut();
