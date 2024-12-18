@@ -22,13 +22,12 @@ import java.lang.foreign.MemorySegment;
 import java.nio.ByteBuffer;
 import java.util.function.Supplier;
 
-import org.jnetpcap.internal.PcapHeaderABI;
-
 import com.slytechs.jnet.jnetpcap.PacketDispatcherSource;
 import com.slytechs.jnet.jnetpcap.PacketHandler.OfNative;
 import com.slytechs.jnet.jnetpcap.PacketHandler.OfPacket;
 import com.slytechs.jnet.jnetpcap.processors.PostProcessors;
 import com.slytechs.jnet.jnetpcap.processors.PostProcessors.PostProcessorData;
+import com.slytechs.jnet.jnetruntime.frame.FrameABI;
 import com.slytechs.jnet.jnetruntime.pipeline.DT;
 import com.slytechs.jnet.jnetruntime.pipeline.OutputConnector;
 import com.slytechs.jnet.jnetruntime.pipeline.OutputStack;
@@ -58,7 +57,7 @@ public class PostPcapPipeline
 		/**
 		 * @param abi2
 		 */
-		public PostContext(PcapHeaderABI abi, Supplier<Packet> defaultPacketFactory) {
+		public PostContext(FrameABI abi, Supplier<Packet> defaultPacketFactory) {
 			this.abi = abi;
 			this.defaultPacketFactory = defaultPacketFactory;
 		}
@@ -89,7 +88,7 @@ public class PostPcapPipeline
 		public PacketDissector dissector;
 
 		/** The abi. */
-		public final PcapHeaderABI abi;
+		public final FrameABI abi;
 
 		/** The singleton desc buffer. */
 		private ByteBuffer reusableDescBuffer;
@@ -126,7 +125,7 @@ public class PostPcapPipeline
 	public PostPcapPipeline(
 			OutputConnector<OfNative> connectionPoint,
 			PacketDispatcherSource source,
-			PcapHeaderABI abi) {
+			FrameABI abi) {
 		super(NAME, new RawDataType<>(PostProcessorData.class));
 
 		this.dispatcherSource = source;

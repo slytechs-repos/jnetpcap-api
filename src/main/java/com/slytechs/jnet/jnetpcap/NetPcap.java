@@ -33,7 +33,6 @@ import org.jnetpcap.PcapHeader;
 import org.jnetpcap.PcapIf;
 import org.jnetpcap.constant.PcapConstants;
 import org.jnetpcap.constant.PcapDlt;
-import org.jnetpcap.internal.PcapHeaderABI;
 
 import com.slytechs.jnet.jnetpcap.PacketHandler.OfNative;
 import com.slytechs.jnet.jnetpcap.internal.PcapSource;
@@ -45,6 +44,7 @@ import com.slytechs.jnet.jnetpcap.processors.PacketRepeater;
 import com.slytechs.jnet.jnetpcap.processors.PostProcessors;
 import com.slytechs.jnet.jnetpcap.processors.PreProcessors;
 import com.slytechs.jnet.jnetruntime.NotFound;
+import com.slytechs.jnet.jnetruntime.frame.FrameABI;
 import com.slytechs.jnet.jnetruntime.pipeline.OutputConnector;
 import com.slytechs.jnet.jnetruntime.util.Flags;
 import com.slytechs.jnet.jnetruntime.util.MemoryUnit;
@@ -127,7 +127,7 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 			preProcessors.addProcessor(new PacketRepeater(80)
 					.rewriteTimestamp(true)
 					.setIfgForRepeated(100, TimeUnit.MILLISECONDS));
-			
+
 			// preProcessors.addProcessor(21, new PacketRepeater(2));
 //				preProcessors.addProcessor(new PacketDelay(100, TimeUnit.MILLISECONDS));
 
@@ -429,19 +429,22 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 
 	private final PacketDispatcher packetDispatcher;
 
+	private final FrameABI frameABI;
+
 	private NetPcap(Pcap pcap) {
 		super(pcap);
+		var pcapHeaderABI = pcap.getPcapHeaderABI();
+		this.frameABI = FrameABI.valueOf(pcapHeaderABI.isCompact(), pcapHeaderABI.order());
 
 		PcapSource pcapSource = super::dispatch; // Make sure to use Pcap.dispatch, not NetPcap.dispatchNative
-		PcapHeaderABI abi = pcap.getPcapHeaderABI();
 		String shortName = PcapUtils.shortName(name());
 
-		this.prePipeline = new PrePcapPipeline(shortName, this, abi, pcapSource);
+		this.prePipeline = new PrePcapPipeline(shortName, this, frameABI, pcapSource);
 
 		OutputConnector<OfNative> outputConnector = prePipeline::addOutput;
 		PacketDispatcherSource source = prePipeline::capturePackets;
 
-		this.postPipeline = new PostPcapPipeline(outputConnector, source, abi);
+		this.postPipeline = new PostPcapPipeline(outputConnector, source, frameABI);
 		this.packetDispatcher = new PipelinePacketDispatcher(prePipeline, postPipeline);
 	}
 

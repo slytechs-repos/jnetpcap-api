@@ -24,7 +24,6 @@ import java.nio.ByteBuffer;
 import java.util.function.Supplier;
 
 import org.jnetpcap.PcapHeader;
-import org.jnetpcap.internal.PcapHeaderABI;
 
 import com.slytechs.jnet.jnetpcap.NetPcap;
 import com.slytechs.jnet.jnetpcap.PacketHandler;
@@ -102,11 +101,10 @@ public final class PrePcapPipeline
 	 * @param name
 	 * @param reducer
 	 */
-	public PrePcapPipeline(String deviceName, NetPcap pcap, PcapHeaderABI headerABI, PcapSource source) {
+	public PrePcapPipeline(String deviceName, NetPcap pcap, FrameABI frameABI, PcapSource source) {
 		super(deviceName, new RawDataType<>(PreProcessorData.class));
 		this.pcapSource = source;
 
-		var frameABI = FrameABI.valueOf(headerABI.isCompact(), headerABI.order());
 		this.ctx = new PreContext(frameABI, TimestampUnit.PCAP_MICRO);
 
 		var mseg = Arena.ofAuto().allocate(PcapDescriptor.PCAP_DESCRIPTOR_LENGTH);

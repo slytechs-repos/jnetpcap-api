@@ -22,12 +22,10 @@ import java.lang.foreign.MemorySegment;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-import org.jnetpcap.PcapHeader;
-
-import com.slytechs.jnet.jnetpcap.PacketHandler;
 import com.slytechs.jnet.jnetpcap.PacketHandler.OfNative;
 import com.slytechs.jnet.jnetpcap.internal.PostPcapPipeline.PostContext;
 import com.slytechs.jnet.jnetpcap.processors.PostProcessors.PostProcessorData;
+import com.slytechs.jnet.jnetruntime.frame.PcapFrameHeader;
 import com.slytechs.jnet.jnetruntime.pipeline.InputTransformer;
 import com.slytechs.jnet.jnetruntime.pipeline.RawDataType;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
@@ -42,9 +40,9 @@ class InputPacketDissector
 
 	private static final long MAX_DESCRIPTOR_SIZE = MemoryUnit.BYTES.toBytes(256);
 	private final PostContext ctx;
-	private final PcapHeader pcapHeader;
-	private final MemorySegment pcapSegment;
-	private final ByteBuffer pcapBuffer;
+	private final PcapFrameHeader pcapHeader;
+	private MemorySegment pcapSegment;
+	private ByteBuffer pcapBuffer;
 	private final PacketDissector dissector;
 	private final MemorySegment descSegment;
 	private final ByteBuffer descBuffer;
@@ -59,9 +57,7 @@ class InputPacketDissector
 		super(id, new RawDataType<>(OfNative.class));
 
 		this.ctx = ctx.clone();
-		this.pcapHeader = new PcapHeader(ctx.abi);
-		this.pcapSegment = pcapHeader.asMemoryReference();
-		this.pcapBuffer = pcapSegment.asByteBuffer();
+		this.pcapHeader = new PcapFrameHeader(ctx.abi);
 		this.dissector = ctx.dissector;
 
 		this.descSegment = Arena.ofAuto().allocate(MAX_DESCRIPTOR_SIZE);
@@ -69,9 +65,10 @@ class InputPacketDissector
 	}
 
 	private Packet dissectPacket(MemorySegment header, MemorySegment packet) {
-		pcapSegment.copyFrom(header);
-		pcapBuffer.clear();
-		pcapBuffer.order(ctx.abi.order());
+
+		this.pcapSegment = header;
+		this.pcapBuffer = header.asByteBuffer().order(ctx.abi.order());
+		this.pcapHeader.bind(pcapBuffer, pcapSegment);
 
 		Packet goPacket = ctx.packetFactory.get();
 		goPacket.setFormatter(ctx.formatter);
@@ -100,7 +97,7 @@ class InputPacketDissector
 	 */
 	@Override
 	public void handleNative(MemorySegment user, MemorySegment header, MemorySegment packet) {
-		
+
 		var goPacket = dissectPacket(header, packet);
 
 		getOutput().processDissectedPacket(goPacket, ctx);
