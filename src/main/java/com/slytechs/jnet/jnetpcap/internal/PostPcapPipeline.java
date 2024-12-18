@@ -26,7 +26,7 @@ import com.slytechs.jnet.jnetpcap.PacketDispatcherSource;
 import com.slytechs.jnet.jnetpcap.PacketHandler.OfNative;
 import com.slytechs.jnet.jnetpcap.PacketHandler.OfPacket;
 import com.slytechs.jnet.jnetpcap.processors.PostProcessors;
-import com.slytechs.jnet.jnetpcap.processors.PostProcessors.PostProcessorData;
+import com.slytechs.jnet.jnetpcap.processors.PostProcessors.PostProcessor;
 import com.slytechs.jnet.jnetruntime.frame.FrameABI;
 import com.slytechs.jnet.jnetruntime.pipeline.DT;
 import com.slytechs.jnet.jnetruntime.pipeline.OutputConnector;
@@ -47,7 +47,7 @@ import com.slytechs.jnet.protocol.meta.PacketFormat;
  * @author Sly Technologies Inc.
  */
 public class PostPcapPipeline
-		extends Pipeline<PostProcessorData>
+		extends Pipeline<PostProcessor>
 		implements PostProcessors, Registration {
 
 	public static final String NAME = "PostPcapPipeline";
@@ -115,8 +115,8 @@ public class PostPcapPipeline
 	private final PacketDispatcherSource dispatcherSource;
 	private final InputPacketDissector input;
 
-	private final OutputStack<PostProcessorData> outputStack;
-	private final OutputTransformer<PostProcessorData, OfPacket<Object>> packetOutput;
+	private final OutputStack<PostProcessor> outputStack;
+	private final OutputTransformer<PostProcessor, OfPacket<Object>> packetOutput;
 
 	/**
 	 * @param name
@@ -126,7 +126,7 @@ public class PostPcapPipeline
 			OutputConnector<OfNative> connectionPoint,
 			PacketDispatcherSource source,
 			FrameABI abi) {
-		super(NAME, new RawDataType<>(PostProcessorData.class));
+		super(NAME, new RawDataType<>(PostProcessor.class));
 
 		this.dispatcherSource = source;
 
@@ -146,7 +146,7 @@ public class PostPcapPipeline
 		this.upstreamRegistration = connectionPoint.connectToOutput("PostProcessors", input);
 	}
 
-	private final PostProcessorData outputOfPacket(Supplier<OfPacket<Object>> out) {
+	private final PostProcessor outputOfPacket(Supplier<OfPacket<Object>> out) {
 		return (Packet packet, PostContext postContext) -> out.get().handlePacket(postContext.user, packet);
 	}
 

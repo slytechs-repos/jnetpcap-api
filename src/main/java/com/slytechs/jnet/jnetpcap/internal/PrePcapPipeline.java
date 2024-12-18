@@ -32,7 +32,7 @@ import com.slytechs.jnet.jnetpcap.PacketHandler.OfBuffer;
 import com.slytechs.jnet.jnetpcap.PacketHandler.OfForeign;
 import com.slytechs.jnet.jnetpcap.PacketHandler.OfNative;
 import com.slytechs.jnet.jnetpcap.processors.PreProcessors;
-import com.slytechs.jnet.jnetpcap.processors.PreProcessors.PreProcessorData;
+import com.slytechs.jnet.jnetpcap.processors.PreProcessors.PreProcessor;
 import com.slytechs.jnet.jnetruntime.frame.FrameABI;
 import com.slytechs.jnet.jnetruntime.frame.PcapFrameHeader;
 import com.slytechs.jnet.jnetruntime.pipeline.DT;
@@ -53,7 +53,7 @@ import com.slytechs.jnet.protocol.descriptor.PcapDescriptor;
  * @author Mark Bednarczyk
  */
 public final class PrePcapPipeline
-		extends Pipeline<PreProcessorData>
+		extends Pipeline<PreProcessor>
 		implements PreProcessors {
 
 	/**
@@ -81,7 +81,7 @@ public final class PrePcapPipeline
 		}
 
 		public void reset() {
-			this.packetCount = 0;
+//			this.packetCount = 0;
 			this.user = null;
 		}
 	}
@@ -90,11 +90,11 @@ public final class PrePcapPipeline
 	private final PreContext ctx;
 
 	private final PcapDescriptor pcapDescriptorReusable = new PcapDescriptor();
-	private final OutputStack<PreProcessorData> cbStack;
-	private final OutputTransformer<PreProcessorData, OfNative> nativeOutput;
-	private final OutputTransformer<PreProcessorData, OfArray<Object>> arrayOutput;
-	private final OutputTransformer<PreProcessorData, OfBuffer<Object>> bufferOutput;
-	private final OutputTransformer<PreProcessorData, OfForeign<Object>> foreignOutput;
+	private final OutputStack<PreProcessor> cbStack;
+	private final OutputTransformer<PreProcessor, OfNative> nativeOutput;
+	private final OutputTransformer<PreProcessor, OfArray<Object>> arrayOutput;
+	private final OutputTransformer<PreProcessor, OfBuffer<Object>> bufferOutput;
+	private final OutputTransformer<PreProcessor, OfForeign<Object>> foreignOutput;
 	private final PcapSource pcapSource;
 
 	/**
@@ -102,7 +102,7 @@ public final class PrePcapPipeline
 	 * @param reducer
 	 */
 	public PrePcapPipeline(String deviceName, NetPcap pcap, FrameABI frameABI, PcapSource source) {
-		super(deviceName, new RawDataType<>(PreProcessorData.class));
+		super(deviceName, new RawDataType<>(PreProcessor.class));
 		this.pcapSource = source;
 
 		this.ctx = new PreContext(frameABI, TimestampUnit.PCAP_MICRO);
@@ -127,11 +127,11 @@ public final class PrePcapPipeline
 	}
 
 	public Registration addOutput(Object id, OfNative handler) {
-		var output = cbStack.createTransformer(id, new OutputMapper<PreProcessorData, OfNative>() {
+		var output = cbStack.createTransformer(id, new OutputMapper<PreProcessor, OfNative>() {
 
 			@Override
-			public PreProcessorData createMappedOutput(Supplier<OfNative> sink,
-					OutputTransformer<PreProcessorData, OfNative> output) {
+			public PreProcessor createMappedOutput(Supplier<OfNative> sink,
+					OutputTransformer<PreProcessor, OfNative> output) {
 				return (header, packet, context) -> {
 					sink.get().handleNative(MemorySegment.NULL, header, packet);
 
@@ -234,7 +234,7 @@ public final class PrePcapPipeline
 		return this.mainInput;
 	}
 
-	private final OfNative inputOfNative(Supplier<PreProcessorData> out,
+	private final OfNative inputOfNative(Supplier<PreProcessor> out,
 			InputTransformer<?, ?> input) {
 		return (_, header, packet) -> {
 			ctx.reset();
@@ -245,12 +245,12 @@ public final class PrePcapPipeline
 			ctx.pcapHeader.withBinding(ctx.pcapBuffer, ctx.pcapSegment);
 
 			// Setup IFG frame tracking, auto-closeable but reusing the same stopwatch
-			try (var sw = ctx.frameStopwatch.start(ctx.pcapHeader)) {
+			try (var _ = ctx.frameStopwatch.start(ctx.pcapHeader)) {
 
 				var nextProcessor = out.get();
-				long pktsProcessedInPipe = nextProcessor.processNativePacket(header, packet, ctx);
+				long pktsProcessedInPipe = nextProcessor.preProcessPacket(header, packet, ctx);
 
-				ctx.packetCount = pktsProcessedInPipe;
+				ctx.packetCount += pktsProcessedInPipe;
 			}
 
 		};
@@ -284,7 +284,7 @@ public final class PrePcapPipeline
 		return ctx.packetCount > 0;
 	}
 
-	private final PreProcessorData outputOfArray(Supplier<PacketHandler.OfArray<Object>> out) {
+	private final PreProcessor outputOfArray(Supplier<PacketHandler.OfArray<Object>> out) {
 		return (header, packet, ctx) -> {
 			var array = packet.toArray(ValueLayout.JAVA_BYTE);
 
@@ -295,7 +295,7 @@ public final class PrePcapPipeline
 		};
 	}
 
-	private final PreProcessorData outputOfBuffer(Supplier<OfBuffer<Object>> out) {
+	private final PreProcessor outputOfBuffer(Supplier<OfBuffer<Object>> out) {
 		return (header, packet, ctx) -> {
 			var buf = packet.asByteBuffer();
 
@@ -306,7 +306,7 @@ public final class PrePcapPipeline
 		};
 	}
 
-	private final PreProcessorData outputOfForeign(Supplier<OfForeign<Object>> out) {
+	private final PreProcessor outputOfForeign(Supplier<OfForeign<Object>> out) {
 		return (header, packet, ctx) -> {
 			var cb = out.get();
 			cb.handleForeign(ctx.user, ctx.pcapHeader, packet);
@@ -315,7 +315,7 @@ public final class PrePcapPipeline
 		};
 	}
 
-	private final PreProcessorData outputOfNative(Supplier<OfNative> out,
+	private final PreProcessor outputOfNative(Supplier<OfNative> out,
 			OutputTransformer<?, ?> output) {
 		return (header, packet, ctx) -> {
 			var cb = out.get();

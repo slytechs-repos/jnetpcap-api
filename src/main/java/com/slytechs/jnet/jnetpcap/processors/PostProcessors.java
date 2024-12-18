@@ -31,8 +31,8 @@ public interface PostProcessors {
 	int IPF_REASSEMBLER_PRIORITY = 0;
 
 	/** Internal pipeline data handling interface, not ment to be used externally */
-	public interface PostProcessorData {
-		void processDissectedPacket(Packet packet, @SuppressWarnings("exports") PostContext postContext);
+	public interface PostProcessor {
+		void postProcessPacket(Packet packet, @SuppressWarnings("exports") PostContext postContext);
 	}
 
 	String toStringInOut();

@@ -24,7 +24,7 @@ import java.nio.ByteOrder;
 
 import com.slytechs.jnet.jnetpcap.PacketHandler.OfNative;
 import com.slytechs.jnet.jnetpcap.internal.PostPcapPipeline.PostContext;
-import com.slytechs.jnet.jnetpcap.processors.PostProcessors.PostProcessorData;
+import com.slytechs.jnet.jnetpcap.processors.PostProcessors.PostProcessor;
 import com.slytechs.jnet.jnetruntime.frame.PcapFrameHeader;
 import com.slytechs.jnet.jnetruntime.pipeline.InputTransformer;
 import com.slytechs.jnet.jnetruntime.pipeline.RawDataType;
@@ -35,7 +35,7 @@ import com.slytechs.jnet.protocol.descriptor.PacketDissector;
 import com.slytechs.jnet.protocol.meta.PacketFormat;
 
 class InputPacketDissector
-		extends InputTransformer<OfNative, PostProcessorData>
+		extends InputTransformer<OfNative, PostProcessor>
 		implements OfNative {
 
 	private static final long MAX_DESCRIPTOR_SIZE = MemoryUnit.BYTES.toBytes(256);
@@ -100,7 +100,7 @@ class InputPacketDissector
 
 		var goPacket = dissectPacket(header, packet);
 
-		getOutput().processDissectedPacket(goPacket, ctx);
+		getOutput().postProcessPacket(goPacket, ctx);
 	}
 
 	public PostContext getContext() {

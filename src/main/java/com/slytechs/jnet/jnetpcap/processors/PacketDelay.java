@@ -22,7 +22,7 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 import com.slytechs.jnet.jnetpcap.internal.PrePcapPipeline.PreContext;
-import com.slytechs.jnet.jnetpcap.processors.PreProcessors.PreProcessorData;
+import com.slytechs.jnet.jnetpcap.processors.PreProcessors.PreProcessor;
 import com.slytechs.jnet.jnetruntime.pipeline.Processor;
 import com.slytechs.jnet.jnetruntime.time.NanoTime;
 
@@ -47,8 +47,8 @@ import com.slytechs.jnet.jnetruntime.time.NanoTime;
  * @author Sly Technologies Inc.
  */
 public final class PacketDelay
-		extends Processor<PreProcessorData>
-		implements PreProcessorData {
+		extends Processor<PreProcessor>
+		implements PreProcessor {
 
 	/** The name identifier for this processor. */
 	public static final String NAME = "PacketDelay";
@@ -147,7 +147,7 @@ public final class PacketDelay
 	 *         interrupted
 	 */
 	@Override
-	public long processNativePacket(MemorySegment header, MemorySegment packet,
+	public long preProcessPacket(MemorySegment header, MemorySegment packet,
 			@SuppressWarnings("exports") PreContext preContext) {
 		try {
 			long nanosDelay = settings.delayNano();
@@ -160,6 +160,6 @@ public final class PacketDelay
 			return 0;
 		}
 
-		return getOutput().processNativePacket(header, packet, preContext);
+		return getOutput().preProcessPacket(header, packet, preContext);
 	}
 }

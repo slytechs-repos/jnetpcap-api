@@ -42,13 +42,13 @@ public interface PreProcessors {
 	int PACKET_DELAY_PRIORITY = 100;
 
 	/** Internal pipeline data handling interface, not ment to be used externally */
-	interface PreProcessorData {
-		long processNativePacket(MemorySegment header, MemorySegment packet, @SuppressWarnings("exports") PreContext preContext);
+	interface PreProcessor {
+		long preProcessPacket(MemorySegment header, MemorySegment packet, @SuppressWarnings("exports") PreContext preContext);
 	}
 
-	Processor<PreProcessorData> addProcessor(Processor<PreProcessorData> newProcessor);
+	Processor<PreProcessor> addProcessor(Processor<PreProcessor> newProcessor);
 
-	default Processor<PreProcessorData> addProcessor(int priority, Processor<PreProcessorData> newProcessor) {
+	default Processor<PreProcessor> addProcessor(int priority, Processor<PreProcessor> newProcessor) {
 		return addProcessor(newProcessor.setPriority(priority));
 	}
 

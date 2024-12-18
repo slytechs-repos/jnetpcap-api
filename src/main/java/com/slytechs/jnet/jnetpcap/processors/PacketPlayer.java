@@ -21,7 +21,7 @@ import java.lang.foreign.MemorySegment;
 import java.util.concurrent.TimeUnit;
 
 import com.slytechs.jnet.jnetpcap.internal.PrePcapPipeline.PreContext;
-import com.slytechs.jnet.jnetpcap.processors.PreProcessors.PreProcessorData;
+import com.slytechs.jnet.jnetpcap.processors.PreProcessors.PreProcessor;
 import com.slytechs.jnet.jnetruntime.pipeline.Processor;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
 
@@ -31,8 +31,8 @@ import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
  * @author Mark Bednarczyk
  */
 public class PacketPlayer
-		extends Processor<PreProcessorData>
-		implements PreProcessorData {
+		extends Processor<PreProcessor>
+		implements PreProcessor {
 
 	private PacketPlayerSettings settings = new PacketPlayerSettings();
 	{
@@ -232,12 +232,12 @@ public class PacketPlayer
 	}
 
 	/**
-	 * @see com.slytechs.jnet.jnetpcap.processors.PreProcessors.PreProcessorData#processNativePacket(java.lang.foreign.MemorySegment,
+	 * @see com.slytechs.jnet.jnetpcap.processors.PreProcessors.PreProcessor#preProcessPacket(java.lang.foreign.MemorySegment,
 	 *      java.lang.foreign.MemorySegment,
 	 *      com.slytechs.jnet.jnetpcap.internal.PrePcapPipeline.PreContext)
 	 */
 	@Override
-	public long processNativePacket(MemorySegment header, MemorySegment packet,
+	public long preProcessPacket(MemorySegment header, MemorySegment packet,
 			@SuppressWarnings("exports") PreContext ctx) {
 
 		try {
@@ -255,7 +255,7 @@ public class PacketPlayer
 			if (rewrite && ifg > 0)
 				frameHdr.timestamp(stopWatch.newTsNanos(), TimestampUnit.EPOCH_NANO);
 
-			return getOutput().processNativePacket(header, packet, ctx);
+			return getOutput().preProcessPacket(header, packet, ctx);
 
 		} catch (InterruptedException e) {
 			handleError(e, this);

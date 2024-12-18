@@ -25,7 +25,7 @@ import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 
 import com.slytechs.jnet.jnetpcap.internal.PrePcapPipeline.PreContext;
-import com.slytechs.jnet.jnetpcap.processors.PreProcessors.PreProcessorData;
+import com.slytechs.jnet.jnetpcap.processors.PreProcessors.PreProcessor;
 import com.slytechs.jnet.jnetruntime.pipeline.Processor;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
 
@@ -43,8 +43,8 @@ import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
  * @author Mark Bednarczyk
  */
 public final class PacketRepeater
-		extends Processor<PreProcessorData>
-		implements PreProcessorData {
+		extends Processor<PreProcessor>
+		implements PreProcessor {
 
 	/** The Constant NAME. */
 	public static final String NAME = "PacketRepeater";
@@ -162,7 +162,7 @@ public final class PacketRepeater
 	}
 
 	@Override
-	public long processNativePacket(MemorySegment header, MemorySegment packet,
+	public long preProcessPacket(MemorySegment header, MemorySegment packet,
 			@SuppressWarnings("exports") PreContext ctx) {
 		long count = 0;
 		long repeatCount = settings.REPEAT_COUNT.getLong();
@@ -184,7 +184,7 @@ public final class PacketRepeater
 					if (rewrite && delay)
 						frameHdr.timestamp(stopWatch.newTsNanos(), TimestampUnit.EPOCH_NANO);
 
-					count += getOutput().processNativePacket(header, packet, ctx);
+					count += getOutput().preProcessPacket(header, packet, ctx);
 
 				}
 			}
