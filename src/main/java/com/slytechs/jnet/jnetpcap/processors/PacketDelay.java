@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 import com.slytechs.jnet.jnetpcap.internal.PrePcapPipeline.PreContext;
 import com.slytechs.jnet.jnetpcap.processors.PreProcessors.PreProcessorData;
 import com.slytechs.jnet.jnetruntime.pipeline.Processor;
-import com.slytechs.jnet.jnetruntime.time.NanoTimes;
+import com.slytechs.jnet.jnetruntime.time.NanoTime;
 
 /**
  * A packet processor that introduces configurable delays between packet
@@ -133,7 +133,7 @@ public final class PacketDelay
 	 * the packet to the next processor in the pipeline.
 	 * 
 	 * <p>
-	 * This method uses {@link NanoTimes#delay(long)} to implement precise timing
+	 * This method uses {@link NanoTime#delay(long)} to implement precise timing
 	 * control. If the thread is interrupted during the delay, the method will
 	 * return early with a status code of 0.
 	 * </p>
@@ -149,7 +149,7 @@ public final class PacketDelay
 		try {
 			long nanosDelay = settings.delayNano();
 
-			NanoTimes.delay(nanosDelay);
+			NanoTime.delay(nanosDelay);
 
 		} catch (InterruptedException e) {
 			super.handleError(e, outputData);

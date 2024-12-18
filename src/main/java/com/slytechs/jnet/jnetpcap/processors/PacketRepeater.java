@@ -29,7 +29,7 @@ import org.jnetpcap.internal.PcapHeaderABI;
 import com.slytechs.jnet.jnetpcap.internal.PrePcapPipeline.PreContext;
 import com.slytechs.jnet.jnetpcap.processors.PreProcessors.PreProcessorData;
 import com.slytechs.jnet.jnetruntime.pipeline.Processor;
-import com.slytechs.jnet.jnetruntime.time.NanoTimes;
+import com.slytechs.jnet.jnetruntime.time.NanoTime;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
 
 /**
@@ -304,12 +304,12 @@ public final class PacketRepeater
 
 
 			if (repeatCount > 0 && firstIfg < minIfg)
-				NanoTimes.delay(minIfg - firstIfg);
+				NanoTime.delay(minIfg - firstIfg);
 
 			for (long c = 0; c < repeatCount; c++) {
 
 				if (c > 0 && ifg > 0)
-					NanoTimes.delay(ifg);
+					NanoTime.delay(ifg);
 
 				// Write actual timestamp when packet transmitted
 				if (rewrite) {
