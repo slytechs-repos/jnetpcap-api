@@ -5,8 +5,8 @@ import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 
 import org.jnetpcap.PcapHandler.NativeCallback;
-import org.jnetpcap.PcapHeader;
 
+import com.slytechs.jnet.jnetruntime.frame.PcapFrameHeader;
 import com.slytechs.jnet.protocol.Packet;
 
 /**
@@ -34,7 +34,7 @@ public interface PacketHandler {
 		 * @param header The pcap header containing packet metadata
 		 * @param packet The packet data as a byte array copy
 		 */
-		void handleArray(U user, PcapHeader header, byte[] packet);
+		void handleArray(U user, PcapFrameHeader header, byte[] packet);
 	}
 
 	/**
@@ -54,7 +54,7 @@ public interface PacketHandler {
 		 * @param header The pcap header containing packet metadata
 		 * @param packet The packet data as a ByteBuffer
 		 */
-		void handleBuffer(U user, PcapHeader header, ByteBuffer packet);
+		void handleBuffer(U user, PcapFrameHeader header, ByteBuffer packet);
 	}
 
 	/**
@@ -75,7 +75,7 @@ public interface PacketHandler {
 		 * @param header The packet header as a memory segment
 		 * @param packet The packet data as a memory segment
 		 */
-		void handleForeign(U user, MemorySegment header, MemorySegment packet);
+		void handleForeign(U user, PcapFrameHeader header, MemorySegment packet);
 	}
 
 	/**
