@@ -15,7 +15,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.slytechs.jnet.jnetpcap;
+package com.slytechs.jnet.jnetpcap.api;
 
 /**
  * The type of pcap handle that is open by an instance of pcap-pro. Provides

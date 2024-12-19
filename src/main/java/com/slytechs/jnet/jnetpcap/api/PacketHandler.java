@@ -1,4 +1,4 @@
-package com.slytechs.jnet.jnetpcap;
+package com.slytechs.jnet.jnetpcap.api;
 
 import java.lang.foreign.MemorySegment;
 import java.nio.ByteBuffer;
@@ -7,7 +7,7 @@ import java.util.function.Consumer;
 import org.jnetpcap.PcapHandler.NativeCallback;
 
 import com.slytechs.jnet.jnetruntime.frame.PcapFrameHeader;
-import com.slytechs.jnet.protocol.Packet;
+import com.slytechs.jnet.protocol.api.packet.Packet;
 
 /**
  * A marker interface for different types of packet handlers used in packet

@@ -15,18 +15,18 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.slytechs.jnet.jnetpcap.internal;
+package com.slytechs.jnet.jnetpcap.api.internal;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.nio.ByteBuffer;
 import java.util.function.Supplier;
 
-import com.slytechs.jnet.jnetpcap.PacketDispatcherSource;
-import com.slytechs.jnet.jnetpcap.PacketHandler.OfNative;
-import com.slytechs.jnet.jnetpcap.PacketHandler.OfPacket;
-import com.slytechs.jnet.jnetpcap.processors.PostProcessors;
-import com.slytechs.jnet.jnetpcap.processors.PostProcessors.PostProcessor;
+import com.slytechs.jnet.jnetpcap.api.PacketDispatcherSource;
+import com.slytechs.jnet.jnetpcap.api.PacketHandler.OfNative;
+import com.slytechs.jnet.jnetpcap.api.PacketHandler.OfPacket;
+import com.slytechs.jnet.jnetpcap.api.processors.PostProcessors;
+import com.slytechs.jnet.jnetpcap.api.processors.PostProcessors.PostProcessor;
 import com.slytechs.jnet.jnetruntime.frame.FrameABI;
 import com.slytechs.jnet.jnetruntime.pipeline.DT;
 import com.slytechs.jnet.jnetruntime.pipeline.OutputConnector;
@@ -36,11 +36,11 @@ import com.slytechs.jnet.jnetruntime.pipeline.Pipeline;
 import com.slytechs.jnet.jnetruntime.pipeline.RawDataType;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
 import com.slytechs.jnet.jnetruntime.util.Registration;
-import com.slytechs.jnet.protocol.Frame.FrameNumber;
-import com.slytechs.jnet.protocol.Packet;
-import com.slytechs.jnet.protocol.core.constants.PacketDescriptorType;
-import com.slytechs.jnet.protocol.descriptor.PacketDissector;
-import com.slytechs.jnet.protocol.meta.PacketFormat;
+import com.slytechs.jnet.protocol.api.common.Frame.FrameNumber;
+import com.slytechs.jnet.protocol.api.descriptor.PacketDissector;
+import com.slytechs.jnet.protocol.api.meta.PacketFormat;
+import com.slytechs.jnet.protocol.api.packet.Packet;
+import com.slytechs.jnet.protocol.tcpip.constants.PacketDescriptorType;
 
 /**
  * @author Mark Bednarczyk [mark@slytechs.com]

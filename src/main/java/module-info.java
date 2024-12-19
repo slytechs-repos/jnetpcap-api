@@ -21,11 +21,11 @@
  * 
  * @author Mark Bednarczyk.
  */
-module com.slytechs.jnet.jnetpcap {
-	exports com.slytechs.jnet.jnetpcap;
-	exports com.slytechs.jnet.jnetpcap.processors;
-//	exports com.slytechs.jnet.jnetpcap.processor.packet;
-//	exports com.slytechs.jnet.jnetpcap.processor.protocol;
+module com.slytechs.jnet.jnetpcap.api {
+	exports com.slytechs.jnet.jnetpcap.api;
+	exports com.slytechs.jnet.jnetpcap.api.processors;
+//	exports com.slytechs.jnet.jnetpcap.api.processor.packet;
+//	exports com.slytechs.jnet.jnetpcap.api.processor.protocol;
 
 	requires transitive org.jnetpcap;
 	requires transitive com.slytechs.jnet.protocol;

@@ -15,7 +15,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.slytechs.jnet.jnetpcap;
+package com.slytechs.jnet.jnetpcap.api;
 
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.lang.foreign.MemorySegment;
@@ -43,12 +43,12 @@ import org.jnetpcap.constant.PcapTstampType;
 import org.jnetpcap.internal.PcapHeaderABI;
 import org.jnetpcap.util.PcapPacketRef;
 
-import com.slytechs.jnet.jnetpcap.PacketHandler.OfBuffer;
-import com.slytechs.jnet.jnetpcap.PacketHandler.OfForeign;
-import com.slytechs.jnet.jnetpcap.PacketHandler.OfNative;
-import com.slytechs.jnet.jnetpcap.PacketHandler.OfPacket;
-import com.slytechs.jnet.jnetpcap.PacketHandler.OfPacketConsumer;
-import com.slytechs.jnet.protocol.Packet;
+import com.slytechs.jnet.jnetpcap.api.PacketHandler.OfBuffer;
+import com.slytechs.jnet.jnetpcap.api.PacketHandler.OfForeign;
+import com.slytechs.jnet.jnetpcap.api.PacketHandler.OfNative;
+import com.slytechs.jnet.jnetpcap.api.PacketHandler.OfPacket;
+import com.slytechs.jnet.jnetpcap.api.PacketHandler.OfPacketConsumer;
+import com.slytechs.jnet.protocol.api.packet.Packet;
 
 /**
  * 
@@ -97,7 +97,7 @@ public abstract sealed class BaseNetPcap
 	/**
 	 * @param count
 	 * @return
-	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#capturePackets(long)
+	 * @see com.slytechs.jnet.jnetpcap.api.PacketDispatcher#capturePackets(long)
 	 */
 	@Override
 	public long capturePackets(long count) {
@@ -133,6 +133,21 @@ public abstract sealed class BaseNetPcap
 	 */
 	public BpFilter compile(String str, boolean optimize, int netmask) throws PcapException {
 		return pcap.compile(str, optimize, netmask);
+	}
+
+	/**
+	 * @param str
+	 * @param optimize
+	 * @return
+	 * @throws PcapException
+	 * @see org.jnetpcap.Pcap#compile(java.lang.String, boolean)
+	 */
+	public NetPcap setFilter(String str) throws PcapException {
+		var prog = pcap.compile(str, true);
+
+		setFilter(prog);
+		
+		return us;
 	}
 
 	/**
@@ -211,11 +226,11 @@ public abstract sealed class BaseNetPcap
 	 * @param cb
 	 * @param user
 	 * @return
-	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#dispatchArray(long,
-	 *      com.slytechs.jnet.jnetpcap.PacketHandler.OfArray, java.lang.Object)
+	 * @see com.slytechs.jnet.jnetpcap.api.PacketDispatcher#dispatchArray(long,
+	 *      com.slytechs.jnet.jnetpcap.api.PacketHandler.OfArray, java.lang.Object)
 	 */
 	@Override
-	public <U> long dispatchArray(long count, com.slytechs.jnet.jnetpcap.PacketHandler.OfArray<U> cb, U user) {
+	public <U> long dispatchArray(long count, com.slytechs.jnet.jnetpcap.api.PacketHandler.OfArray<U> cb, U user) {
 		return getPacketDispatcher().dispatchArray(count, cb, user);
 	}
 
@@ -225,8 +240,8 @@ public abstract sealed class BaseNetPcap
 	 * @param cb
 	 * @param user
 	 * @return
-	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#dispatchBuffer(long,
-	 *      com.slytechs.jnet.jnetpcap.PacketHandler.OfBuffer, java.lang.Object)
+	 * @see com.slytechs.jnet.jnetpcap.api.PacketDispatcher#dispatchBuffer(long,
+	 *      com.slytechs.jnet.jnetpcap.api.PacketHandler.OfBuffer, java.lang.Object)
 	 */
 	@Override
 	public <U> long dispatchBuffer(long count, OfBuffer<U> cb, U user) {
@@ -239,8 +254,8 @@ public abstract sealed class BaseNetPcap
 	 * @param memorySegmentHandler
 	 * @param user
 	 * @return
-	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#dispatchForeign(long,
-	 *      com.slytechs.jnet.jnetpcap.PacketHandler.OfForeign, java.lang.Object)
+	 * @see com.slytechs.jnet.jnetpcap.api.PacketDispatcher#dispatchForeign(long,
+	 *      com.slytechs.jnet.jnetpcap.api.PacketHandler.OfForeign, java.lang.Object)
 	 */
 	@Override
 	public <U> long dispatchForeign(long count, OfForeign<U> memorySegmentHandler, U user) {
@@ -252,8 +267,8 @@ public abstract sealed class BaseNetPcap
 	 * @param handler
 	 * @param user
 	 * @return
-	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#dispatchNative(long,
-	 *      com.slytechs.jnet.jnetpcap.PacketHandler.OfNative,
+	 * @see com.slytechs.jnet.jnetpcap.api.PacketDispatcher#dispatchNative(long,
+	 *      com.slytechs.jnet.jnetpcap.api.PacketHandler.OfNative,
 	 *      java.lang.foreign.MemorySegment)
 	 */
 	@Override
@@ -267,8 +282,8 @@ public abstract sealed class BaseNetPcap
 	 * @param cb
 	 * @param user
 	 * @return
-	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#dispatchPacket(long,
-	 *      com.slytechs.jnet.jnetpcap.PacketHandler.OfPacket, java.lang.Object)
+	 * @see com.slytechs.jnet.jnetpcap.api.PacketDispatcher#dispatchPacket(long,
+	 *      com.slytechs.jnet.jnetpcap.api.PacketHandler.OfPacket, java.lang.Object)
 	 */
 	@Override
 	public <U> long dispatchPacket(long count, OfPacket<U> cb, U user) {
@@ -282,8 +297,8 @@ public abstract sealed class BaseNetPcap
 	 * @param user
 	 * @param packetFactory
 	 * @return
-	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#dispatchPacket(long,
-	 *      com.slytechs.jnet.jnetpcap.PacketHandler.OfPacket, java.lang.Object,
+	 * @see com.slytechs.jnet.jnetpcap.api.PacketDispatcher#dispatchPacket(long,
+	 *      com.slytechs.jnet.jnetpcap.api.PacketHandler.OfPacket, java.lang.Object,
 	 *      java.util.function.Supplier)
 	 */
 	@Override
@@ -295,7 +310,7 @@ public abstract sealed class BaseNetPcap
 	 * @param <U>
 	 * @param cb
 	 * @return
-	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#dispatchPacket(com.slytechs.jnet.jnetpcap.PacketHandler.OfPacketConsumer)
+	 * @see com.slytechs.jnet.jnetpcap.api.PacketDispatcher#dispatchPacket(com.slytechs.jnet.jnetpcap.api.PacketHandler.OfPacketConsumer)
 	 */
 	@Override
 	public <U> long dispatchPacket(OfPacketConsumer cb) {
@@ -314,7 +329,7 @@ public abstract sealed class BaseNetPcap
 
 	/**
 	 * @return
-	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#getDefaultPacket()
+	 * @see com.slytechs.jnet.jnetpcap.api.PacketDispatcher#getDefaultPacket()
 	 */
 	@Override
 	public Packet getDefaultPacket() {
@@ -527,7 +542,7 @@ public abstract sealed class BaseNetPcap
 	/**
 	 * @param packet
 	 * @return
-	 * @see com.slytechs.jnet.jnetpcap.PacketDispatcher#nextPacket(com.slytechs.jnet.protocol.Packet)
+	 * @see com.slytechs.jnet.jnetpcap.api.PacketDispatcher#nextPacket(com.slytechs.jnet.protocol.api.packet.Packet)
 	 */
 	@Override
 	public boolean nextPacket(Packet packet) {
@@ -729,7 +744,7 @@ public abstract sealed class BaseNetPcap
 	 * @throws PcapException
 	 * @see org.jnetpcap.Pcap#setPromisc(boolean)
 	 */
-	public NetPcap setPromisc(boolean promiscousMode) throws PcapException {
+	public NetPcap setPromiscuous(boolean promiscousMode) throws PcapException {
 		pcap.setPromisc(promiscousMode);
 
 		return us;

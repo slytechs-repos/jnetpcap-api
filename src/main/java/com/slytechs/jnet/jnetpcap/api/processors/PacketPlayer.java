@@ -15,13 +15,13 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.slytechs.jnet.jnetpcap.processors;
+package com.slytechs.jnet.jnetpcap.api.processors;
 
 import java.lang.foreign.MemorySegment;
 import java.util.concurrent.TimeUnit;
 
-import com.slytechs.jnet.jnetpcap.internal.PrePcapPipeline.PreContext;
-import com.slytechs.jnet.jnetpcap.processors.PreProcessors.PreProcessor;
+import com.slytechs.jnet.jnetpcap.api.internal.PrePcapPipeline.PreContext;
+import com.slytechs.jnet.jnetpcap.api.processors.PreProcessors.PreProcessor;
 import com.slytechs.jnet.jnetruntime.pipeline.Processor;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
 
@@ -232,9 +232,9 @@ public class PacketPlayer
 	}
 
 	/**
-	 * @see com.slytechs.jnet.jnetpcap.processors.PreProcessors.PreProcessor#preProcessPacket(java.lang.foreign.MemorySegment,
+	 * @see com.slytechs.jnet.jnetpcap.api.processors.PreProcessors.PreProcessor#preProcessPacket(java.lang.foreign.MemorySegment,
 	 *      java.lang.foreign.MemorySegment,
-	 *      com.slytechs.jnet.jnetpcap.internal.PrePcapPipeline.PreContext)
+	 *      com.slytechs.jnet.jnetpcap.api.internal.PrePcapPipeline.PreContext)
 	 */
 	@Override
 	public long preProcessPacket(MemorySegment header, MemorySegment packet,

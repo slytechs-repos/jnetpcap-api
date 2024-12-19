@@ -15,7 +15,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.slytechs.jnet.jnetpcap;
+package com.slytechs.jnet.jnetpcap.api;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -33,25 +33,28 @@ import org.jnetpcap.PcapHeader;
 import org.jnetpcap.PcapIf;
 import org.jnetpcap.constant.PcapConstants;
 import org.jnetpcap.constant.PcapDlt;
+import org.jnetpcap.util.PcapVersionException;
 
-import com.slytechs.jnet.jnetpcap.PacketHandler.OfNative;
-import com.slytechs.jnet.jnetpcap.internal.PcapSource;
-import com.slytechs.jnet.jnetpcap.internal.PcapUtils;
-import com.slytechs.jnet.jnetpcap.internal.PostPcapPipeline;
-import com.slytechs.jnet.jnetpcap.internal.PrePcapPipeline;
-import com.slytechs.jnet.jnetpcap.processors.PacketRepeater;
-import com.slytechs.jnet.jnetpcap.processors.PostProcessors;
-import com.slytechs.jnet.jnetpcap.processors.PreProcessors;
+import com.slytechs.jnet.jnetpcap.api.PacketHandler.OfNative;
+import com.slytechs.jnet.jnetpcap.api.internal.PcapSource;
+import com.slytechs.jnet.jnetpcap.api.internal.PcapUtils;
+import com.slytechs.jnet.jnetpcap.api.internal.PostPcapPipeline;
+import com.slytechs.jnet.jnetpcap.api.internal.PrePcapPipeline;
+import com.slytechs.jnet.jnetpcap.api.processors.PacketRepeater;
+import com.slytechs.jnet.jnetpcap.api.processors.PostProcessors;
+import com.slytechs.jnet.jnetpcap.api.processors.PreProcessors;
 import com.slytechs.jnet.jnetruntime.NotFound;
 import com.slytechs.jnet.jnetruntime.frame.FrameABI;
 import com.slytechs.jnet.jnetruntime.pipeline.OutputConnector;
 import com.slytechs.jnet.jnetruntime.util.Flags;
+import com.slytechs.jnet.jnetruntime.util.InvalidVersionException;
 import com.slytechs.jnet.jnetruntime.util.MemoryUnit;
 import com.slytechs.jnet.jnetruntime.util.Named;
 import com.slytechs.jnet.jnetruntime.util.Registration;
-import com.slytechs.jnet.protocol.core.constants.PacketDescriptorType;
-import com.slytechs.jnet.protocol.core.network.IpReassembly;
-import com.slytechs.jnet.protocol.meta.PacketFormat;
+import com.slytechs.jnet.jnetruntime.util.Version;
+import com.slytechs.jnet.protocol.api.meta.PacketFormat;
+import com.slytechs.jnet.protocol.tcpip.constants.PacketDescriptorType;
+import com.slytechs.jnet.protocol.tcpip.network.IpReassembly;
 
 /**
  * Provides high-level packet capture and protocol settingsSupport using
@@ -88,6 +91,23 @@ import com.slytechs.jnet.protocol.meta.PacketFormat;
  * @author Mark Bednarczyk
  */
 public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
+
+	/**
+	 * Current version of the NetPcap implementation in MAJOR.MINOR.PATCH format.
+	 */
+	public static final String VERSION = "0.11.0";
+
+	/**
+	 * Artifact identifier for this library, used for dependency management and
+	 * version checks.
+	 */
+	public static final String ARTIFACT_ID = "jnetpcap-api";
+
+	/**
+	 * Maven group identifier for this library, used in dependency declarations and
+	 * artifact resolution.
+	 */
+	public static final String GROUP_ID = "com.slytechs.jnet.jnetpcap.api";
 
 	/**
 	 * Represents the maximum snapshot length for packet capture.
@@ -207,6 +227,46 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 			System.out.printf("processed %d packets%n", count);
 		}
 
+	}
+
+	/**
+	 * Performs semantic version compatibility checks between the installed library
+	 * and application. Follows a minimal subset of Semantic Versioning rules
+	 * focused on major and minor version compatibility.
+	 * 
+	 * <h3>Version Compatibility Rules</h3>
+	 * <ul>
+	 * <li>Major versions must match exactly (e.g. 2.x.x with 2.y.y)</li>
+	 * <li>Application's minor version must not exceed library's minor version</li>
+	 * <li>Patch versions are ignored in compatibility checks</li>
+	 * </ul>
+	 * 
+	 * <h3>Examples</h3>
+	 * 
+	 * <pre>
+	 * Compatible:
+	 *   Library 2.3.0 with App 2.3.1   (matching major, matching minor)
+	 *   Library 2.4.0 with App 2.3.0   (matching major, lib minor > app minor)
+	 *   Library 2.0.0 with App 2.0.1   (matching major and minor)
+	 * 
+	 * Incompatible:
+	 *   Library 3.0.0 with App 2.0.0   (major version mismatch)
+	 *   Library 2.1.0 with App 2.2.0   (app minor exceeds lib minor)
+	 * </pre>
+	 *
+	 * @param version Version string to check against this implementation (format:
+	 *                MAJOR.MINOR.PATCH)
+	 * @throws InvalidVersionException If versions are incompatible or malformed
+	 * @see <a href="https://semver.org">Semantic Versioning 2.0.0</a>
+	 */
+	public static void checkVersion(String version) throws InvalidVersionException {
+		Version.minimalCheck(ARTIFACT_ID, NetPcap.VERSION, version);
+
+		try {
+			Pcap.checkPcapVersion(Pcap.VERSION);
+		} catch (PcapVersionException e) {
+			throw new InvalidVersionException(e);
+		}
 	}
 
 	/**

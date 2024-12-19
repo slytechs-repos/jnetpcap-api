@@ -15,24 +15,24 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.slytechs.jnet.jnetpcap.internal;
+package com.slytechs.jnet.jnetpcap.api.internal;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-import com.slytechs.jnet.jnetpcap.PacketHandler.OfNative;
-import com.slytechs.jnet.jnetpcap.internal.PostPcapPipeline.PostContext;
-import com.slytechs.jnet.jnetpcap.processors.PostProcessors.PostProcessor;
+import com.slytechs.jnet.jnetpcap.api.PacketHandler.OfNative;
+import com.slytechs.jnet.jnetpcap.api.internal.PostPcapPipeline.PostContext;
+import com.slytechs.jnet.jnetpcap.api.processors.PostProcessors.PostProcessor;
 import com.slytechs.jnet.jnetruntime.frame.PcapFrameHeader;
 import com.slytechs.jnet.jnetruntime.pipeline.InputTransformer;
 import com.slytechs.jnet.jnetruntime.pipeline.RawDataType;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
 import com.slytechs.jnet.jnetruntime.util.MemoryUnit;
-import com.slytechs.jnet.protocol.Packet;
-import com.slytechs.jnet.protocol.descriptor.PacketDissector;
-import com.slytechs.jnet.protocol.meta.PacketFormat;
+import com.slytechs.jnet.protocol.api.descriptor.PacketDissector;
+import com.slytechs.jnet.protocol.api.meta.PacketFormat;
+import com.slytechs.jnet.protocol.api.packet.Packet;
 
 class InputPacketDissector
 		extends InputTransformer<OfNative, PostProcessor>
@@ -92,7 +92,7 @@ class InputPacketDissector
 	}
 
 	/**
-	 * @see com.slytechs.jnet.jnetpcap.PacketHandler.OfNative#handleNative(java.lang.foreign.MemorySegment,
+	 * @see com.slytechs.jnet.jnetpcap.api.PacketHandler.OfNative#handleNative(java.lang.foreign.MemorySegment,
 	 *      java.lang.foreign.MemorySegment, java.lang.foreign.MemorySegment)
 	 */
 	@Override

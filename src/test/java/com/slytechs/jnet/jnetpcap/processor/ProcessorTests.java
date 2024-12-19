@@ -23,7 +23,7 @@ import java.io.IOException;
 import org.jnetpcap.PcapException;
 import org.junit.jupiter.api.Test;
 
-import com.slytechs.jnet.jnetpcap.NetPcap;
+import com.slytechs.jnet.jnetpcap.api.NetPcap;
 
 /**
  * The Class ProcessorTests.

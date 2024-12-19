@@ -15,7 +15,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.slytechs.jnet.jnetpcap.internal;
+package com.slytechs.jnet.jnetpcap.api.internal;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
@@ -25,14 +25,14 @@ import java.util.function.Supplier;
 
 import org.jnetpcap.PcapHeader;
 
-import com.slytechs.jnet.jnetpcap.NetPcap;
-import com.slytechs.jnet.jnetpcap.PacketHandler;
-import com.slytechs.jnet.jnetpcap.PacketHandler.OfArray;
-import com.slytechs.jnet.jnetpcap.PacketHandler.OfBuffer;
-import com.slytechs.jnet.jnetpcap.PacketHandler.OfForeign;
-import com.slytechs.jnet.jnetpcap.PacketHandler.OfNative;
-import com.slytechs.jnet.jnetpcap.processors.PreProcessors;
-import com.slytechs.jnet.jnetpcap.processors.PreProcessors.PreProcessor;
+import com.slytechs.jnet.jnetpcap.api.NetPcap;
+import com.slytechs.jnet.jnetpcap.api.PacketHandler;
+import com.slytechs.jnet.jnetpcap.api.PacketHandler.OfArray;
+import com.slytechs.jnet.jnetpcap.api.PacketHandler.OfBuffer;
+import com.slytechs.jnet.jnetpcap.api.PacketHandler.OfForeign;
+import com.slytechs.jnet.jnetpcap.api.PacketHandler.OfNative;
+import com.slytechs.jnet.jnetpcap.api.processors.PreProcessors;
+import com.slytechs.jnet.jnetpcap.api.processors.PreProcessors.PreProcessor;
 import com.slytechs.jnet.jnetruntime.frame.FrameABI;
 import com.slytechs.jnet.jnetruntime.frame.PcapFrameHeader;
 import com.slytechs.jnet.jnetruntime.pipeline.DT;
@@ -45,9 +45,9 @@ import com.slytechs.jnet.jnetruntime.pipeline.RawDataType;
 import com.slytechs.jnet.jnetruntime.time.FrameStopwatch;
 import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
 import com.slytechs.jnet.jnetruntime.util.Registration;
-import com.slytechs.jnet.protocol.Packet;
-import com.slytechs.jnet.protocol.core.constants.PacketDescriptorType;
-import com.slytechs.jnet.protocol.descriptor.PcapDescriptor;
+import com.slytechs.jnet.protocol.api.descriptor.PcapDescriptor;
+import com.slytechs.jnet.protocol.api.packet.Packet;
+import com.slytechs.jnet.protocol.tcpip.constants.PacketDescriptorType;
 
 /**
  * @author Mark Bednarczyk

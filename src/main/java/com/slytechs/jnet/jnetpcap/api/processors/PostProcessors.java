@@ -15,10 +15,10 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.slytechs.jnet.jnetpcap.processors;
+package com.slytechs.jnet.jnetpcap.api.processors;
 
-import com.slytechs.jnet.jnetpcap.internal.PostPcapPipeline.PostContext;
-import com.slytechs.jnet.protocol.Packet;
+import com.slytechs.jnet.jnetpcap.api.internal.PostPcapPipeline.PostContext;
+import com.slytechs.jnet.protocol.api.packet.Packet;
 
 /**
  * 

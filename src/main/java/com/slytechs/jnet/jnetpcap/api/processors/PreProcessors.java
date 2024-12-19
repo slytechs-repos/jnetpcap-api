@@ -15,11 +15,11 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.slytechs.jnet.jnetpcap.processors;
+package com.slytechs.jnet.jnetpcap.api.processors;
 
 import java.lang.foreign.MemorySegment;
 
-import com.slytechs.jnet.jnetpcap.internal.PrePcapPipeline.PreContext;
+import com.slytechs.jnet.jnetpcap.api.internal.PrePcapPipeline.PreContext;
 import com.slytechs.jnet.jnetruntime.pipeline.Processor;
 
 /**

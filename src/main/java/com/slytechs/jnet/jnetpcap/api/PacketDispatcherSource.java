@@ -15,11 +15,11 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.slytechs.jnet.jnetpcap.internal;
+package com.slytechs.jnet.jnetpcap.api;
 
-import java.lang.foreign.MemorySegment;
+import java.util.function.LongUnaryOperator;
 
-import com.slytechs.jnet.jnetpcap.PacketHandler;
+import com.slytechs.jnet.protocol.api.packet.Packet;
 
 /**
  * 
@@ -27,8 +27,25 @@ import com.slytechs.jnet.jnetpcap.PacketHandler;
  * @author Mark Bednarczyk [mark@slytechs.com]
  * @author Sly Technologies Inc.
  */
-public interface PcapSource {
+public interface PacketDispatcherSource extends LongUnaryOperator {
 
-	int dispatchNative(int count, PacketHandler.OfNative handler, MemorySegment user);
+	Packet DEFAULT_PACKET = new Packet();
 
+	static PacketDispatcherSource from(LongUnaryOperator src) {
+		return cnt -> src.applyAsLong(cnt);
+	}
+
+	default Packet getDefaultPacket() {
+		return DEFAULT_PACKET;
+	}
+
+	long captureFromSource(long packetCount);
+
+	/**
+	 * @see java.util.function.LongUnaryOperator#applyAsLong(long)
+	 */
+	@Override
+	default long applyAsLong(long packetCount) {
+		return captureFromSource(packetCount);
+	}
 }
