@@ -25,11 +25,11 @@ import java.nio.ByteOrder;
 import com.slytechs.jnet.jnetpcap.api.PacketHandler.OfNative;
 import com.slytechs.jnet.jnetpcap.api.internal.PostPcapPipeline.PostContext;
 import com.slytechs.jnet.jnetpcap.api.processors.PostProcessors.PostProcessor;
-import com.slytechs.jnet.jnetruntime.frame.PcapFrameHeader;
-import com.slytechs.jnet.jnetruntime.pipeline.InputTransformer;
-import com.slytechs.jnet.jnetruntime.pipeline.RawDataType;
-import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
-import com.slytechs.jnet.jnetruntime.util.MemoryUnit;
+import com.slytechs.jnet.platform.api.frame.PcapFrameHeader;
+import com.slytechs.jnet.platform.api.pipeline.DataLiteral;
+import com.slytechs.jnet.platform.api.pipeline.InputTransformer;
+import com.slytechs.jnet.platform.api.time.TimestampUnit;
+import com.slytechs.jnet.platform.api.util.MemoryUnit;
 import com.slytechs.jnet.protocol.api.descriptor.PacketDissector;
 import com.slytechs.jnet.protocol.api.meta.PacketFormat;
 import com.slytechs.jnet.protocol.api.packet.Packet;
@@ -54,7 +54,7 @@ class InputPacketDissector
 	 * @param dataType
 	 */
 	protected InputPacketDissector(Object id, PostContext ctx) {
-		super(id, new RawDataType<>(OfNative.class));
+		super(id, new DataLiteral<>(OfNative.class));
 
 		this.ctx = ctx.clone();
 		this.pcapHeader = new PcapFrameHeader(ctx.abi);

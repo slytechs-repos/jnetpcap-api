@@ -33,18 +33,17 @@ import com.slytechs.jnet.jnetpcap.api.PacketHandler.OfForeign;
 import com.slytechs.jnet.jnetpcap.api.PacketHandler.OfNative;
 import com.slytechs.jnet.jnetpcap.api.processors.PreProcessors;
 import com.slytechs.jnet.jnetpcap.api.processors.PreProcessors.PreProcessor;
-import com.slytechs.jnet.jnetruntime.frame.FrameABI;
-import com.slytechs.jnet.jnetruntime.frame.PcapFrameHeader;
-import com.slytechs.jnet.jnetruntime.pipeline.DT;
-import com.slytechs.jnet.jnetruntime.pipeline.InputTransformer;
-import com.slytechs.jnet.jnetruntime.pipeline.OutputStack;
-import com.slytechs.jnet.jnetruntime.pipeline.OutputTransformer;
-import com.slytechs.jnet.jnetruntime.pipeline.OutputTransformer.OutputMapper;
-import com.slytechs.jnet.jnetruntime.pipeline.Pipeline;
-import com.slytechs.jnet.jnetruntime.pipeline.RawDataType;
-import com.slytechs.jnet.jnetruntime.time.FrameStopwatch;
-import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
-import com.slytechs.jnet.jnetruntime.util.Registration;
+import com.slytechs.jnet.platform.api.frame.FrameABI;
+import com.slytechs.jnet.platform.api.frame.PcapFrameHeader;
+import com.slytechs.jnet.platform.api.pipeline.DataLiteral;
+import com.slytechs.jnet.platform.api.pipeline.InputTransformer;
+import com.slytechs.jnet.platform.api.pipeline.OutputStack;
+import com.slytechs.jnet.platform.api.pipeline.OutputTransformer;
+import com.slytechs.jnet.platform.api.pipeline.OutputTransformer.OutputMapper;
+import com.slytechs.jnet.platform.api.pipeline.Pipeline;
+import com.slytechs.jnet.platform.api.time.FrameStopwatch;
+import com.slytechs.jnet.platform.api.time.TimestampUnit;
+import com.slytechs.jnet.platform.api.util.Registration;
 import com.slytechs.jnet.protocol.api.descriptor.PcapDescriptor;
 import com.slytechs.jnet.protocol.api.packet.Packet;
 import com.slytechs.jnet.protocol.tcpip.constants.PacketDescriptorType;
@@ -102,7 +101,7 @@ public final class PrePcapPipeline
 	 * @param reducer
 	 */
 	public PrePcapPipeline(String deviceName, NetPcap pcap, FrameABI frameABI, PcapSource source) {
-		super(deviceName, new RawDataType<>(PreProcessor.class));
+		super(deviceName, new DataLiteral<>(PreProcessor.class));
 		this.pcapSource = source;
 
 		this.ctx = new PreContext(frameABI, TimestampUnit.PCAP_MICRO);
@@ -111,18 +110,18 @@ public final class PrePcapPipeline
 		this.pcapDescriptorReusable.bind(mseg.asByteBuffer(), mseg);
 
 		this.mainInput = head()
-				.addInput("OfNative", this::inputOfNative, new RawDataType<>(OfNative.class))
+				.addInput("OfNative", this::inputOfNative, new DataLiteral<>(OfNative.class))
 				.getInputPerma(); // Guaranteed it will never change
 
 		this.cbStack = tail().getOutputStack();
 		this.nativeOutput = cbStack.createTransformer(
-				"OfNative", this::outputOfNative, new RawDataType<>(OfNative.class));
+				"OfNative", this::outputOfNative, new DataLiteral<>(OfNative.class));
 		this.arrayOutput = cbStack.createTransformer(
-				"OfArray", this::outputOfArray, new DT<OfArray<Object>>() {});
+				"OfArray", this::outputOfArray, new DataLiteral<OfArray<Object>>() {});
 		this.bufferOutput = cbStack.createTransformer(
-				"OfBuffer", this::outputOfBuffer, new DT<OfBuffer<Object>>() {});
+				"OfBuffer", this::outputOfBuffer, new DataLiteral<OfBuffer<Object>>() {});
 		this.foreignOutput = cbStack.createTransformer(
-				"OfForeign", this::outputOfForeign, new DT<OfForeign<Object>>() {});
+				"OfForeign", this::outputOfForeign, new DataLiteral<OfForeign<Object>>() {});
 
 	}
 
@@ -138,7 +137,7 @@ public final class PrePcapPipeline
 					return 1;
 				};
 			}
-		}, new RawDataType<OfNative>(OfNative.class));
+		}, new DataLiteral<OfNative>(OfNative.class));
 
 		output.connect(handler);
 

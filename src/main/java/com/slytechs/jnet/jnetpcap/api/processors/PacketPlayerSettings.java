@@ -17,12 +17,12 @@
  */
 package com.slytechs.jnet.jnetpcap.api.processors;
 
-import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
-import com.slytechs.jnet.jnetruntime.util.settings.BooleanProperty;
-import com.slytechs.jnet.jnetruntime.util.settings.DoubleProperty;
-import com.slytechs.jnet.jnetruntime.util.settings.EnumProperty;
-import com.slytechs.jnet.jnetruntime.util.settings.LongProperty;
-import com.slytechs.jnet.jnetruntime.util.settings.Settings;
+import com.slytechs.jnet.platform.api.time.TimestampUnit;
+import com.slytechs.jnet.platform.api.util.settings.BooleanProperty;
+import com.slytechs.jnet.platform.api.util.settings.DoubleProperty;
+import com.slytechs.jnet.platform.api.util.settings.EnumProperty;
+import com.slytechs.jnet.platform.api.util.settings.LongProperty;
+import com.slytechs.jnet.platform.api.util.settings.Settings;
 
 /**
  * @author Mark Bednarczyk [mark@slytechs.com]

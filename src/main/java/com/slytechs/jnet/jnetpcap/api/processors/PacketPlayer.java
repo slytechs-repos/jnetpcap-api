@@ -22,8 +22,8 @@ import java.util.concurrent.TimeUnit;
 
 import com.slytechs.jnet.jnetpcap.api.internal.PrePcapPipeline.PreContext;
 import com.slytechs.jnet.jnetpcap.api.processors.PreProcessors.PreProcessor;
-import com.slytechs.jnet.jnetruntime.pipeline.Processor;
-import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
+import com.slytechs.jnet.platform.api.pipeline.Processor;
+import com.slytechs.jnet.platform.api.time.TimestampUnit;
 
 /**
  * The Class PacketPlayer.

@@ -28,6 +28,6 @@ module com.slytechs.jnet.jnetpcap.api {
 //	exports com.slytechs.jnet.jnetpcap.api.processor.protocol;
 
 	requires transitive org.jnetpcap;
-	requires transitive com.slytechs.jnet.protocol;
-	requires transitive com.slytechs.jnet.jnetruntime;
+	requires transitive com.slytechs.jnet.protocol.api;
+	requires transitive com.slytechs.jnet.platform.api;
 }

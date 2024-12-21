@@ -17,9 +17,9 @@
  */
 package com.slytechs.jnet.jnetpcap.api.processors;
 
-import com.slytechs.jnet.jnetruntime.util.settings.BooleanProperty;
-import com.slytechs.jnet.jnetruntime.util.settings.LongProperty;
-import com.slytechs.jnet.jnetruntime.util.settings.Settings;
+import com.slytechs.jnet.platform.api.util.settings.BooleanProperty;
+import com.slytechs.jnet.platform.api.util.settings.LongProperty;
+import com.slytechs.jnet.platform.api.util.settings.Settings;
 
 /**
  * 

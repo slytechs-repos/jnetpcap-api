@@ -20,7 +20,7 @@ package com.slytechs.jnet.jnetpcap.api.processors;
 import java.lang.foreign.MemorySegment;
 
 import com.slytechs.jnet.jnetpcap.api.internal.PrePcapPipeline.PreContext;
-import com.slytechs.jnet.jnetruntime.pipeline.Processor;
+import com.slytechs.jnet.platform.api.pipeline.Processor;
 
 /**
  * 

@@ -24,8 +24,8 @@ import org.jnetpcap.PcapException;
 import org.junit.jupiter.api.Test;
 
 import com.slytechs.jnet.jnetpcap.api.NetPcap;
-import com.slytechs.jnet.jnetruntime.NotFound;
-import com.slytechs.jnet.jnetruntime.util.HexStrings;
+import com.slytechs.jnet.platform.api.NotFound;
+import com.slytechs.jnet.platform.api.util.HexStrings;
 import com.slytechs.jnet.protocol.api.meta.PacketFormat;
 import com.slytechs.jnet.protocol.tcpip.link.Ppp;
 import com.slytechs.jnet.protocol.tcpip.network.Ip4;

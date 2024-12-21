@@ -27,15 +27,14 @@ import com.slytechs.jnet.jnetpcap.api.PacketHandler.OfNative;
 import com.slytechs.jnet.jnetpcap.api.PacketHandler.OfPacket;
 import com.slytechs.jnet.jnetpcap.api.processors.PostProcessors;
 import com.slytechs.jnet.jnetpcap.api.processors.PostProcessors.PostProcessor;
-import com.slytechs.jnet.jnetruntime.frame.FrameABI;
-import com.slytechs.jnet.jnetruntime.pipeline.DT;
-import com.slytechs.jnet.jnetruntime.pipeline.OutputConnector;
-import com.slytechs.jnet.jnetruntime.pipeline.OutputStack;
-import com.slytechs.jnet.jnetruntime.pipeline.OutputTransformer;
-import com.slytechs.jnet.jnetruntime.pipeline.Pipeline;
-import com.slytechs.jnet.jnetruntime.pipeline.RawDataType;
-import com.slytechs.jnet.jnetruntime.time.TimestampUnit;
-import com.slytechs.jnet.jnetruntime.util.Registration;
+import com.slytechs.jnet.platform.api.frame.FrameABI;
+import com.slytechs.jnet.platform.api.pipeline.DataLiteral;
+import com.slytechs.jnet.platform.api.pipeline.OutputConnector;
+import com.slytechs.jnet.platform.api.pipeline.OutputStack;
+import com.slytechs.jnet.platform.api.pipeline.OutputTransformer;
+import com.slytechs.jnet.platform.api.pipeline.Pipeline;
+import com.slytechs.jnet.platform.api.time.TimestampUnit;
+import com.slytechs.jnet.platform.api.util.Registration;
 import com.slytechs.jnet.protocol.api.common.Frame.FrameNumber;
 import com.slytechs.jnet.protocol.api.descriptor.PacketDissector;
 import com.slytechs.jnet.protocol.api.meta.PacketFormat;
@@ -126,7 +125,7 @@ public class PostPcapPipeline
 			OutputConnector<OfNative> connectionPoint,
 			PacketDispatcherSource source,
 			FrameABI abi) {
-		super(NAME, new RawDataType<>(PostProcessor.class));
+		super(NAME, new DataLiteral<>(PostProcessor.class));
 
 		this.dispatcherSource = source;
 
@@ -141,7 +140,7 @@ public class PostPcapPipeline
 
 		this.outputStack = tail().getOutputStack();
 		this.packetOutput = outputStack.createTransformer("OfPacket", this::outputOfPacket,
-				new DT<OfPacket<Object>>() {});
+				new DataLiteral<OfPacket<Object>>() {});
 
 		this.upstreamRegistration = connectionPoint.connectToOutput("PostProcessors", input);
 	}

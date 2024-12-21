@@ -23,8 +23,8 @@ import java.util.concurrent.TimeUnit;
 
 import com.slytechs.jnet.jnetpcap.api.internal.PrePcapPipeline.PreContext;
 import com.slytechs.jnet.jnetpcap.api.processors.PreProcessors.PreProcessor;
-import com.slytechs.jnet.jnetruntime.pipeline.Processor;
-import com.slytechs.jnet.jnetruntime.time.NanoTime;
+import com.slytechs.jnet.platform.api.pipeline.Processor;
+import com.slytechs.jnet.platform.api.time.NanoTime;
 
 /**
  * A packet processor that introduces configurable delays between packet
