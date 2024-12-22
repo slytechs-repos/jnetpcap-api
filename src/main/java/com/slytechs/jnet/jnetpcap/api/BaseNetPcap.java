@@ -146,7 +146,7 @@ public abstract sealed class BaseNetPcap
 		var prog = pcap.compile(str, true);
 
 		setFilter(prog);
-		
+
 		return us;
 	}
 
@@ -255,7 +255,8 @@ public abstract sealed class BaseNetPcap
 	 * @param user
 	 * @return
 	 * @see com.slytechs.jnet.jnetpcap.api.PacketDispatcher#dispatchForeign(long,
-	 *      com.slytechs.jnet.jnetpcap.api.PacketHandler.OfForeign, java.lang.Object)
+	 *      com.slytechs.jnet.jnetpcap.api.PacketHandler.OfForeign,
+	 *      java.lang.Object)
 	 */
 	@Override
 	public <U> long dispatchForeign(long count, OfForeign<U> memorySegmentHandler, U user) {

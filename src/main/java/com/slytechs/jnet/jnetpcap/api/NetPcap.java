@@ -33,6 +33,7 @@ import org.jnetpcap.PcapHeader;
 import org.jnetpcap.PcapIf;
 import org.jnetpcap.constant.PcapConstants;
 import org.jnetpcap.constant.PcapDlt;
+import org.jnetpcap.internal.PcapHeaderABI;
 import org.jnetpcap.util.PcapVersionException;
 
 import com.slytechs.jnet.jnetpcap.api.PacketHandler.OfNative;
@@ -492,7 +493,7 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 
 	private NetPcap(Pcap pcap) {
 		super(pcap);
-		var pcapHeaderABI = pcap.getPcapHeaderABI();
+		PcapHeaderABI pcapHeaderABI = pcap.getPcapHeaderABI();
 		this.frameABI = FrameABI.valueOf(pcapHeaderABI.isCompact(), pcapHeaderABI.order());
 
 		PcapSource pcapSource = super::dispatch; // Make sure to use Pcap.dispatch, not NetPcap.dispatchNative
