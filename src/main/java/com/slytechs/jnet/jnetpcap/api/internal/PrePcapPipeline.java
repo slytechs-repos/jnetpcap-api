@@ -33,17 +33,16 @@ import com.slytechs.jnet.jnetpcap.api.PacketHandler.OfForeign;
 import com.slytechs.jnet.jnetpcap.api.PacketHandler.OfNative;
 import com.slytechs.jnet.jnetpcap.api.processors.PreProcessors;
 import com.slytechs.jnet.jnetpcap.api.processors.PreProcessors.PreProcessor;
+import com.slytechs.jnet.platform.api.data.DataLiteral;
+import com.slytechs.jnet.platform.api.data.pipeline.Pipeline;
+import com.slytechs.jnet.platform.api.data.pipeline.transform.OutputStack;
+import com.slytechs.jnet.platform.api.data.pipeline.transform.OutputTransformer;
+import com.slytechs.jnet.platform.api.data.pipeline.transform.OutputTransformer.OutputMapper;
 import com.slytechs.jnet.platform.api.frame.FrameABI;
 import com.slytechs.jnet.platform.api.frame.PcapFrameHeader;
-import com.slytechs.jnet.platform.api.pipeline.DataLiteral;
-import com.slytechs.jnet.platform.api.pipeline.InputTransformer;
-import com.slytechs.jnet.platform.api.pipeline.OutputStack;
-import com.slytechs.jnet.platform.api.pipeline.OutputTransformer;
-import com.slytechs.jnet.platform.api.pipeline.OutputTransformer.OutputMapper;
-import com.slytechs.jnet.platform.api.pipeline.Pipeline;
-import com.slytechs.jnet.platform.api.time.FrameStopwatch;
-import com.slytechs.jnet.platform.api.time.TimestampUnit;
 import com.slytechs.jnet.platform.api.util.Registration;
+import com.slytechs.jnet.platform.api.util.time.FrameStopwatch;
+import com.slytechs.jnet.platform.api.util.time.TimestampUnit;
 import com.slytechs.jnet.protocol.api.descriptor.PcapDescriptor;
 import com.slytechs.jnet.protocol.api.packet.Packet;
 import com.slytechs.jnet.protocol.tcpip.constants.PacketDescriptorType;
@@ -137,7 +136,7 @@ public final class PrePcapPipeline
 					return 1;
 				};
 			}
-		}, new DataLiteral<OfNative>(OfNative.class));
+		}, new DataLiteral<>(OfNative.class));
 
 		output.connect(handler);
 
@@ -233,8 +232,7 @@ public final class PrePcapPipeline
 		return this.mainInput;
 	}
 
-	private final OfNative inputOfNative(Supplier<PreProcessor> out,
-			InputTransformer<?, ?> input) {
+	private final OfNative inputOfNative(Supplier<PreProcessor> out) {
 		return (_, header, packet) -> {
 			ctx.reset();
 
@@ -314,8 +312,7 @@ public final class PrePcapPipeline
 		};
 	}
 
-	private final PreProcessor outputOfNative(Supplier<OfNative> out,
-			OutputTransformer<?, ?> output) {
+	private final PreProcessor outputOfNative(Supplier<OfNative> out) {
 		return (header, packet, ctx) -> {
 			var cb = out.get();
 			cb.handleNative((MemorySegment) ctx.user, header, packet);
@@ -323,4 +320,5 @@ public final class PrePcapPipeline
 			return 1;
 		};
 	}
+
 }

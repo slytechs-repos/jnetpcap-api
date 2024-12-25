@@ -26,8 +26,8 @@ import java.util.function.LongSupplier;
 
 import com.slytechs.jnet.jnetpcap.api.internal.PrePcapPipeline.PreContext;
 import com.slytechs.jnet.jnetpcap.api.processors.PreProcessors.PreProcessor;
-import com.slytechs.jnet.platform.api.pipeline.Processor;
-import com.slytechs.jnet.platform.api.time.TimestampUnit;
+import com.slytechs.jnet.platform.api.data.common.processor.Processor;
+import com.slytechs.jnet.platform.api.util.time.TimestampUnit;
 
 /**
  * A packet repeater pre-processor. The repeater is able to repeat, or reinsert

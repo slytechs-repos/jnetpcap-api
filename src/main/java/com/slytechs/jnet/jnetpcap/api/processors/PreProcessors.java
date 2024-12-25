@@ -20,7 +20,8 @@ package com.slytechs.jnet.jnetpcap.api.processors;
 import java.lang.foreign.MemorySegment;
 
 import com.slytechs.jnet.jnetpcap.api.internal.PrePcapPipeline.PreContext;
-import com.slytechs.jnet.platform.api.pipeline.Processor;
+import com.slytechs.jnet.platform.api.data.common.processor.Processor;
+import com.slytechs.jnet.platform.api.util.Detail;
 
 /**
  * 
@@ -43,7 +44,8 @@ public interface PreProcessors {
 
 	/** Internal pipeline data handling interface, not ment to be used externally */
 	interface PreProcessor {
-		long preProcessPacket(MemorySegment header, MemorySegment packet, @SuppressWarnings("exports") PreContext preContext);
+		long preProcessPacket(MemorySegment header, MemorySegment packet,
+				@SuppressWarnings("exports") PreContext preContext);
 	}
 
 	Processor<PreProcessor> addProcessor(Processor<PreProcessor> newProcessor);
@@ -52,5 +54,5 @@ public interface PreProcessors {
 		return addProcessor(newProcessor.setPriority(priority));
 	}
 
-	String toStringInOut();
+	String toString(Detail detail);
 }

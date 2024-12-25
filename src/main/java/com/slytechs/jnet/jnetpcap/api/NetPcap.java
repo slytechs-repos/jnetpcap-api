@@ -45,8 +45,9 @@ import com.slytechs.jnet.jnetpcap.api.processors.PacketRepeater;
 import com.slytechs.jnet.jnetpcap.api.processors.PostProcessors;
 import com.slytechs.jnet.jnetpcap.api.processors.PreProcessors;
 import com.slytechs.jnet.platform.api.NotFound;
+import com.slytechs.jnet.platform.api.data.pipeline.transform.OutputConnector;
 import com.slytechs.jnet.platform.api.frame.FrameABI;
-import com.slytechs.jnet.platform.api.pipeline.OutputConnector;
+import com.slytechs.jnet.platform.api.util.Detail;
 import com.slytechs.jnet.platform.api.util.Flags;
 import com.slytechs.jnet.platform.api.util.InvalidVersionException;
 import com.slytechs.jnet.platform.api.util.MemoryUnit;
@@ -155,10 +156,10 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 //					.setSpeed(2)
 //					.setMinIfg(10, TimeUnit.MILLISECONDS));
 
-			System.out.println(preProcessors.toStringInOut());
+			System.out.println(preProcessors.toString(Detail.HIGH));
 
 			PostProcessors postProcessors = pcap.getPostProcessors();
-			System.out.println(postProcessors.toStringInOut());
+			System.out.println(postProcessors.toString(Detail.HIGH));
 
 			int count = 0;
 

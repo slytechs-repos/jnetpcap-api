@@ -18,6 +18,7 @@
 package com.slytechs.jnet.jnetpcap.api.processors;
 
 import com.slytechs.jnet.jnetpcap.api.internal.PostPcapPipeline.PostContext;
+import com.slytechs.jnet.platform.api.util.Detail;
 import com.slytechs.jnet.protocol.api.packet.Packet;
 
 /**
@@ -35,5 +36,5 @@ public interface PostProcessors {
 		void postProcessPacket(Packet packet, @SuppressWarnings("exports") PostContext postContext);
 	}
 
-	String toStringInOut();
+	String toString(Detail detail);
 }
