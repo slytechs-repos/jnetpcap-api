@@ -24,7 +24,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 
-import com.slytechs.jnet.jnetpcap.api.internal.PrePcapPipeline.PreContext;
+import com.slytechs.jnet.jnetpcap.api.impl.PrePcapPipeline.PreContext;
 import com.slytechs.jnet.jnetpcap.api.processors.PreProcessors.PreProcessor;
 import com.slytechs.jnet.platform.api.data.common.processor.Processor;
 import com.slytechs.jnet.platform.api.util.time.TimestampUnit;

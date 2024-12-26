@@ -20,7 +20,7 @@ package com.slytechs.jnet.jnetpcap.api.processors;
 import java.lang.foreign.MemorySegment;
 import java.util.concurrent.TimeUnit;
 
-import com.slytechs.jnet.jnetpcap.api.internal.PrePcapPipeline.PreContext;
+import com.slytechs.jnet.jnetpcap.api.impl.PrePcapPipeline.PreContext;
 import com.slytechs.jnet.jnetpcap.api.processors.PreProcessors.PreProcessor;
 import com.slytechs.jnet.platform.api.data.common.processor.Processor;
 import com.slytechs.jnet.platform.api.util.time.TimestampUnit;
@@ -234,7 +234,7 @@ public class PacketPlayer
 	/**
 	 * @see com.slytechs.jnet.jnetpcap.api.processors.PreProcessors.PreProcessor#preProcessPacket(java.lang.foreign.MemorySegment,
 	 *      java.lang.foreign.MemorySegment,
-	 *      com.slytechs.jnet.jnetpcap.api.internal.PrePcapPipeline.PreContext)
+	 *      com.slytechs.jnet.jnetpcap.api.impl.PrePcapPipeline.PreContext)
 	 */
 	@Override
 	public long preProcessPacket(MemorySegment header, MemorySegment packet,

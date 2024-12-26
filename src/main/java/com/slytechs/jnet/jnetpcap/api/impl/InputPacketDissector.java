@@ -15,7 +15,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.slytechs.jnet.jnetpcap.api.internal;
+package com.slytechs.jnet.jnetpcap.api.impl;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
@@ -23,7 +23,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 import com.slytechs.jnet.jnetpcap.api.PacketHandler.OfNative;
-import com.slytechs.jnet.jnetpcap.api.internal.PostPcapPipeline.PostContext;
+import com.slytechs.jnet.jnetpcap.api.impl.PostPcapPipeline.PostContext;
 import com.slytechs.jnet.jnetpcap.api.processors.PostProcessors.PostProcessor;
 import com.slytechs.jnet.platform.api.data.DataLiteral;
 import com.slytechs.jnet.platform.api.data.pipeline.transform.InputTransformer;

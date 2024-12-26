@@ -17,7 +17,7 @@
  */
 package com.slytechs.jnet.jnetpcap.api.processors;
 
-import com.slytechs.jnet.jnetpcap.api.internal.PostPcapPipeline.PostContext;
+import com.slytechs.jnet.jnetpcap.api.impl.PostPcapPipeline.PostContext;
 import com.slytechs.jnet.platform.api.util.Detail;
 import com.slytechs.jnet.protocol.api.packet.Packet;
 

@@ -21,7 +21,7 @@ import java.lang.foreign.MemorySegment;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
-import com.slytechs.jnet.jnetpcap.api.internal.PrePcapPipeline.PreContext;
+import com.slytechs.jnet.jnetpcap.api.impl.PrePcapPipeline.PreContext;
 import com.slytechs.jnet.jnetpcap.api.processors.PreProcessors.PreProcessor;
 import com.slytechs.jnet.platform.api.data.common.processor.Processor;
 import com.slytechs.jnet.platform.api.util.time.NanoTime;
