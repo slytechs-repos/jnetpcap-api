@@ -36,10 +36,10 @@ import com.slytechs.jnet.platform.api.frame.FrameABI;
 import com.slytechs.jnet.platform.api.util.Registration;
 import com.slytechs.jnet.platform.api.util.time.TimestampUnit;
 import com.slytechs.jnet.protocol.api.common.Frame.FrameNumber;
-import com.slytechs.jnet.protocol.api.descriptor.PacketDissector;
+import com.slytechs.jnet.protocol.api.common.Packet;
+import com.slytechs.jnet.protocol.api.core.PacketDescriptorType;
+import com.slytechs.jnet.protocol.api.descriptor.impl.PacketDissector; 
 import com.slytechs.jnet.protocol.api.meta.PacketFormat;
-import com.slytechs.jnet.protocol.api.packet.Packet;
-import com.slytechs.jnet.protocol.tcpip.constants.PacketDescriptorType;
 
 /**
  * @author Mark Bednarczyk [mark@slytechs.com]

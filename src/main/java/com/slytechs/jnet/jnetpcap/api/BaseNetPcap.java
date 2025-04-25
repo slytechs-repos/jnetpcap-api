@@ -48,7 +48,7 @@ import com.slytechs.jnet.jnetpcap.api.PacketHandler.OfForeign;
 import com.slytechs.jnet.jnetpcap.api.PacketHandler.OfNative;
 import com.slytechs.jnet.jnetpcap.api.PacketHandler.OfPacket;
 import com.slytechs.jnet.jnetpcap.api.PacketHandler.OfPacketConsumer;
-import com.slytechs.jnet.protocol.api.packet.Packet;
+import com.slytechs.jnet.protocol.api.common.Packet;
 
 /**
  * 

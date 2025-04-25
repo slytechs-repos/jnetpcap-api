@@ -47,16 +47,17 @@ import com.slytechs.jnet.jnetpcap.api.processors.PreProcessors;
 import com.slytechs.jnet.platform.api.common.NotFound;
 import com.slytechs.jnet.platform.api.data.pipeline.transform.OutputConnector;
 import com.slytechs.jnet.platform.api.frame.FrameABI;
-import com.slytechs.jnet.platform.api.util.Detail;
 import com.slytechs.jnet.platform.api.util.Flags;
 import com.slytechs.jnet.platform.api.util.InvalidVersionException;
 import com.slytechs.jnet.platform.api.util.MemoryUnit;
 import com.slytechs.jnet.platform.api.util.Named;
 import com.slytechs.jnet.platform.api.util.Registration;
 import com.slytechs.jnet.platform.api.util.Version;
+import com.slytechs.jnet.platform.api.util.format.Detail;
+import com.slytechs.jnet.protocol.api.core.PacketDescriptorType;
 import com.slytechs.jnet.protocol.api.meta.PacketFormat;
-import com.slytechs.jnet.protocol.tcpip.constants.PacketDescriptorType;
-import com.slytechs.jnet.protocol.tcpip.network.IpReassembly;
+import com.slytechs.jnet.protocol.api.pack.Pack;
+import com.slytechs.jnet.protocol.tcpip.ip.reassembly.IpReassembly;
 
 /**
  * Provides high-level packet capture and protocol settingsSupport using
@@ -137,6 +138,16 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 	public static final int MAX_SNAPLEN = PcapConstants.MAX_SNAPLEN;
 
 	public static void main(String[] args) throws PcapException, NotFound, TimeoutException {
+
+		Pack.listServiceModules()
+				.forEach(m -> System.out.printf("Module: %s, version=v%s, id=%s/0x%08X, isAvailable=%s%n",
+						m.name(),
+						m.version(),
+						m.packId(),
+						m.packId().id(),
+						m.isAvailable()));
+		Pack.listAllDeclaredPacks().forEach(System.out::println);
+
 		try (var pcap = NetPcap.live()) {
 
 			pcap.addErrorListener(Throwable::printStackTrace);

@@ -7,7 +7,7 @@ import java.util.function.Consumer;
 import org.jnetpcap.PcapHandler.NativeCallback;
 
 import com.slytechs.jnet.platform.api.frame.PcapFrameHeader;
-import com.slytechs.jnet.protocol.api.packet.Packet;
+import com.slytechs.jnet.protocol.api.common.Packet;
 
 /**
  * A marker interface for different types of packet handlers used in packet

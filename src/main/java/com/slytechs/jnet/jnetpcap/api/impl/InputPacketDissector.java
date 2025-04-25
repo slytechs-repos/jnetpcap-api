@@ -30,9 +30,9 @@ import com.slytechs.jnet.platform.api.data.pipeline.transform.InputTransformer;
 import com.slytechs.jnet.platform.api.frame.PcapFrameHeader;
 import com.slytechs.jnet.platform.api.util.MemoryUnit;
 import com.slytechs.jnet.platform.api.util.time.TimestampUnit;
-import com.slytechs.jnet.protocol.api.descriptor.PacketDissector;
+import com.slytechs.jnet.protocol.api.common.Packet;
+import com.slytechs.jnet.protocol.api.descriptor.impl.PacketDissector;
 import com.slytechs.jnet.protocol.api.meta.PacketFormat;
-import com.slytechs.jnet.protocol.api.packet.Packet;
 
 class InputPacketDissector
 		extends InputTransformer<OfNative, PostProcessor>

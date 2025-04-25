@@ -43,9 +43,9 @@ import com.slytechs.jnet.platform.api.frame.PcapFrameHeader;
 import com.slytechs.jnet.platform.api.util.Registration;
 import com.slytechs.jnet.platform.api.util.time.FrameStopwatch;
 import com.slytechs.jnet.platform.api.util.time.TimestampUnit;
+import com.slytechs.jnet.protocol.api.common.Packet;
+import com.slytechs.jnet.protocol.api.core.PacketDescriptorType;
 import com.slytechs.jnet.protocol.api.descriptor.PcapDescriptor;
-import com.slytechs.jnet.protocol.api.packet.Packet;
-import com.slytechs.jnet.protocol.tcpip.constants.PacketDescriptorType;
 
 /**
  * @author Mark Bednarczyk

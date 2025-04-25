@@ -20,8 +20,8 @@ package com.slytechs.jnet.jnetpcap.api;
 import java.lang.foreign.MemorySegment;
 import java.util.function.Supplier;
 
-import com.slytechs.jnet.protocol.api.packet.Packet;
-import com.slytechs.jnet.protocol.tcpip.constants.PacketDescriptorType;
+import com.slytechs.jnet.protocol.api.common.Packet;
+import com.slytechs.jnet.protocol.api.core.PacketDescriptorType;
 
 /**
  * Dispatches packets to different types of packet handlers. This interface

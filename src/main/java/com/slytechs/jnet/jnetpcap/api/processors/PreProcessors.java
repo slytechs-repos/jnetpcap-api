@@ -21,7 +21,7 @@ import java.lang.foreign.MemorySegment;
 
 import com.slytechs.jnet.jnetpcap.api.impl.PrePcapPipeline.PreContext;
 import com.slytechs.jnet.platform.api.data.common.processor.Processor;
-import com.slytechs.jnet.platform.api.util.Detail;
+import com.slytechs.jnet.platform.api.util.format.Detail;
 
 /**
  * 

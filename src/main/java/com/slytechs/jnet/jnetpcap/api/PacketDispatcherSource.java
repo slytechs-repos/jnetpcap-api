@@ -19,7 +19,7 @@ package com.slytechs.jnet.jnetpcap.api;
 
 import java.util.function.LongUnaryOperator;
 
-import com.slytechs.jnet.protocol.api.packet.Packet;
+import com.slytechs.jnet.protocol.api.common.Packet;
 
 /**
  * 
