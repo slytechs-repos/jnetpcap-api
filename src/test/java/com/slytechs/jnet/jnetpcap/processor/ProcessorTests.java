@@ -20,10 +20,10 @@ package com.slytechs.jnet.jnetpcap.processor;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
-import com.slytechs.sdk.jnetpcap.PcapException;
 import org.junit.jupiter.api.Test;
 
 import com.slytechs.jnet.jnetpcap.api.NetPcap;
+import com.slytechs.sdk.jnetpcap.PcapException;
 
 /**
  * The Class ProcessorTests.
@@ -46,7 +46,7 @@ class ProcessorTests {
 	void testBaseProcessorSetup() throws PcapException, FileNotFoundException, IOException {
 		final String FILE = RESOURCES_DIR + "/HTTP.cap";
 
-		try (var pcap = NetPcap.offline(FILE)) {
+		try (var pcap = NetPcap.openOffline(FILE)) {
 
 			/**
 			 * <pre>

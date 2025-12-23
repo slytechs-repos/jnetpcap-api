@@ -20,13 +20,12 @@ package com.slytechs.jnet.jnetpcap.processor;
 import java.io.File;
 import java.io.IOException;
 
-import com.slytechs.sdk.jnetpcap.PcapException;
 import org.junit.jupiter.api.Test;
 
 import com.slytechs.jnet.jnetpcap.api.NetPcap;
 import com.slytechs.jnet.platform.api.common.NotFound;
 import com.slytechs.jnet.platform.api.util.HexStrings;
-import com.slytechs.sdk.protocol.core.meta.PacketFormat;
+import com.slytechs.sdk.jnetpcap.PcapException;
 import com.slytechs.sdk.protocol.tcpip.ip.Ip4;
 import com.slytechs.sdk.protocol.tcpip.ip.Ip4MtuProbeOption;
 import com.slytechs.sdk.protocol.tcpip.ip.Ip4MtuReplyOption;
@@ -87,13 +86,12 @@ public class TestPcapSyntax {
 				"7E FF 03 00 21 45 00 00 14 00 01 00 00 40 00 7C E7 7F 00 00 01 7F 00 00 01 7E");
 
 		Ppp ppp = new Ppp();
-		ppp.setFormatter(new PacketFormat());
 
 		ppp.bind(pppPacket);
 
 		System.out.println(ppp);
 
-		try (var pcap = NetPcap.offline(FILE)) {
+		try (var pcap = NetPcap.openOffline(FILE)) {
 
 			Ip4 ip4 = new Ip4();
 			Ip6 ip6 = new Ip6();
