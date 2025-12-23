@@ -23,11 +23,9 @@
  */
 module com.slytechs.jnet.jnetpcap.api {
 	exports com.slytechs.jnet.jnetpcap.api;
-	exports com.slytechs.jnet.jnetpcap.api.processors;
-//	exports com.slytechs.jnet.jnetpcap.api.processor.packet;
-//	exports com.slytechs.jnet.jnetpcap.api.processor.protocol;
 
 	requires transitive org.jnetpcap;
 	requires transitive com.slytechs.jnet.protocol.api;
-	requires transitive com.slytechs.jnet.platform.api;
+	requires transitive com.slytechs.jnet.protocol.tcpip;
+	requires transitive com.slytechs.jnet.core.api;
 }

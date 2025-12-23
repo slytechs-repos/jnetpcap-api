@@ -1,13 +1,8 @@
 package com.slytechs.jnet.jnetpcap.api;
 
-import java.lang.foreign.MemorySegment;
-import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 
-import org.jnetpcap.PcapHandler.NativeCallback;
-
-import com.slytechs.jnet.platform.api.frame.PcapFrameHeader;
-import com.slytechs.jnet.protocol.api.common.Packet;
+import com.slytechs.jnet.protocol.api.Packet;
 
 /**
  * A marker interface for different types of packet handlers used in packet
@@ -15,98 +10,7 @@ import com.slytechs.jnet.protocol.api.common.Packet;
  * packet handlers that can process packets in different formats (array, buffer,
  * native memory) and with different safety guarantees.
  */
-public sealed interface PacketHandler
-		permits PacketHandler.OfArray,
-		PacketHandler.OfBuffer,
-		PacketHandler.OfNative,
-		PacketHandler.OfForeign,
-		PacketHandler.OfPacket,
-		PacketHandler.OfPacketConsumer {
-
-	/**
-	 * Provides a safe packet handling mechanism using byte arrays. Each packet is
-	 * received as a copy in a byte array, ensuring memory safety and allowing for
-	 * packet data persistence beyond the callback scope.
-	 *
-	 * @param <U> The type of user-defined data to be passed through the handler
-	 */
-	@FunctionalInterface
-	non-sealed interface OfArray<U> extends PacketHandler {
-
-		/**
-		 * Handles a packet received as a byte array.
-		 *
-		 * @param user   User-defined data passed through the handler
-		 * @param header The pcap header containing packet metadata
-		 * @param packet The packet data as a byte array copy
-		 */
-		void handleArray(U user, PcapFrameHeader header, byte[] packet);
-	}
-
-	/**
-	 * Provides packet handling using ByteBuffers. Packets can be received either as
-	 * copies or as temporal references, offering a balance between safety and
-	 * performance.
-	 *
-	 * @param <U> The type of user-defined data to be passed through the handler
-	 */
-	@FunctionalInterface
-	non-sealed interface OfBuffer<U> extends PacketHandler {
-
-		/**
-		 * Handles a packet received as a ByteBuffer.
-		 *
-		 * @param user   User-defined data passed through the handler
-		 * @param header The pcap header containing packet metadata
-		 * @param packet The packet data as a ByteBuffer
-		 */
-		void handleBuffer(U user, PcapFrameHeader header, ByteBuffer packet);
-	}
-
-	/**
-	 * Provides direct access to foreign memory segments for packet handling. This
-	 * is an advanced, zero-copy handler that operates directly on memory segments.
-	 * The memory is only valid during the handler execution.
-	 *
-	 * @param <U> The type of user-defined data to be passed through the handler
-	 */
-	@FunctionalInterface
-	non-sealed interface OfForeign<U> extends PacketHandler {
-
-		/**
-		 * Handles a packet using foreign memory segments. Note: The memory segments are
-		 * only valid during the execution of this method.
-		 *
-		 * @param user   User-defined data passed through the handler
-		 * @param header The packet header as a memory segment
-		 * @param packet The packet data as a memory segment
-		 */
-		void handleForeign(U user, PcapFrameHeader header, MemorySegment packet);
-	}
-
-	/**
-	 * Provides native callback handling for libpcap integration. This handler
-	 * interfaces directly with native libpcap callbacks and automatically bridges
-	 * to the handleNative method.
-	 */
-	@FunctionalInterface
-	non-sealed interface OfNative extends NativeCallback, PacketHandler {
-
-		/**
-		 * Handles packets using native memory segments. This method provides direct
-		 * access to native memory without copying.
-		 *
-		 * @param user   User data as a memory segment
-		 * @param header The packet header as a memory segment
-		 * @param packet The packet data as a memory segment
-		 */
-		void handleNative(MemorySegment user, MemorySegment header, MemorySegment packet);
-
-		@Override
-		default void nativeCallback(MemorySegment user, MemorySegment header, MemorySegment packet) {
-			handleNative(user, header, packet);
-		}
-	}
+public interface PacketHandler {
 
 	/**
 	 * Provides high-level packet handling using the Packet object model. This
@@ -115,7 +19,7 @@ public sealed interface PacketHandler
 	 * @param <U> The type of user-defined data to be passed through the handler
 	 */
 	@FunctionalInterface
-	non-sealed interface OfPacket<U> extends PacketHandler {
+	interface OfPacket<U> extends PacketHandler {
 
 		/**
 		 * Handles a parsed packet object.
@@ -131,7 +35,7 @@ public sealed interface PacketHandler
 	 * implements the standard Java Consumer interface, allowing it to be used in
 	 * streaming operations.
 	 */
-	non-sealed interface OfPacketConsumer extends PacketHandler, Consumer<Packet> {
+	interface OfPacketConsumer extends PacketHandler, Consumer<Packet> {
 
 		/**
 		 * Consumes a packet object. This method adheres to the Consumer interface
