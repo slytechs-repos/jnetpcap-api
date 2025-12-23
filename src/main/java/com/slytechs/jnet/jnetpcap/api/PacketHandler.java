@@ -2,7 +2,7 @@ package com.slytechs.jnet.jnetpcap.api;
 
 import java.util.function.Consumer;
 
-import com.slytechs.jnet.protocol.api.Packet;
+import com.slytechs.sdk.protocol.core.Packet;
 
 /**
  * A marker interface for different types of packet handlers used in packet

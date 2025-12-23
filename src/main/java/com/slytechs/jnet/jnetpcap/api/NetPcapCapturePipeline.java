@@ -2,28 +2,27 @@ package com.slytechs.jnet.jnetpcap.api;
 
 import java.lang.foreign.MemorySegment;
 
-import org.jnetpcap.Pcap;
-import org.jnetpcap.PcapException;
-
-import com.slytechs.jnet.core.api.memory.FixedMemory;
-import com.slytechs.jnet.core.api.memory.Memory;
-import com.slytechs.jnet.core.api.memory.ScopedMemory;
-import com.slytechs.jnet.core.api.time.TimestampUnit;
 import com.slytechs.jnet.jnetpcap.api.PacketHandler.OfPacket;
 import com.slytechs.jnet.jnetpcap.api.PacketHandler.OfPacketConsumer;
-import com.slytechs.jnet.protocol.api.Packet;
-import com.slytechs.jnet.protocol.api.descriptor.DescriptorTypeInfo;
-import com.slytechs.jnet.protocol.api.descriptor.L2FrameType;
-import com.slytechs.jnet.protocol.api.descriptor.L2FrameTypeInfo;
-import com.slytechs.jnet.protocol.api.descriptor.NetPacketDescriptor;
-import com.slytechs.jnet.protocol.api.descriptor.PacketDescriptor;
-import com.slytechs.jnet.protocol.api.descriptor.PcapHdrDescriptor;
-import com.slytechs.jnet.protocol.api.dissector.Net3PacketDissector;
-import com.slytechs.jnet.protocol.api.dissector.PacketDissector;
-import com.slytechs.jnet.protocol.api.stack.PacketPolicy;
-import com.slytechs.jnet.protocol.api.stack.ProtocolStack;
-import com.slytechs.jnet.protocol.api.stack.ProtocolStackException;
-import com.slytechs.jnet.protocol.api.stack.processor.Processor;
+import com.slytechs.sdk.common.memory.FixedMemory;
+import com.slytechs.sdk.common.memory.Memory;
+import com.slytechs.sdk.common.memory.ScopedMemory;
+import com.slytechs.sdk.common.time.TimestampUnit;
+import com.slytechs.sdk.jnetpcap.Pcap;
+import com.slytechs.sdk.jnetpcap.PcapException;
+import com.slytechs.sdk.protocol.core.Packet;
+import com.slytechs.sdk.protocol.core.descriptor.DescriptorTypeInfo;
+import com.slytechs.sdk.protocol.core.descriptor.L2FrameType;
+import com.slytechs.sdk.protocol.core.descriptor.L2FrameTypeInfo;
+import com.slytechs.sdk.protocol.core.descriptor.NetPacketDescriptor;
+import com.slytechs.sdk.protocol.core.descriptor.PacketDescriptor;
+import com.slytechs.sdk.protocol.core.descriptor.PcapHdrDescriptor;
+import com.slytechs.sdk.protocol.core.dissector.Net3PacketDissector;
+import com.slytechs.sdk.protocol.core.dissector.PacketDissector;
+import com.slytechs.sdk.protocol.core.stack.PacketPolicy;
+import com.slytechs.sdk.protocol.core.stack.ProtocolStack;
+import com.slytechs.sdk.protocol.core.stack.ProtocolStackException;
+import com.slytechs.sdk.protocol.core.stack.processor.Processor;
 
 /**
  * Package-private dispatcher that bridges pcap callbacks to ProtocolStack

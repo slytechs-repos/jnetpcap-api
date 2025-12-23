@@ -6,23 +6,29 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.jnetpcap.Pcap;
-import org.jnetpcap.PcapException;
-import org.jnetpcap.PcapIf;
-import org.jnetpcap.constant.PcapDlt;
-import org.jnetpcap.constant.PcapTStampPrecision;
-
-import com.slytechs.jnet.core.api.memory.MemoryUnit;
-import com.slytechs.jnet.core.api.util.Named;
 import com.slytechs.jnet.jnetpcap.api.PacketHandler.OfPacket;
 import com.slytechs.jnet.jnetpcap.api.PacketHandler.OfPacketConsumer;
-import com.slytechs.jnet.protocol.api.Packet;
-import com.slytechs.jnet.protocol.api.stack.PacketMemoryPoolSettings;
-import com.slytechs.jnet.protocol.api.stack.ProtocolStack;
-import com.slytechs.jnet.protocol.tcpip.ethernet.Ethernet;
-import com.slytechs.jnet.protocol.tcpip.ip.Ip4;
+import com.slytechs.sdk.common.memory.MemoryUnit;
+import com.slytechs.sdk.common.util.Named;
+import com.slytechs.sdk.jnetpcap.Pcap;
+import com.slytechs.sdk.jnetpcap.PcapException;
+import com.slytechs.sdk.jnetpcap.PcapIf;
+import com.slytechs.sdk.jnetpcap.constant.PcapDlt;
+import com.slytechs.sdk.jnetpcap.constant.PcapTStampPrecision;
+import com.slytechs.sdk.jnetpcap.util.PcapVersionException;
+import com.slytechs.sdk.protocol.core.Packet;
+import com.slytechs.sdk.protocol.core.stack.PacketMemoryPoolSettings;
+import com.slytechs.sdk.protocol.core.stack.ProtocolStack;
+import com.slytechs.sdk.protocol.tcpip.ethernet.Ethernet;
+import com.slytechs.sdk.protocol.tcpip.ip.Ip4;
 
 public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
+	
+	public static String VERSION = Pcap.VERSION;
+	
+	public static void checkVersion(String applicationVersion) throws PcapVersionException {
+		PcapVersionException.throwIfVersionMismatch(NetPcap.VERSION, applicationVersion);
+	}
 
 	public static NetPcap create(PcapIf device) throws PcapException {
 		return create(device, ProtocolStack.packetDissectionOnly());
@@ -213,7 +219,7 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 	}
 
 	/**
-	 * @see com.slytechs.jnet.core.api.util.Named#name()
+	 * @see com.slytechs.sdk.common.util.Named#name()
 	 */
 	@Override
 	public String name() {

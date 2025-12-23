@@ -20,32 +20,32 @@ package com.slytechs.jnet.jnetpcap.processor;
 import java.io.File;
 import java.io.IOException;
 
-import org.jnetpcap.PcapException;
+import com.slytechs.sdk.jnetpcap.PcapException;
 import org.junit.jupiter.api.Test;
 
 import com.slytechs.jnet.jnetpcap.api.NetPcap;
 import com.slytechs.jnet.platform.api.common.NotFound;
 import com.slytechs.jnet.platform.api.util.HexStrings;
-import com.slytechs.jnet.protocol.api.meta.PacketFormat;
-import com.slytechs.jnet.protocol.tcpip.ip.Ip4;
-import com.slytechs.jnet.protocol.tcpip.ip.Ip4MtuProbeOption;
-import com.slytechs.jnet.protocol.tcpip.ip.Ip4MtuReplyOption;
-import com.slytechs.jnet.protocol.tcpip.ip.Ip4QuickStartOption;
-import com.slytechs.jnet.protocol.tcpip.ip.Ip4RecordRouteOption;
-import com.slytechs.jnet.protocol.tcpip.ip.Ip4RouterAlertOption;
-import com.slytechs.jnet.protocol.tcpip.ip.Ip4SecurityDefunctOption;
-import com.slytechs.jnet.protocol.tcpip.ip.Ip4TimestampOption;
-import com.slytechs.jnet.protocol.tcpip.ip.Ip4TracerouteOption;
-import com.slytechs.jnet.protocol.tcpip.ip.Ip6;
-import com.slytechs.jnet.protocol.tcpip.ip.Ip6AuthHeaderExtension;
-import com.slytechs.jnet.protocol.tcpip.ip.Ip6DestinationExtension;
-import com.slytechs.jnet.protocol.tcpip.ip.Ip6EcapsSecPayloadExtension;
-import com.slytechs.jnet.protocol.tcpip.ip.Ip6FragmentExtension;
-import com.slytechs.jnet.protocol.tcpip.ip.Ip6HopByHopExtension;
-import com.slytechs.jnet.protocol.tcpip.ip.Ip6MobilityExtension;
-import com.slytechs.jnet.protocol.tcpip.ip.Ip6RoutingExtension;
-import com.slytechs.jnet.protocol.tcpip.ip.Ip6Shim6Extension;
-import com.slytechs.jnet.protocol.tcpip.ppp.Ppp;
+import com.slytechs.sdk.protocol.core.meta.PacketFormat;
+import com.slytechs.sdk.protocol.tcpip.ip.Ip4;
+import com.slytechs.sdk.protocol.tcpip.ip.Ip4MtuProbeOption;
+import com.slytechs.sdk.protocol.tcpip.ip.Ip4MtuReplyOption;
+import com.slytechs.sdk.protocol.tcpip.ip.Ip4QuickStartOption;
+import com.slytechs.sdk.protocol.tcpip.ip.Ip4RecordRouteOption;
+import com.slytechs.sdk.protocol.tcpip.ip.Ip4RouterAlertOption;
+import com.slytechs.sdk.protocol.tcpip.ip.Ip4SecurityDefunctOption;
+import com.slytechs.sdk.protocol.tcpip.ip.Ip4TimestampOption;
+import com.slytechs.sdk.protocol.tcpip.ip.Ip4TracerouteOption;
+import com.slytechs.sdk.protocol.tcpip.ip.Ip6;
+import com.slytechs.sdk.protocol.tcpip.ip.Ip6AuthHeaderExtension;
+import com.slytechs.sdk.protocol.tcpip.ip.Ip6DestinationExtension;
+import com.slytechs.sdk.protocol.tcpip.ip.Ip6EcapsSecPayloadExtension;
+import com.slytechs.sdk.protocol.tcpip.ip.Ip6FragmentExtension;
+import com.slytechs.sdk.protocol.tcpip.ip.Ip6HopByHopExtension;
+import com.slytechs.sdk.protocol.tcpip.ip.Ip6MobilityExtension;
+import com.slytechs.sdk.protocol.tcpip.ip.Ip6RoutingExtension;
+import com.slytechs.sdk.protocol.tcpip.ip.Ip6Shim6Extension;
+import com.slytechs.sdk.protocol.tcpip.ppp.Ppp;
 
 /**
  * @author Mark Bednarczyk

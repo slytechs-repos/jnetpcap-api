@@ -26,22 +26,21 @@ import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
-import org.jnetpcap.BpFilter;
-import org.jnetpcap.Pcap;
-import org.jnetpcap.PcapActivatedException;
-import org.jnetpcap.PcapDumper;
-import org.jnetpcap.PcapException;
-import org.jnetpcap.PcapHandler.NativeCallback;
-import org.jnetpcap.PcapHandler.OfArray;
-import org.jnetpcap.PcapHandler.OfMemorySegment;
-import org.jnetpcap.PcapStat;
-import org.jnetpcap.constant.PcapDirection;
-import org.jnetpcap.constant.PcapDlt;
-import org.jnetpcap.constant.PcapTStampPrecision;
-import org.jnetpcap.constant.PcapTstampType;
-import org.jnetpcap.internal.PcapHeaderABI;
-
-import com.slytechs.jnet.protocol.api.Packet;
+import com.slytechs.sdk.jnetpcap.BpFilter;
+import com.slytechs.sdk.jnetpcap.Pcap;
+import com.slytechs.sdk.jnetpcap.PcapActivatedException;
+import com.slytechs.sdk.jnetpcap.PcapDumper;
+import com.slytechs.sdk.jnetpcap.PcapException;
+import com.slytechs.sdk.jnetpcap.PcapStat;
+import com.slytechs.sdk.jnetpcap.PcapHandler.NativeCallback;
+import com.slytechs.sdk.jnetpcap.PcapHandler.OfArray;
+import com.slytechs.sdk.jnetpcap.PcapHandler.OfMemorySegment;
+import com.slytechs.sdk.jnetpcap.constant.PcapDirection;
+import com.slytechs.sdk.jnetpcap.constant.PcapDlt;
+import com.slytechs.sdk.jnetpcap.constant.PcapTStampPrecision;
+import com.slytechs.sdk.jnetpcap.constant.PcapTstampType;
+import com.slytechs.sdk.jnetpcap.internal.PcapHeaderABI;
+import com.slytechs.sdk.protocol.core.Packet;
 
 /**
  * 
@@ -63,7 +62,7 @@ public abstract class BaseNetPcap {
 	/**
 	 * @throws PcapActivatedException
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#activate()
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#activate()
 	 */
 	public void activate() throws PcapActivatedException, PcapException {
 		pcapApi.activate();
@@ -71,7 +70,7 @@ public abstract class BaseNetPcap {
 
 	/**
 	 * 
-	 * @see org.jnetpcap.Pcap#breakloop()
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#breakloop()
 	 */
 	public void breakloop() {
 		pcapApi.breakloop();
@@ -80,7 +79,7 @@ public abstract class BaseNetPcap {
 	/**
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#canSetRfmon()
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#canSetRfmon()
 	 */
 	public boolean canSetRfmon() throws PcapException {
 		return pcapApi.canSetRfmon();
@@ -88,7 +87,7 @@ public abstract class BaseNetPcap {
 
 	/**
 	 * 
-	 * @see org.jnetpcap.Pcap#close()
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#close()
 	 */
 	public void close() {
 		pcapApi.close();
@@ -99,7 +98,7 @@ public abstract class BaseNetPcap {
 	 * @param optimize
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#compile(java.lang.String, boolean)
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#compile(java.lang.String, boolean)
 	 */
 	public BpFilter compile(String str, boolean optimize) throws PcapException {
 		return pcapApi.compile(str, optimize);
@@ -111,7 +110,7 @@ public abstract class BaseNetPcap {
 	 * @param netmask
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#compile(java.lang.String, boolean, int)
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#compile(java.lang.String, boolean, int)
 	 */
 	public BpFilter compile(String str, boolean optimize, int netmask) throws PcapException {
 		return pcapApi.compile(str, optimize, netmask);
@@ -120,7 +119,7 @@ public abstract class BaseNetPcap {
 	/**
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#datalink()
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#datalink()
 	 */
 	public PcapDlt datalink() throws PcapException {
 		return pcapApi.datalink();
@@ -129,7 +128,7 @@ public abstract class BaseNetPcap {
 	/**
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#dataLinkExt()
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#dataLinkExt()
 	 */
 	public PcapDlt dataLinkExt() throws PcapException {
 		return pcapApi.dataLinkExt();
@@ -140,7 +139,7 @@ public abstract class BaseNetPcap {
 	 * @param handler
 	 * @param user
 	 * @return
-	 * @see org.jnetpcap.Pcap#dispatch(int, org.jnetpcap.PcapHandler.NativeCallback,
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#dispatch(int, com.slytechs.sdk.jnetpcap.PcapHandler.NativeCallback,
 	 *      java.lang.foreign.MemorySegment)
 	 */
 	public int dispatch(int count, NativeCallback handler, MemorySegment user) {
@@ -154,7 +153,7 @@ public abstract class BaseNetPcap {
 	 * @param user
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#dispatch(int, org.jnetpcap.PcapHandler.OfArray,
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#dispatch(int, com.slytechs.sdk.jnetpcap.PcapHandler.OfArray,
 	 *      java.lang.Object)
 	 */
 	public <U> int dispatch(int count, OfArray<U> handler, U user) throws PcapException {
@@ -168,8 +167,8 @@ public abstract class BaseNetPcap {
 	 * @param user
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#dispatch(int,
-	 *      org.jnetpcap.PcapHandler.OfMemorySegment, java.lang.Object)
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#dispatch(int,
+	 *      com.slytechs.sdk.jnetpcap.PcapHandler.OfMemorySegment, java.lang.Object)
 	 */
 	public <U> int dispatch(int count, OfMemorySegment<U> handler, U user) throws PcapException {
 		return pcapApi.dispatch(count, handler, user);
@@ -181,7 +180,7 @@ public abstract class BaseNetPcap {
 	 * @param pcapDumper
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#dispatch(int, org.jnetpcap.PcapDumper)
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#dispatch(int, com.slytechs.sdk.jnetpcap.PcapDumper)
 	 */
 	public <U> int dispatch(int count, PcapDumper pcapDumper) throws PcapException {
 		return pcapApi.dispatch(count, pcapDumper);
@@ -191,7 +190,7 @@ public abstract class BaseNetPcap {
 	 * @param fname
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#dumpOpen(java.lang.String)
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#dumpOpen(java.lang.String)
 	 */
 	public PcapDumper dumpOpen(String fname) throws PcapException {
 		return pcapApi.dumpOpen(fname);
@@ -199,7 +198,7 @@ public abstract class BaseNetPcap {
 
 	/**
 	 * @return
-	 * @see org.jnetpcap.Pcap#geterr()
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#geterr()
 	 */
 	public String geterr() {
 		return pcapApi.geterr();
@@ -207,7 +206,7 @@ public abstract class BaseNetPcap {
 
 	/**
 	 * @return
-	 * @see org.jnetpcap.Pcap#getName()
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#getName()
 	 */
 	public final String getName() {
 		return pcapApi.getName();
@@ -216,7 +215,7 @@ public abstract class BaseNetPcap {
 	/**
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#getNonBlock()
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#getNonBlock()
 	 */
 	public boolean getNonBlock() throws PcapException {
 		return pcapApi.getNonBlock();
@@ -224,7 +223,7 @@ public abstract class BaseNetPcap {
 
 	/**
 	 * @return
-	 * @see org.jnetpcap.Pcap#getPcapHeaderABI()
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#getPcapHeaderABI()
 	 */
 	public PcapHeaderABI getPcapHeaderABI() {
 		return pcapApi.getPcapHeaderABI();
@@ -233,7 +232,7 @@ public abstract class BaseNetPcap {
 	/**
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#getTstampPrecision()
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#getTstampPrecision()
 	 */
 	public PcapTStampPrecision getTstampPrecision() throws PcapException {
 		return pcapApi.getTstampPrecision();
@@ -243,7 +242,7 @@ public abstract class BaseNetPcap {
 	 * @param array
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#inject(byte[])
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#inject(byte[])
 	 */
 	public final int inject(byte[] array) throws PcapException {
 		return pcapApi.inject(array);
@@ -255,7 +254,7 @@ public abstract class BaseNetPcap {
 	 * @param length
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#inject(byte[], int, int)
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#inject(byte[], int, int)
 	 */
 	public final int inject(byte[] array, int offset, int length) throws PcapException {
 		return pcapApi.inject(array, offset, length);
@@ -265,7 +264,7 @@ public abstract class BaseNetPcap {
 	 * @param buf
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#inject(java.nio.ByteBuffer)
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#inject(java.nio.ByteBuffer)
 	 */
 	public final int inject(ByteBuffer buf) throws PcapException {
 		return pcapApi.inject(buf);
@@ -276,7 +275,7 @@ public abstract class BaseNetPcap {
 	 * @param length
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#inject(java.lang.foreign.MemorySegment, int)
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#inject(java.lang.foreign.MemorySegment, int)
 	 */
 	public int inject(MemorySegment packet, int length) throws PcapException {
 		return pcapApi.inject(packet, length);
@@ -285,7 +284,7 @@ public abstract class BaseNetPcap {
 	/**
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#isSwapped()
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#isSwapped()
 	 */
 	public boolean isSwapped() throws PcapException {
 		return pcapApi.isSwapped();
@@ -294,7 +293,7 @@ public abstract class BaseNetPcap {
 	/**
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#listDataLinks()
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#listDataLinks()
 	 */
 	public List<PcapDlt> listDataLinks() throws PcapException {
 		return pcapApi.listDataLinks();
@@ -303,7 +302,7 @@ public abstract class BaseNetPcap {
 	/**
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#listTstampTypes()
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#listTstampTypes()
 	 */
 	public List<PcapTstampType> listTstampTypes() throws PcapException {
 		return pcapApi.listTstampTypes();
@@ -315,7 +314,7 @@ public abstract class BaseNetPcap {
 	 * @param handler
 	 * @param user
 	 * @return
-	 * @see org.jnetpcap.Pcap#loop(int, org.jnetpcap.PcapHandler.NativeCallback,
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#loop(int, com.slytechs.sdk.jnetpcap.PcapHandler.NativeCallback,
 	 *      java.lang.foreign.MemorySegment)
 	 */
 	public <U> int loop(int count, NativeCallback handler, MemorySegment user) {
@@ -329,7 +328,7 @@ public abstract class BaseNetPcap {
 	 * @param user
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#loop(int, org.jnetpcap.PcapHandler.OfArray,
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#loop(int, com.slytechs.sdk.jnetpcap.PcapHandler.OfArray,
 	 *      java.lang.Object)
 	 */
 	public <U> int loop(int count, OfArray<U> handler, U user) throws PcapException {
@@ -342,7 +341,7 @@ public abstract class BaseNetPcap {
 	 * @param handler
 	 * @param user
 	 * @return
-	 * @see org.jnetpcap.Pcap#loop(int, org.jnetpcap.PcapHandler.OfMemorySegment,
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#loop(int, com.slytechs.sdk.jnetpcap.PcapHandler.OfMemorySegment,
 	 *      java.lang.Object)
 	 */
 	public <U> int loop(int count, OfMemorySegment<U> handler, U user) {
@@ -355,7 +354,7 @@ public abstract class BaseNetPcap {
 	 * @param pcapDumper
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#loop(int, org.jnetpcap.PcapDumper)
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#loop(int, com.slytechs.sdk.jnetpcap.PcapDumper)
 	 */
 	public <U> int loop(int count, PcapDumper pcapDumper) throws PcapException {
 		return pcapApi.loop(count, pcapDumper);
@@ -364,7 +363,7 @@ public abstract class BaseNetPcap {
 	/**
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#majorVersion()
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#majorVersion()
 	 */
 	public int majorVersion() throws PcapException {
 		return pcapApi.majorVersion();
@@ -373,7 +372,7 @@ public abstract class BaseNetPcap {
 	/**
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#minorVersion()
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#minorVersion()
 	 */
 	public int minorVersion() throws PcapException {
 		return pcapApi.minorVersion();
@@ -382,7 +381,7 @@ public abstract class BaseNetPcap {
 	/**
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#next()
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#next()
 	 */
 	public abstract Packet next() throws PcapException;
 
@@ -390,14 +389,14 @@ public abstract class BaseNetPcap {
 	 * @return
 	 * @throws PcapException
 	 * @throws TimeoutException
-	 * @see org.jnetpcap.Pcap#nextEx()
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#nextEx()
 	 */
 	public abstract Packet nextEx() throws PcapException, TimeoutException;
 
 	/**
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#order()
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#order()
 	 */
 	public final ByteOrder order() throws PcapException {
 		return pcapApi.order();
@@ -406,7 +405,7 @@ public abstract class BaseNetPcap {
 	/**
 	 * @param prefix
 	 * @return
-	 * @see org.jnetpcap.Pcap#perror(java.lang.String)
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#perror(java.lang.String)
 	 */
 	public Pcap perror(String prefix) {
 		return pcapApi.perror(prefix);
@@ -415,7 +414,7 @@ public abstract class BaseNetPcap {
 	/**
 	 * @param buf
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#sendPacket(byte[])
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#sendPacket(byte[])
 	 */
 	public final void sendPacket(byte[] buf) throws PcapException {
 		pcapApi.sendPacket(buf);
@@ -426,7 +425,7 @@ public abstract class BaseNetPcap {
 	 * @param offset
 	 * @param length
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#sendPacket(byte[], int, int)
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#sendPacket(byte[], int, int)
 	 */
 	public final void sendPacket(byte[] buf, int offset, int length) throws PcapException {
 		pcapApi.sendPacket(buf, offset, length);
@@ -435,7 +434,7 @@ public abstract class BaseNetPcap {
 	/**
 	 * @param buf
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#sendPacket(java.nio.ByteBuffer)
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#sendPacket(java.nio.ByteBuffer)
 	 */
 	public final void sendPacket(ByteBuffer buf) throws PcapException {
 		pcapApi.sendPacket(buf);
@@ -445,7 +444,7 @@ public abstract class BaseNetPcap {
 	 * @param packet
 	 * @param length
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#sendPacket(java.lang.foreign.MemorySegment, int)
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#sendPacket(java.lang.foreign.MemorySegment, int)
 	 */
 	public void sendPacket(MemorySegment packet, int length) throws PcapException {
 		pcapApi.sendPacket(packet, length);
@@ -455,7 +454,7 @@ public abstract class BaseNetPcap {
 	 * @param bufferSize
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#setBufferSize(int)
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#setBufferSize(int)
 	 */
 	public Pcap setBufferSize(int bufferSize) throws PcapException {
 		return pcapApi.setBufferSize(bufferSize);
@@ -465,7 +464,7 @@ public abstract class BaseNetPcap {
 	 * @param dlt
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#setDatalink(int)
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#setDatalink(int)
 	 */
 	public Pcap setDatalink(int dlt) throws PcapException {
 		return pcapApi.setDatalink(dlt);
@@ -475,7 +474,7 @@ public abstract class BaseNetPcap {
 	 * @param dlt
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#setDatalink(java.util.Optional)
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#setDatalink(java.util.Optional)
 	 */
 	public Pcap setDatalink(Optional<PcapDlt> dlt) throws PcapException {
 		return pcapApi.setDatalink(dlt);
@@ -485,7 +484,7 @@ public abstract class BaseNetPcap {
 	 * @param dlt
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#setDatalink(org.jnetpcap.constant.PcapDlt)
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#setDatalink(com.slytechs.sdk.jnetpcap.constant.PcapDlt)
 	 */
 	public Pcap setDatalink(PcapDlt dlt) throws PcapException {
 		return pcapApi.setDatalink(dlt);
@@ -495,7 +494,7 @@ public abstract class BaseNetPcap {
 	 * @param dir
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#setDirection(int)
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#setDirection(int)
 	 */
 	public Pcap setDirection(int dir) throws PcapException {
 		return pcapApi.setDirection(dir);
@@ -505,7 +504,7 @@ public abstract class BaseNetPcap {
 	 * @param dir
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#setDirection(java.util.Optional)
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#setDirection(java.util.Optional)
 	 */
 	public Pcap setDirection(Optional<PcapDirection> dir) throws PcapException {
 		return pcapApi.setDirection(dir);
@@ -515,7 +514,7 @@ public abstract class BaseNetPcap {
 	 * @param dir
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#setDirection(org.jnetpcap.constant.PcapDirection)
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#setDirection(com.slytechs.sdk.jnetpcap.constant.PcapDirection)
 	 */
 	public Pcap setDirection(PcapDirection dir) throws PcapException {
 		return pcapApi.setDirection(dir);
@@ -525,7 +524,7 @@ public abstract class BaseNetPcap {
 	 * @param bpfProgram
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#setFilter(org.jnetpcap.BpFilter)
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#setFilter(com.slytechs.sdk.jnetpcap.BpFilter)
 	 */
 	public Pcap setFilter(BpFilter bpfProgram) throws PcapException {
 		return pcapApi.setFilter(bpfProgram);
@@ -535,7 +534,7 @@ public abstract class BaseNetPcap {
 	 * @param bpfProgram
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#setFilter(java.util.Optional)
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#setFilter(java.util.Optional)
 	 */
 	public Pcap setFilter(Optional<BpFilter> bpfProgram) throws PcapException {
 		return pcapApi.setFilter(bpfProgram);
@@ -545,7 +544,7 @@ public abstract class BaseNetPcap {
 	 * @param enable
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#setImmediateMode(boolean)
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#setImmediateMode(boolean)
 	 */
 	public Pcap setImmediateMode(boolean enable) throws PcapException {
 		return pcapApi.setImmediateMode(enable);
@@ -555,7 +554,7 @@ public abstract class BaseNetPcap {
 	 * @param blockMode
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#setNonBlock(boolean)
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#setNonBlock(boolean)
 	 */
 	public Pcap setNonBlock(boolean blockMode) throws PcapException {
 		return pcapApi.setNonBlock(blockMode);
@@ -565,7 +564,7 @@ public abstract class BaseNetPcap {
 	 * @param promiscousMode
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#setPromisc(boolean)
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#setPromisc(boolean)
 	 */
 	public Pcap setPromisc(boolean promiscousMode) throws PcapException {
 		return pcapApi.setPromisc(promiscousMode);
@@ -575,7 +574,7 @@ public abstract class BaseNetPcap {
 	 * @param rfMonitor
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#setRfmon(boolean)
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#setRfmon(boolean)
 	 */
 	public Pcap setRfmon(boolean rfMonitor) throws PcapException {
 		return pcapApi.setRfmon(rfMonitor);
@@ -585,7 +584,7 @@ public abstract class BaseNetPcap {
 	 * @param snaplen
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#setSnaplen(int)
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#setSnaplen(int)
 	 */
 	public Pcap setSnaplen(int snaplen) throws PcapException {
 		return pcapApi.setSnaplen(snaplen);
@@ -595,7 +594,7 @@ public abstract class BaseNetPcap {
 	 * @param timeoutInMillis
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#setTimeout(int)
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#setTimeout(int)
 	 */
 	public Pcap setTimeout(int timeoutInMillis) throws PcapException {
 		return pcapApi.setTimeout(timeoutInMillis);
@@ -605,7 +604,7 @@ public abstract class BaseNetPcap {
 	 * @param precision
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#setTstampPrecision(org.jnetpcap.constant.PcapTStampPrecision)
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#setTstampPrecision(com.slytechs.sdk.jnetpcap.constant.PcapTStampPrecision)
 	 */
 	public Pcap setTstampPrecision(PcapTStampPrecision precision) throws PcapException {
 		return pcapApi.setTstampPrecision(precision);
@@ -615,7 +614,7 @@ public abstract class BaseNetPcap {
 	 * @param type
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#setTstampType(org.jnetpcap.constant.PcapTstampType)
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#setTstampType(com.slytechs.sdk.jnetpcap.constant.PcapTstampType)
 	 */
 	public Pcap setTstampType(PcapTstampType type) throws PcapException {
 		return pcapApi.setTstampType(type);
@@ -624,7 +623,7 @@ public abstract class BaseNetPcap {
 	/**
 	 * @param exceptionHandler
 	 * @return
-	 * @see org.jnetpcap.Pcap#setUncaughtExceptionHandler(java.util.function.Consumer)
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#setUncaughtExceptionHandler(java.util.function.Consumer)
 	 */
 	public Pcap setUncaughtExceptionHandler(Consumer<? super Throwable> exceptionHandler) {
 		return pcapApi.setUncaughtExceptionHandler(exceptionHandler);
@@ -633,7 +632,7 @@ public abstract class BaseNetPcap {
 	/**
 	 * @param exceptionHandler
 	 * @return
-	 * @see org.jnetpcap.Pcap#setUncaughtExceptionHandler(java.lang.Thread.UncaughtExceptionHandler)
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#setUncaughtExceptionHandler(java.lang.Thread.UncaughtExceptionHandler)
 	 */
 	public Pcap setUncaughtExceptionHandler(UncaughtExceptionHandler exceptionHandler) {
 		return pcapApi.setUncaughtExceptionHandler(exceptionHandler);
@@ -642,7 +641,7 @@ public abstract class BaseNetPcap {
 	/**
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#snapshot()
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#snapshot()
 	 */
 	public int snapshot() throws PcapException {
 		return pcapApi.snapshot();
@@ -651,7 +650,7 @@ public abstract class BaseNetPcap {
 	/**
 	 * @return
 	 * @throws PcapException
-	 * @see org.jnetpcap.Pcap#stats()
+	 * @see com.slytechs.sdk.jnetpcap.Pcap#stats()
 	 */
 	public PcapStat stats() throws PcapException {
 		return pcapApi.stats();

@@ -21,11 +21,11 @@
  * 
  * @author Mark Bednarczyk.
  */
-module com.slytechs.jnet.jnetpcap.api {
+module com.slytechs.sdk.jnetpcap.api {
 	exports com.slytechs.jnet.jnetpcap.api;
 
-	requires transitive org.jnetpcap;
-	requires transitive com.slytechs.jnet.protocol.api;
-	requires transitive com.slytechs.jnet.protocol.tcpip;
-	requires transitive com.slytechs.jnet.core.api;
+	requires transitive com.slytechs.sdk.jnetpcap;
+	requires transitive com.slytechs.sdk.protocol.core;
+	requires transitive com.slytechs.sdk.protocol.tcpip;
+	requires transitive com.slytechs.sdk.common;
 }

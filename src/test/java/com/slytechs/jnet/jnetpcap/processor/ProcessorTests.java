@@ -20,7 +20,7 @@ package com.slytechs.jnet.jnetpcap.processor;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
-import org.jnetpcap.PcapException;
+import com.slytechs.sdk.jnetpcap.PcapException;
 import org.junit.jupiter.api.Test;
 
 import com.slytechs.jnet.jnetpcap.api.NetPcap;

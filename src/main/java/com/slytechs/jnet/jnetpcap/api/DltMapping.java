@@ -17,7 +17,7 @@
  */
 package com.slytechs.jnet.jnetpcap.api;
 
-import org.jnetpcap.constant.PcapDlt;
+import com.slytechs.sdk.jnetpcap.constant.PcapDlt;
 
 /**
  * Maps pcap DLT (Data Link Type) values to L2 frame type constants.
@@ -54,7 +54,7 @@ public final class DltMapping {
 
     // ════════════════════════════════════════════════════════════════════════════
     // L2FrameType Constants (duplicated to avoid module dependency)
-    // These MUST match com.slytechs.jnet.protocol.api.L2FrameType
+    // These MUST match com.slytechs.sdk.protocol.core.L2FrameType
     // ════════════════════════════════════════════════════════════════════════════
 
     // @formatter:off
