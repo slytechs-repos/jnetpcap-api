@@ -23,9 +23,12 @@
  */
 module com.slytechs.sdk.jnetpcap.api {
 	exports com.slytechs.jnet.jnetpcap.api;
+	exports com.slytechs.jnet.jnetpcap.api.foreign to com.slytechs.sdk.common;
 
 	requires transitive com.slytechs.sdk.jnetpcap;
 	requires transitive com.slytechs.sdk.protocol.core;
 	requires transitive com.slytechs.sdk.protocol.tcpip;
 	requires transitive com.slytechs.sdk.common;
+	requires lexactivator;
+
 }
