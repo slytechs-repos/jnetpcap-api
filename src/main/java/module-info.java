@@ -23,7 +23,9 @@
  */
 module com.slytechs.sdk.jnetpcap.api {
 	exports com.slytechs.jnet.jnetpcap.api;
-	exports com.slytechs.jnet.jnetpcap.api.foreign to com.slytechs.sdk.common;
+
+	opens com.slytechs.jnet.jnetpcap.api.foreign
+			to com.slytechs.sdk.common;
 
 	requires transitive com.slytechs.sdk.jnetpcap;
 	requires transitive com.slytechs.sdk.protocol.core;
