@@ -1,112 +1,309 @@
-![Maven Central](https://img.shields.io/maven-central/v/com.slytechs.jnet.jnetpcap/jnetpcap-api)
-
 # jNetPcap API
-A full featured, protocol enabled, java API with IP Fragment tracking and reassembly.
 
-## Overview
+[![Java](https://img.shields.io/badge/Java-22%2B-orange.svg)](https://openjdk.java.net/projects/jdk/22/) [![Maven Central](https://img.shields.io/badge/Maven-Central-blue.svg)](https://search.maven.org/artifact/com.slytechs.sdk/jnetpcap-api) [![License](https://img.shields.io/badge/License-Apache%20v2-green.svg)](https://claude.ai/chat/LICENSE)
 
-**jNetPcap API** is a Java module, which provides the main API (application programming interface) for you application. The API is build on and extends the lower level [**jnetpcap-wrapper**][jnetpcap-wrapper] module for raw **libpcap** capabilities. 
+High-level packet capture and protocol analysis API for the jNetPcap SDK.
 
-The API provides extensive functionality for 
+**jnetpcap-api** extends the low-level libpcap bindings with protocol dissection, IP fragment reassembly, TCP stream reconstruction, and zero-allocation packet processing.
 
-* packet processing
-* deep packet inspection
-* protocol analysis
-* packet generation for transmission.
+------
 
-[**jNetPcap SDK**][jnetpcap-sdk], which is a parent module for all of **jNetPcap API** artifacts, ensures that all of the available protocol packs and required modules are available for use.
+## Table of Contents
 
-## How to use this library
-The **jNetPcap API** library provides the starting point for your application. 
+1. [Quick Start](https://claude.ai/chat/2b3c34b0-d15b-43e9-95df-1d214208b87d#quick-start)
+2. [Features](https://claude.ai/chat/2b3c34b0-d15b-43e9-95df-1d214208b87d#features)
+3. [Examples](https://claude.ai/chat/2b3c34b0-d15b-43e9-95df-1d214208b87d#examples)
+4. [Architecture](https://claude.ai/chat/2b3c34b0-d15b-43e9-95df-1d214208b87d#architecture)
+5. [Advanced Installation](https://claude.ai/chat/2b3c34b0-d15b-43e9-95df-1d214208b87d#advanced-installation)
+6. [Documentation](https://claude.ai/chat/2b3c34b0-d15b-43e9-95df-1d214208b87d#documentation)
 
-### Setup
-The library requires [**jnetpcap-wrapper**][jnetpcap-wrapper], a low level *libpcap* module and the [**protocol-pack-sdk**][protocol-pack-sdk] modules which provide runtime and protocol support to **jNetPcap API**, grouped in numerous protocol packs.
+------
 
-#### Maven Central setup
-The easiest way to setup your application, is to add `jnetpcap-api` module as a dependency in your Maven `pom.xml` project file. This will allow Maven to download all of the required prerequisites for you project.
+## Quick Start
 
-```
+### Installation
+
+Add a single dependency:
+
+```xml
 <dependency>
-	<groupId>com.slytechs.jnet.jnetpcap</groupId>
-	<artifactId>jnetpcap-api</artifactId>
-	<version>0.10.0</version>
+    <groupId>com.slytechs.sdk</groupId>
+    <artifactId>jnetpcap-sdk</artifactId>
+    <version>3.0.0</version>
 </dependency>
 ```
 
-## Examples
-To get started lets take a look at a couple of examples.
+That's it. All dependencies (bindings, protocols, etc.) are pulled transitively.
 
-Capturing packets with full protocol header access is easy.
+### Hello World
+
 ```java
+import com.slytechs.jnet.jnetpcap.api.NetPcap;
+
 void main() throws PcapException {
-	/* Pcap capture file to read */
-	final String PCAP_FILE = "pcaps/HTTP.cap";
-	
-	/*
-	 * Automatically close Pcap resource when done and checks the client and
-	 * installed runtime API versions to ensure they are compatible.
-	 */
-	try (NetPcap pcap = NetPcap.openOffline(PCAP_FILE)) {
-
-		/* Set a pretty print formatter to toString() method */
-		pcap.setPacketFormatter(new PacketFormat());
-
-		/* Number of packets to capture */
-		final int PACKET_COUNT = 10;
-
-		/* API API! Create protocol headers and reuse inside the dispatch handler */
-		final Ethernet ethernet = new Ethernet();
-		final Ip4 ip4 = new Ip4();
-		final Tcp tcp = new Tcp();
-		final Ip4RouterOption router = new Ip4RouterOption();
-
-		/* Capture packets and access protocol headers */
-		pcap.dispatch(PACKET_COUNT, (String user, Packet packet) -> { // API API
-
-			// If present, printout ethernet header
-			if (packet.hasHeader(ethernet))
-				System.out.println(ethernet);
-			
-			// If present, printout ip4 header
-			if (packet.hasHeader(ip4))
-				System.out.println(ip4);
-
-			// If present, printout IPv4.router header extension
-			if (packet.hasHeader(ip4) && ip4.hasExtension(router))
-				System.out.println(router);
-
-			// If present, printout tcp header
-			if (packet.hasHeader(tcp))
-				System.out.println(tcp);
-
-		}, "Example - Hello World");
-	}
+    
+    try (var pcap = NetPcap.openOffline("capture.pcap")) {
+        
+        pcap.dispatch(10, packet -> {
+            System.out.println(packet);
+        });
+    }
 }
 ```
-Here is a sample of all the IPF options and how to setup. The dispatched `Ip4` containing packets will have IPv4 datagrams fully reassembled, and optionally you can supress individual IP fragments, tracking and many other IPF related options.:
-```java
-/* Enable IP fragmentation reassembly and use many IPF options */
-pcap
-		.enableIpf(true) // Enables both IPF reassembly and tracking
-		.enableIpfReassembly(true) // Default, but this is how you disable
-		.enableIpfTracking(true) // Default, but this is how you disable
-		.enableIpfAttachComplete(true) // Attach only complete dgrams to last IPF
-		.enableIpfAttachIncomplete(true) // Attach incomplete dgrams as well to last IPF
-		.enableIpfPassthroughFragments(true) // Pass through original IP fragments
-		.enableIpfPassthroughComplete(true) // Pass through new reassembled dgrams
-		.enableIpfPassthroughIncomplete(true) // Pass through new incomplete dgrams
-		.setIpfTimeoutOnLast(false) // Otherwise only timeout on duration
-		.setIpfBufferSize(1, MemoryUnit.MEGABYTES) // Total reassembly buffer size
-		.setIpfTableSize(16, CountUnit.KILO) // How many hash table entries
-		.setIpfMaxFragmentCount(16) // Max number of IP fragments per hash entry
-		.setIpfTimeoutMilli(1200) // Timeout in system or packet time for incomplete dgrams
-		.setIpfMaxDgramSize(64, MemoryUnit.KILOBYTES) // Max reassembled IP dgram size
-		.useIpfPacketTimesource() // Or System timesource
-		.activateIpf(); // Or Pcap.activate() if using Pcap.create(...)
+
+### JVM Arguments
+
+```bash
+java --enable-native-access=com.slytechs.jnet.jnetpcap -jar myapp.jar
 ```
 
-[protocol-pack-sdk]: <https://github.com/slytechs-repos/protocol-pack-sdk>
-[jnetpcap-sdk]: <https://github.com/slytechs-repos/jnetpcap-sdk>
-[jnetpcap-wrapper]: <https://github.com/slytechs-repos/jnetpcap-wrapper>
-[jnetpcap-examples]: <https://github.com/slytechs-repos/jnetpcap-examples>
-[jnetworks-sdk]: <https://github.com/slytechs-repos/jnetworks-sdk>
+------
+
+## Features
+
+- **Protocol Dissection** - Automatic parsing of L2-L7 protocols
+- **IP Fragment Reassembly** - Reconstruct fragmented datagrams
+- **TCP Stream Reconstruction** - Reassemble TCP segments in order
+- **Zero-Allocation Processing** - Reusable headers for 100M+ pps
+- **Multiple Protocol Packs** - TCP/IP, Web, Infrastructure
+
+------
+
+## Examples
+
+### Zero-Allocation Header Access
+
+Headers are designed for reuse - allocate once, bind many times:
+
+```java
+import com.slytechs.jnet.jnetpcap.api.NetPcap;
+import com.slytechs.sdk.protocol.tcpip.ip.Ip4;
+import com.slytechs.sdk.protocol.tcpip.tcp.Tcp;
+
+void main() throws PcapException {
+    
+    // Allocate headers ONCE outside hot path
+    Ip4 ip4 = new Ip4();
+    Tcp tcp = new Tcp();
+    
+    try (var pcap = NetPcap.openOffline("capture.pcap")) {
+        
+        pcap.dispatch(Pcap.LOOP_INFINITE, packet -> {
+            
+            // hasHeader() checks presence AND binds header to packet data
+            if (packet.hasHeader(ip4)) {
+                System.out.printf("IP: %s -> %s%n", ip4.src(), ip4.dst());
+            }
+            
+            if (packet.hasHeader(tcp)) {
+                System.out.printf("TCP: %d -> %d [%s]%n", 
+                    tcp.srcPort(), tcp.dstPort(), tcp.flags());
+            }
+        });
+    }
+}
+```
+
+### Live Capture with Filter
+
+```java
+void main() throws PcapException {
+    Ip4 ip4 = new Ip4();
+    Tcp tcp = new Tcp();
+    
+    try (var pcap = NetPcap.openLive("eth0")) {
+        
+        pcap.setFilter("tcp port 443");
+        
+        pcap.dispatch(1000, packet -> {
+            if (packet.hasHeader(ip4) && packet.hasHeader(tcp)) {
+                System.out.printf("%s:%d -> %s:%d%n",
+                    ip4.src(), tcp.srcPort(),
+                    ip4.dst(), tcp.dstPort());
+            }
+        });
+    }
+}
+```
+
+### Tunnel Detection (Depth Parameter)
+
+For tunneled protocols like IP-in-IP or Q-in-Q:
+
+```java
+Ip4 outerIp = new Ip4();
+Ip4 innerIp = new Ip4();
+
+pcap.dispatch(count, packet -> {
+    
+    // Depth 0 = outermost, Depth 1 = first tunnel
+    if (packet.hasHeader(outerIp, 0) && packet.hasHeader(innerIp, 1)) {
+        System.out.printf("Tunnel: %s -> %s encapsulates %s -> %s%n",
+            outerIp.src(), outerIp.dst(),
+            innerIp.src(), innerIp.dst());
+    }
+});
+```
+
+### TCP Options
+
+```java
+Tcp tcp = new Tcp();
+TcpOptions options = new TcpOptions();
+
+pcap.dispatch(count, packet -> {
+    
+    if (packet.hasHeader(tcp) && tcp.hasOptions()) {
+        options.bind(tcp);
+        
+        if (options.hasMss())
+            System.out.println("MSS: " + options.mss());
+        if (options.hasWindowScale())
+            System.out.println("WScale: " + options.windowScale());
+        if (options.hasTimestamps())
+            System.out.printf("TS: val=%d, ecr=%d%n", 
+                options.tsVal(), options.tsEcr());
+    }
+});
+```
+
+### Packet Descriptor
+
+```java
+pcap.dispatch(10, packet -> {
+    var desc = packet.getPacketDescriptor();
+    System.out.println(desc);
+});
+
+// Output:
+// Net Packet Descriptor: cap=74 wire=74 ts=1299012579821
+//   Protocol Bitmap = 0x00000015 (ETH IPv4 TCP)
+//   Protocol Count = 3
+```
+
+------
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     Your Application                        │
+└───────────────────────────┬─────────────────────────────────┘
+                            │
+┌───────────────────────────▼─────────────────────────────────┐
+│                      jnetpcap-api                           │
+│           (NetPcap, Packet, Protocol Dissection)            │
+└───────────────────────────┬─────────────────────────────────┘
+                            │
+        ┌───────────────────┼───────────────────┐
+        │                   │                   │
+        ▼                   ▼                   ▼
+┌───────────────┐   ┌───────────────┐   ┌───────────────┐
+│ sdk-protocol  │   │ sdk-protocol  │   │ sdk-protocol  │
+│    -tcpip     │   │     -web      │   │    -infra     │
+└───────────────┘   └───────────────┘   └───────────────┘
+        │                   │                   │
+        └───────────────────┼───────────────────┘
+                            │
+┌───────────────────────────▼─────────────────────────────────┐
+│                   jnetpcap-bindings                         │
+│              (Panama FFM bindings to libpcap)               │
+└───────────────────────────┬─────────────────────────────────┘
+                            │
+┌───────────────────────────▼─────────────────────────────────┐
+│                  Native libpcap / Npcap                     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+------
+
+## Advanced Installation
+
+### Cherry-Pick Modules (With BOM)
+
+For fine-grained control over which modules to include:
+
+```xml
+<dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>com.slytechs.sdk</groupId>
+            <artifactId>sdk-bom</artifactId>
+            <version>3.0.0</version>
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
+    </dependencies>
+</dependencyManagement>
+
+<dependencies>
+    <!-- Pick only what you need - versions managed by BOM -->
+    <dependency>
+        <groupId>com.slytechs.sdk</groupId>
+        <artifactId>jnetpcap-api</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>com.slytechs.sdk</groupId>
+        <artifactId>sdk-protocol-tcpip</artifactId>
+    </dependency>
+</dependencies>
+```
+
+### Gradle
+
+```groovy
+dependencies {
+    implementation 'com.slytechs.sdk:jnetpcap-sdk:3.0.0'
+}
+```
+
+### Module Declaration
+
+```java
+module your.app {
+    requires com.slytechs.jnet.jnetpcap.api;
+}
+```
+
+------
+
+## Native Library Requirements
+
+| Platform | Library | Installation                    |
+| -------- | ------- | ------------------------------- |
+| Linux    | libpcap | `apt install libpcap-dev`       |
+| macOS    | libpcap | Pre-installed                   |
+| Windows  | Npcap   | [npcap.com](https://npcap.com/) |
+
+------
+
+## Documentation
+
+- [GitHub Wiki](https://github.com/slytechs-repos/jnetpcap-api/wiki) - User guides and tutorials
+- [Javadocs](https://slytechs-repos.github.io/jnetpcap-api/) - API documentation
+- [Examples](https://github.com/slytechs-repos/jnetpcap-examples) - Sample code
+
+------
+
+## Related Projects
+
+| Module                                                       | Description                        |
+| ------------------------------------------------------------ | ---------------------------------- |
+| [jnetpcap-sdk](https://github.com/slytechs-repos/jnetpcap-sdk) | Starter - pulls all dependencies   |
+| [jnetpcap-bindings](https://github.com/slytechs-repos/jnetpcap-bindings) | Low-level libpcap bindings         |
+| [sdk-protocol-tcpip](https://github.com/slytechs-repos/sdk-protocol-tcpip) | TCP/IP protocol pack               |
+| [sdk-protocol-web](https://github.com/slytechs-repos/sdk-protocol-web) | Web protocol pack (HTTP, TLS, DNS) |
+
+------
+
+## License
+
+Licensed under Apache License v2.0. See [LICENSE](https://claude.ai/chat/LICENSE) for details.
+
+------
+
+**Sly Technologies Inc.** - High-performance network analysis solutions
+
+Website: [www.slytechs.com](https://www.slytechs.com/)
+
+------

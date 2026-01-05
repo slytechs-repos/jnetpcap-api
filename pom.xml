@@ -1,34 +1,83 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<modelVersion>4.0.0</modelVersion>
-	<url>https://www.slytechs.com</url>
-	<parent>
-		<groupId>com.slytechs.jnet.jnetpcap</groupId>
-		<artifactId>jnetpcap-sdk-parent</artifactId>
-		<version>0.10.0</version>
-	</parent>
-	<artifactId>jnetpcap-api</artifactId>
-	<!-- mvn versions:set -DnewVersion=_new_version_ -->
-	<name>jNetPcap API</name>
-	<description>A protocol aware PCAP API for packet dissection, reassembly and
-		analysis</description>
+<project xmlns="http://maven.apache.org/POM/4.0.0" 
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    
+    <groupId>com.slytechs.sdk</groupId>
+    <artifactId>jnetpcap-api</artifactId>
+    <version>3.0.0-SNAPSHOT</version>
+    <name>jNetPcap API</name>
+    <description>High-level jNetPcap API with protocol support</description>
+    
+    <properties>
+        <maven.compiler.source>22</maven.compiler.source>
+        <maven.compiler.target>22</maven.compiler.target>
+        <maven.compiler.release>22</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
 
-	<dependencies>
-		<dependency>
-			<groupId>com.slytechs.jnet.jnetpcap</groupId>
-			<artifactId>jnetpcap-wrapper</artifactId>
-			<version>2.1.0</version>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.slytechs.sdk</groupId>
+                <artifactId>sdk-bom</artifactId>
+                <version>3.0.0-SNAPSHOT</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+    
+    <dependencies>
+        <!-- SDK modules - versions managed by BOM -->
+        <dependency>
+            <groupId>com.slytechs.sdk</groupId>
+            <artifactId>sdk-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.slytechs.sdk</groupId>
+            <artifactId>jnetpcap-bindings</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.slytechs.sdk</groupId>
+            <artifactId>sdk-protocol-core</artifactId>
+        </dependency>
+	    <dependency>
+	        <groupId>com.slytechs.sdk</groupId>
+	        <artifactId>sdk-protocol-tcpip</artifactId>
+	    </dependency>
+        
+        <!-- Test -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+		    <groupId>com.cryptlex.lexactivator</groupId>
+		    <artifactId>lexactivator</artifactId>
 		</dependency>
-		<dependency>
-			<groupId>com.slytechs.jnet.protocol</groupId>
-			<artifactId>protocol-pack-api</artifactId>
-			<version>0.10.0</version>
-		</dependency>
-		<dependency>
-			<groupId>com.slytechs.jnet.protocol</groupId>
-			<artifactId>protocol-pack-web</artifactId>
-			<version>0.10.0</version>
-		</dependency>
-	</dependencies>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+            </plugin>
+            <plugin>
+				<groupId>org.sonatype.central</groupId>
+				<artifactId>central-publishing-maven-plugin</artifactId>
+				<version>0.9.0</version>  <!-- Latest as of early 2026 -->
+				<extensions>true</extensions>
+				<configuration>
+					<publishingServerId>central</publishingServerId>
+				</configuration>
+			</plugin>
+        </plugins>
+    </build>
 </project>

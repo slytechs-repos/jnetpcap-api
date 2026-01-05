@@ -19,14 +19,18 @@
 /**
  * Provides packet dissection and IP fragment reassembly services.
  * 
- * @author Sly Technologies Inc.
- * @author repos@slytechs.com
- *
+ * @author Mark Bednarczyk.
  */
-module com.slytechs.jnet.jnetpcap {
-	exports com.slytechs.jnet.jnetpcap;
+module com.slytechs.sdk.jnetpcap.api {
+	exports com.slytechs.jnet.jnetpcap.api;
 
-	requires transitive org.jnetpcap;
-	requires transitive com.slytechs.jnet.protocol;
-	requires com.slytechs.jnet.jnetruntime;
+	opens com.slytechs.jnet.jnetpcap.api.foreign
+			to com.slytechs.sdk.common;
+
+	requires transitive com.slytechs.sdk.jnetpcap;
+	requires transitive com.slytechs.sdk.protocol.core;
+	requires transitive com.slytechs.sdk.protocol.tcpip;
+	requires transitive com.slytechs.sdk.common;
+	requires lexactivator;
+
 }
