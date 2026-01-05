@@ -10,12 +10,13 @@ High-level packet capture and protocol analysis API for the jNetPcap SDK.
 
 ## Table of Contents
 
-1. [Quick Start](https://claude.ai/chat/2b3c34b0-d15b-43e9-95df-1d214208b87d#quick-start)
-2. [Features](https://claude.ai/chat/2b3c34b0-d15b-43e9-95df-1d214208b87d#features)
-3. [Examples](https://claude.ai/chat/2b3c34b0-d15b-43e9-95df-1d214208b87d#examples)
-4. [Architecture](https://claude.ai/chat/2b3c34b0-d15b-43e9-95df-1d214208b87d#architecture)
-5. [Advanced Installation](https://claude.ai/chat/2b3c34b0-d15b-43e9-95df-1d214208b87d#advanced-installation)
-6. [Documentation](https://claude.ai/chat/2b3c34b0-d15b-43e9-95df-1d214208b87d#documentation)
+1. [Quick Start](https://claude.ai/chat/7bb340ad-df75-49f3-8a46-20bf36a9141c#quick-start)
+2. [License Activation](https://claude.ai/chat/7bb340ad-df75-49f3-8a46-20bf36a9141c#license-activation)
+3. [Features](https://claude.ai/chat/7bb340ad-df75-49f3-8a46-20bf36a9141c#features)
+4. [Examples](https://claude.ai/chat/7bb340ad-df75-49f3-8a46-20bf36a9141c#examples)
+5. [Architecture](https://claude.ai/chat/7bb340ad-df75-49f3-8a46-20bf36a9141c#architecture)
+6. [Advanced Installation](https://claude.ai/chat/7bb340ad-df75-49f3-8a46-20bf36a9141c#advanced-installation)
+7. [Documentation](https://claude.ai/chat/7bb340ad-df75-49f3-8a46-20bf36a9141c#documentation)
 
 ------
 
@@ -40,22 +41,54 @@ That's it. All dependencies (bindings, protocols, etc.) are pulled transitively.
 ```java
 import com.slytechs.jnet.jnetpcap.api.NetPcap;
 
-void main() throws PcapException {
-    
-    try (var pcap = NetPcap.openOffline("capture.pcap")) {
+public class HelloCapture {
+    public static void main(String[] args) throws PcapException {
+        // Activate community license (required, internet connection needed)
+        NetPcap.activateLicense();
         
-        pcap.dispatch(10, packet -> {
-            System.out.println(packet);
-        });
+        try (var pcap = NetPcap.openOffline("capture.pcap")) {
+            
+            pcap.dispatch(10, packet -> {
+                System.out.println(packet);
+            });
+        }
     }
 }
 ```
 
 ### JVM Arguments
 
+jNetPcap uses Java's Foreign Function & Memory (FFM) API. Add these JVM arguments:
+
 ```bash
-java --enable-native-access=com.slytechs.jnet.jnetpcap -jar myapp.jar
+java --enable-native-access=com.slytechs.sdk.jnetpcap,com.slytechs.sdk.common -jar myapp.jar
 ```
+
+------
+
+## License Activation
+
+The jNetPcap SDK includes a **free unlimited Community Edition license**.
+
+```java
+public static void main(String[] args) throws PcapException {
+    // Required: Call once at application startup
+    NetPcap.activateLicense();
+    
+    // Now use jNetPcap normally
+    try (var pcap = NetPcap.openOffline("capture.pcap")) {
+        pcap.loop(-1, packet -> System.out.println(packet));
+    }
+}
+```
+
+**Requirements:**
+
+- Call `NetPcap.activateLicense()` before any capture operations
+- Internet connectivity required for activation
+- No registration or API keys needed
+
+The Community Edition is licensed under Apache 2.0 with telemetry. For commercial licenses without telemetry, contact [sales@slytechs.com](mailto:sales@slytechs.com).
 
 ------
 
@@ -80,26 +113,29 @@ import com.slytechs.jnet.jnetpcap.api.NetPcap;
 import com.slytechs.sdk.protocol.tcpip.ip.Ip4;
 import com.slytechs.sdk.protocol.tcpip.tcp.Tcp;
 
-void main() throws PcapException {
-    
-    // Allocate headers ONCE outside hot path
-    Ip4 ip4 = new Ip4();
-    Tcp tcp = new Tcp();
-    
-    try (var pcap = NetPcap.openOffline("capture.pcap")) {
+public class ZeroAllocationExample {
+    public static void main(String[] args) throws PcapException {
+        NetPcap.activateLicense();
         
-        pcap.dispatch(Pcap.LOOP_INFINITE, packet -> {
+        // Allocate headers ONCE outside hot path
+        Ip4 ip4 = new Ip4();
+        Tcp tcp = new Tcp();
+        
+        try (var pcap = NetPcap.openOffline("capture.pcap")) {
             
-            // hasHeader() checks presence AND binds header to packet data
-            if (packet.hasHeader(ip4)) {
-                System.out.printf("IP: %s -> %s%n", ip4.src(), ip4.dst());
-            }
-            
-            if (packet.hasHeader(tcp)) {
-                System.out.printf("TCP: %d -> %d [%s]%n", 
-                    tcp.srcPort(), tcp.dstPort(), tcp.flags());
-            }
-        });
+            pcap.dispatch(-1, packet -> {
+                
+                // hasHeader() checks presence AND binds header to packet data
+                if (packet.hasHeader(ip4)) {
+                    System.out.printf("IP: %s -> %s%n", ip4.src(), ip4.dst());
+                }
+                
+                if (packet.hasHeader(tcp)) {
+                    System.out.printf("TCP: %d -> %d [SYN=%b ACK=%b]%n", 
+                        tcp.srcPort(), tcp.dstPort(), tcp.isSyn(), tcp.isAck());
+                }
+            });
+        }
     }
 }
 ```
@@ -107,22 +143,53 @@ void main() throws PcapException {
 ### Live Capture with Filter
 
 ```java
-void main() throws PcapException {
-    Ip4 ip4 = new Ip4();
-    Tcp tcp = new Tcp();
-    
-    try (var pcap = NetPcap.openLive("eth0")) {
+public class LiveCaptureExample {
+    public static void main(String[] args) throws PcapException {
+        NetPcap.activateLicense();
         
-        pcap.setFilter("tcp port 443");
+        Ip4 ip4 = new Ip4();
+        Tcp tcp = new Tcp();
         
-        pcap.dispatch(1000, packet -> {
-            if (packet.hasHeader(ip4) && packet.hasHeader(tcp)) {
-                System.out.printf("%s:%d -> %s:%d%n",
-                    ip4.src(), tcp.srcPort(),
-                    ip4.dst(), tcp.dstPort());
-            }
-        });
+        try (var pcap = NetPcap.create("eth0")) {
+            pcap.setSnaplen(65535)
+                .setPromisc(true)
+                .setTimeout(Duration.ofSeconds(1))
+                .activate();
+            
+            pcap.setFilter("tcp port 443");
+            
+            pcap.dispatch(1000, packet -> {
+                if (packet.hasHeader(ip4) && packet.hasHeader(tcp)) {
+                    System.out.printf("%s:%d -> %s:%d%n",
+                        ip4.src(), tcp.srcPort(),
+                        ip4.dst(), tcp.dstPort());
+                }
+            });
+        }
     }
+}
+```
+
+### Packet Persistence
+
+Packets in callbacks are only valid during the callback. To keep them longer:
+
+```java
+Queue<Packet> queue = new ConcurrentLinkedQueue<>();
+
+pcap.loop(-1, packet -> {
+    if (packet.hasHeader(tcp) && tcp.isSyn()) {
+        // persist() copies packet to independent memory
+        Packet keeper = packet.persist();
+        queue.add(keeper);
+    }
+});
+
+// Process outside callback
+Packet p;
+while ((p = queue.poll()) != null) {
+    // Process...
+    p.recycle();  // Return to pool when done
 }
 ```
 
@@ -171,14 +238,12 @@ pcap.dispatch(count, packet -> {
 
 ```java
 pcap.dispatch(10, packet -> {
-    var desc = packet.getPacketDescriptor();
-    System.out.println(desc);
+    var desc = packet.descriptor();
+    System.out.printf("Frame: caplen=%d wirelen=%d timestamp=%s%n",
+        packet.captureLength(),
+        packet.wireLength(),
+        packet.timestampInfo());
 });
-
-// Output:
-// Net Packet Descriptor: cap=74 wire=74 ts=1299012579821
-//   Protocol Bitmap = 0x00000015 (ETH IPv4 TCP)
-//   Protocol Count = 3
 ```
 
 ------
@@ -279,9 +344,9 @@ module your.app {
 
 ## Documentation
 
+- [jnetpcap-examples](https://github.com/slytechs-repos/jnetpcap-examples) - Working examples
 - [GitHub Wiki](https://github.com/slytechs-repos/jnetpcap-api/wiki) - User guides and tutorials
 - [Javadocs](https://slytechs-repos.github.io/jnetpcap-api/) - API documentation
-- [Examples](https://github.com/slytechs-repos/jnetpcap-examples) - Sample code
 
 ------
 
@@ -305,5 +370,3 @@ Licensed under Apache License v2.0. See [LICENSE](https://claude.ai/chat/LICENSE
 **Sly Technologies Inc.** - High-performance network analysis solutions
 
 Website: [www.slytechs.com](https://www.slytechs.com/)
-
-------
