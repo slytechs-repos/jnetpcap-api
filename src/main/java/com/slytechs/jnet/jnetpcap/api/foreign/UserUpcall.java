@@ -17,6 +17,7 @@ package com.slytechs.jnet.jnetpcap.api.foreign;
 
 import java.lang.foreign.MemorySegment;
 
+import com.slytechs.sdk.common.foreign.ForeignUtils;
 import com.slytechs.sdk.jnetpcap.internal.PcapHeaderABI;
 
 /**
@@ -42,13 +43,15 @@ public class UserUpcall implements NativeUpcall {
 		try {
 
 			int hdrlen = abi.headerLength();
-			header = header.reinterpret(hdrlen);
+			header = ForeignUtils.reinterpret(header, hdrlen);
 
 			int caplen = abi.captureLength(header);
-			packet = packet.reinterpret(caplen);
+			packet = ForeignUtils.reinterpret(packet, caplen);
 
 			this.userCallback.nativeUpcall(user, header, packet);
-		} catch (RuntimeException e) {}
+		} catch (RuntimeException e) {
+			e.printStackTrace();
+		}
 	}
 
 	/**

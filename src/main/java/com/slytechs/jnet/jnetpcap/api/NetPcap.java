@@ -30,7 +30,6 @@ import com.slytechs.jnet.jnetpcap.api.PacketHandler.OfPacket;
 import com.slytechs.jnet.jnetpcap.api.PacketHandler.OfPacketConsumer;
 import com.slytechs.jnet.jnetpcap.api.foreign.MemorySegmentPair;
 import com.slytechs.jnet.jnetpcap.api.foreign.NetPcapDispatcher;
-import com.slytechs.jnet.jnetpcap.api.foreign.UserUpcall;
 import com.slytechs.sdk.common.license.LicenseException;
 import com.slytechs.sdk.common.memory.MemoryUnit;
 import com.slytechs.sdk.common.util.Named;
@@ -632,7 +631,6 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 	private PacketPipeline pipeline;
 	private boolean activated;
 	private final NetPcapDispatcher dispatcher;
-	private final UserUpcall userUpcall;
 	private final MemorySegmentPair userPair = new MemorySegmentPair();
 	private final MemorySegment pcapHandle;
 
@@ -646,7 +644,6 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 				pcap.handle(),
 				pcap.getPcapHeaderABI(),
 				pcap::breakloop);
-		this.userUpcall = this.dispatcher.userUpcall();
 
 		if (activated) {
 			configurePipeline();
@@ -685,7 +682,7 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 	 */
 	public <U> int dispatch(int count, OfPacket<U> handler, U user) throws PcapException {
 
-		userUpcall.setUserCallback((MemorySegment _, MemorySegment h, MemorySegment p) -> {
+		dispatcher.userUpcall().setUserCallback((MemorySegment _, MemorySegment h, MemorySegment p) -> {
 			Packet packet = pipeline.processPacket(h, p);
 
 			if (packet != null)
@@ -705,7 +702,7 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 	 */
 	public int dispatch(int count, OfPacketConsumer handler) throws PcapException {
 
-		userUpcall.setUserCallback((MemorySegment _, MemorySegment h, MemorySegment p) -> {
+		dispatcher.userUpcall().setUserCallback((MemorySegment _, MemorySegment h, MemorySegment p) -> {
 			Packet packet = pipeline.processPacket(h, p);
 
 			if (packet != null)
@@ -736,7 +733,7 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 	 * @return number of packets processed, -1 on error, -2 on break
 	 */
 	public <U> int loop(int count, OfPacket<U> handler, U user) {
-		userUpcall.setUserCallback((MemorySegment _, MemorySegment h, MemorySegment p) -> {
+		dispatcher.userUpcall().setUserCallback((MemorySegment _, MemorySegment h, MemorySegment p) -> {
 			Packet packet = pipeline.processPacket(h, p);
 
 			if (packet != null)
@@ -754,7 +751,7 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 	 * @return number of packets processed, -1 on error, -2 on break
 	 */
 	public int loop(int count, OfPacketConsumer handler) {
-		userUpcall.setUserCallback((MemorySegment _, MemorySegment h, MemorySegment p) -> {
+		dispatcher.userUpcall().setUserCallback((MemorySegment _, MemorySegment h, MemorySegment p) -> {
 			Packet packet = pipeline.processPacket(h, p);
 
 			if (packet != null)
