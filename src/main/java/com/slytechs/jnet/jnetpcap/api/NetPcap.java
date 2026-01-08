@@ -832,8 +832,8 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 	 * @throws PcapException if transmission fails
 	 */
 	public void sendPacket(Packet packet) throws PcapException {
-		MemorySegment segment = packet.segment();
-		long start = packet.start();
+		MemorySegment segment = packet.view().segment();
+		long start = packet.view().start();
 		int length = packet.captureLength();
 		pcapApi.sendPacket(segment.asSlice(start, length), length);
 	}
@@ -846,8 +846,8 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 	 * @throws PcapException if injection fails
 	 */
 	public int inject(Packet packet) throws PcapException {
-		MemorySegment segment = packet.segment();
-		long start = packet.start();
+		MemorySegment segment = packet.view().segment();
+		long start = packet.view().start();
 		int length = packet.captureLength();
 		return pcapApi.inject(segment.asSlice(start, length), length);
 	}
