@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.slytechs.jnet.jnetpcap.api;
+package com.slytechs.sdk.jnetpcap.api;
 
 import java.lang.foreign.MemorySegment;
 
@@ -25,8 +25,8 @@ import com.slytechs.sdk.protocol.core.Packet;
 import com.slytechs.sdk.protocol.core.PacketSettings;
 import com.slytechs.sdk.protocol.core.descriptor.AbstractPacketDescriptor;
 import com.slytechs.sdk.protocol.core.descriptor.DescriptorInfo;
-import com.slytechs.sdk.protocol.core.dissector.Net3PacketDissector;
-import com.slytechs.sdk.protocol.core.dissector.OnDemandDissector;
+import com.slytechs.sdk.protocol.core.dissector.Type2PacketDissector;
+import com.slytechs.sdk.protocol.core.dissector.OnDemandPacketDissector;
 import com.slytechs.sdk.protocol.core.dissector.PacketDissector;
 
 /**
@@ -52,7 +52,7 @@ class PacketPipeline {
 
 	private PacketDissector createDissector(PacketSettings settings) {
 		if (settings.isDissectionEnabled() && settings.isEagerDissection()) {
-			return new Net3PacketDissector();
+			return new Type2PacketDissector();
 		}
 
 		return null;
@@ -60,14 +60,14 @@ class PacketPipeline {
 
 	private Packet createPacket(PacketSettings settings) {
 		if (settings.isDissectionEnabled() && settings.isEagerDissection()) {
-			return Packet.ofHybridType(DescriptorInfo.NET);
+			return Packet.ofHybridType(DescriptorInfo.TYPE2);
 
 		} else {
 			var pkt = Packet.ofScopedType(DescriptorInfo.PCAP_PADDED);
 			var desc = ((AbstractPacketDescriptor) pkt.descriptor());
 
 			if (settings.isOnDemandDissection())
-				desc.setOnDemandDissector(OnDemandDissector::bindHeader);
+				desc.setOnDemandDissector(OnDemandPacketDissector::bindHeader);
 
 			return pkt;
 		}

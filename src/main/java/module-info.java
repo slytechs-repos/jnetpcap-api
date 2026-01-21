@@ -22,7 +22,7 @@
  * @author Mark Bednarczyk.
  */
 module com.slytechs.sdk.jnetpcap.api {
-	exports com.slytechs.jnet.jnetpcap.api;
+	exports com.slytechs.sdk.jnetpcap.api;
 
 	opens com.slytechs.jnet.jnetpcap.api.foreign
 			to com.slytechs.sdk.common;

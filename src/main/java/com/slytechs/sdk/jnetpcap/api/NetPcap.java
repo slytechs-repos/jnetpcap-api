@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.slytechs.jnet.jnetpcap.api;
+package com.slytechs.sdk.jnetpcap.api;
 
 import java.io.File;
 import java.lang.Thread.UncaughtExceptionHandler;
@@ -26,8 +26,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
-import com.slytechs.jnet.jnetpcap.api.PacketHandler.OfPacket;
-import com.slytechs.jnet.jnetpcap.api.PacketHandler.OfPacketConsumer;
 import com.slytechs.jnet.jnetpcap.api.foreign.MemorySegmentPair;
 import com.slytechs.jnet.jnetpcap.api.foreign.NetPcapDispatcher;
 import com.slytechs.sdk.common.license.LicenseException;
@@ -37,6 +35,8 @@ import com.slytechs.sdk.jnetpcap.BpFilter;
 import com.slytechs.sdk.jnetpcap.Pcap;
 import com.slytechs.sdk.jnetpcap.PcapException;
 import com.slytechs.sdk.jnetpcap.PcapIf;
+import com.slytechs.sdk.jnetpcap.api.PacketHandler.OfPacket;
+import com.slytechs.sdk.jnetpcap.api.PacketHandler.OfPacketConsumer;
 import com.slytechs.sdk.jnetpcap.constant.PcapDirection;
 import com.slytechs.sdk.jnetpcap.constant.PcapDlt;
 import com.slytechs.sdk.jnetpcap.constant.PcapSrc;

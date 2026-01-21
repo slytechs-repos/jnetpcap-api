@@ -39,7 +39,7 @@ That's it. All dependencies (bindings, protocols, etc.) are pulled transitively.
 ### Hello World
 
 ```java
-import com.slytechs.jnet.jnetpcap.api.NetPcap;
+import com.slytechs.sdk.jnetpcap.api.NetPcap;
 
 public class HelloCapture {
     public static void main(String[] args) throws PcapException {
@@ -109,7 +109,7 @@ The Community Edition is licensed under Apache 2.0 with telemetry. For commercia
 Headers are designed for reuse - allocate once, bind many times:
 
 ```java
-import com.slytechs.jnet.jnetpcap.api.NetPcap;
+import com.slytechs.sdk.jnetpcap.api.NetPcap;
 import com.slytechs.sdk.protocol.tcpip.ip.Ip4;
 import com.slytechs.sdk.protocol.tcpip.tcp.Tcp;
 
@@ -326,7 +326,7 @@ dependencies {
 
 ```java
 module your.app {
-    requires com.slytechs.jnet.jnetpcap.api;
+    requires com.slytechs.sdk.jnetpcap.api;
 }
 ```
 

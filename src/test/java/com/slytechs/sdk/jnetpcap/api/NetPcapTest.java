@@ -15,7 +15,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.slytechs.jnet.jnetpcap.api;
+package com.slytechs.sdk.jnetpcap.api;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -34,10 +34,11 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import com.slytechs.sdk.jnetpcap.PcapException;
+import com.slytechs.sdk.jnetpcap.api.NetPcap;
 import com.slytechs.sdk.protocol.core.Packet;
 import com.slytechs.sdk.protocol.core.PacketSettings;
 import com.slytechs.sdk.protocol.core.descriptor.DescriptorInfo;
-import com.slytechs.sdk.protocol.core.descriptor.NetPacketDescriptor;
+import com.slytechs.sdk.protocol.core.descriptor.Type2PacketDescriptor;
 import com.slytechs.sdk.protocol.tcpip.ethernet.Ethernet;
 import com.slytechs.sdk.protocol.tcpip.ip.Ip4;
 import com.slytechs.sdk.protocol.tcpip.ip.Ip6;
@@ -303,7 +304,7 @@ class NetPcapTest {
     class DissectionTests {
         
         @Test
-        @DisplayName("Eager dissection provides NET descriptor")
+        @DisplayName("Eager dissection provides TYPE2 descriptor")
         void eagerDissection_netDescriptor() throws PcapException {
             pcap = NetPcap.openOffline(HTTP_PCAP, new PacketSettings().dissect());
             
@@ -311,8 +312,8 @@ class NetPcapTest {
             
             assertNotNull(packet);
             assertNotNull(packet.descriptor());
-            assertEquals(DescriptorInfo.NET, packet.descriptor().descriptorInfo());
-            assertTrue(packet.descriptor() instanceof NetPacketDescriptor);
+            assertEquals(DescriptorInfo.TYPE2, packet.descriptor().descriptorInfo());
+            assertTrue(packet.descriptor() instanceof Type2PacketDescriptor);
         }
         
         @Test
@@ -321,7 +322,7 @@ class NetPcapTest {
             pcap = NetPcap.openOffline(HTTP_PCAP, new PacketSettings().dissect());
             
             Packet packet = pcap.next();
-            NetPacketDescriptor desc = (NetPacketDescriptor) packet.descriptor();
+            Type2PacketDescriptor desc = (Type2PacketDescriptor) packet.descriptor();
             
             // HTTP.cap should have Ethernet frames
             assertTrue(desc.getProtoBitmap() != 0, "Should have dissected protocols");
@@ -337,7 +338,7 @@ class NetPcapTest {
             assertNotNull(packet);
             assertNotNull(packet.descriptor());
             // Should use PCAP descriptor type (PADDED for live/memory)
-            assertNotEquals(DescriptorInfo.NET, packet.descriptor().descriptorInfo());
+            assertNotEquals(DescriptorInfo.TYPE2, packet.descriptor().descriptorInfo());
         }
     }
     
@@ -563,7 +564,7 @@ class NetPcapTest {
             assertFalse(settings.isOnDemandDissection());
             assertTrue(settings.isDissectionEnabled());
             assertTrue(settings.isHybridMemory());
-            assertEquals(DescriptorInfo.NET, settings.descriptorType());
+            assertEquals(DescriptorInfo.TYPE2, settings.descriptorType());
         }
         
         @Test

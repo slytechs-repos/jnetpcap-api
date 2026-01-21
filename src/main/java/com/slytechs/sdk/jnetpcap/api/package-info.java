@@ -80,7 +80,7 @@
  * PacketSettings configures how packets are structured and managed in memory:
  * </p>
  * <ul>
- * <li>{@code dissect()} - Enable eager protocol dissection (NET descriptor)</li>
+ * <li>{@code dissect()} - Enable eager protocol dissection (TYPE2 descriptor)</li>
  * <li>{@code onDemand()} - Enable on-demand dissection</li>
  * <li>{@code zeroCopy()} - Use scoped memory (valid only in callback)</li>
  * <li>{@code descriptorType(DescriptorTypeInfo)} - Choose descriptor format</li>
@@ -104,7 +104,7 @@
  * <h3>Offline File Reading with PacketSettings</h3>
  * <pre>{@code
  * PacketSettings settings = new PacketSettings()
- *     .dissect();  // Eager dissection with NET descriptor
+ *     .dissect();  // Eager dissection with TYPE2 descriptor
  * 
  * try (NetPcap pcap = NetPcap.openOffline("capture.pcap", settings)) {
  *     pcap.setFilter("tcp port 80");
@@ -219,7 +219,7 @@
  * <table>
  * <caption>Dissection Modes (PacketSettings)</caption>
  * <tr><th>Mode</th><th>Method</th><th>Description</th></tr>
- * <tr><td>Eager</td><td>{@code dissect()}</td><td>Full dissection before callback, NET descriptor</td></tr>
+ * <tr><td>Eager</td><td>{@code dissect()}</td><td>Full dissection before callback, TYPE2 descriptor</td></tr>
  * <tr><td>On-demand</td><td>{@code onDemand()}</td><td>Dissect lazily on first {@code hasHeader()}</td></tr>
  * <tr><td>None</td><td>(default)</td><td>No dissection, PCAP descriptor only</td></tr>
  * </table>
@@ -346,7 +346,7 @@
  * <tr><th>Type</th><th>Size</th><th>Use Case</th></tr>
  * <tr><td>{@code PCAP_PADDED}</td><td>24 bytes</td><td>Kernel format (x64 padded)</td></tr>
  * <tr><td>{@code PCAP_PACKED}</td><td>16 bytes</td><td>File format (packed)</td></tr>
- * <tr><td>{@code NET}</td><td>96 bytes</td><td>Full protocol dissection</td></tr>
+ * <tr><td>{@code TYPE2}</td><td>96 bytes</td><td>Full protocol dissection</td></tr>
  * </table>
  * 
  * <h2>Thread Safety</h2>
@@ -431,4 +431,4 @@
  * @see com.slytechs.sdk.jnetpcap.Pcap
  * @see com.slytechs.sdk.protocol.core.Packet
  */
-package com.slytechs.jnet.jnetpcap.api;
+package com.slytechs.sdk.jnetpcap.api;
