@@ -37,7 +37,7 @@ import com.slytechs.sdk.jnetpcap.PcapException;
 import com.slytechs.sdk.jnetpcap.api.NetPcap;
 import com.slytechs.sdk.protocol.core.Packet;
 import com.slytechs.sdk.protocol.core.PacketSettings;
-import com.slytechs.sdk.protocol.core.descriptor.DescriptorInfo;
+import com.slytechs.sdk.protocol.core.descriptor.DescriptorType;
 import com.slytechs.sdk.protocol.core.descriptor.Type2PacketDescriptor;
 import com.slytechs.sdk.protocol.tcpip.ethernet.Ethernet;
 import com.slytechs.sdk.protocol.tcpip.ip.Ip4;
@@ -312,7 +312,7 @@ class NetPcapTest {
             
             assertNotNull(packet);
             assertNotNull(packet.descriptor());
-            assertEquals(DescriptorInfo.TYPE2, packet.descriptor().descriptorInfo());
+            assertEquals(DescriptorType.TYPE2, packet.descriptor().descriptorType());
             assertTrue(packet.descriptor() instanceof Type2PacketDescriptor);
         }
         
@@ -338,7 +338,7 @@ class NetPcapTest {
             assertNotNull(packet);
             assertNotNull(packet.descriptor());
             // Should use PCAP descriptor type (PADDED for live/memory)
-            assertNotEquals(DescriptorInfo.TYPE2, packet.descriptor().descriptorInfo());
+            assertNotEquals(DescriptorType.TYPE2, packet.descriptor().descriptorType());
         }
     }
     
@@ -503,7 +503,7 @@ class NetPcapTest {
             Packet packet = pcap.next();
             
             assertNotNull(packet.descriptor());
-            assertNotNull(packet.descriptor().descriptorInfo());
+            assertNotNull(packet.descriptor().descriptorType());
         }
     }
     
@@ -564,7 +564,7 @@ class NetPcapTest {
             assertFalse(settings.isOnDemandDissection());
             assertTrue(settings.isDissectionEnabled());
             assertTrue(settings.isHybridMemory());
-            assertEquals(DescriptorInfo.TYPE2, settings.descriptorType());
+            assertEquals(DescriptorType.TYPE2, settings.descriptorType());
         }
         
         @Test
@@ -585,7 +585,7 @@ class NetPcapTest {
             assertTrue(settings.isOnDemandDissection());
             assertTrue(settings.isDissectionEnabled());
             assertFalse(settings.isHybridMemory());
-            assertEquals(DescriptorInfo.PCAP_PACKED, settings.descriptorType());
+            assertEquals(DescriptorType.PCAP_PACKED, settings.descriptorType());
         }
         
         @Test

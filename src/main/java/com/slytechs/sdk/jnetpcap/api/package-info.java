@@ -151,7 +151,7 @@
  *     
  *     Ethernet eth = new Ethernet();
  *     Ip4 ip4 = new Ip4();
- *     Tcp tcp = new Tcp();
+ *     TCP tcp = new TCP();
  *     
  *     pcap.dispatch(1000, packet -> {
  *         if (packet.hasHeader(eth) && packet.hasHeader(ip4) && packet.hasHeader(tcp)) {
@@ -236,7 +236,7 @@
  * Ethernet eth = new Ethernet();
  * Ip4 ip4 = new Ip4();
  * Ip6 ip6 = new Ip6();
- * Tcp tcp = new Tcp();
+ * TCP tcp = new TCP();
  * Udp udp = new Udp();
  * 
  * pcap.loop(-1, packet -> {
@@ -378,7 +378,7 @@
  * ExecutorService workers = Executors.newFixedThreadPool(4);
  * for (int i = 0; i < 4; i++) {
  *     workers.submit(() -> {
- *         Tcp tcp = new Tcp();  // Thread-local header
+ *         TCP tcp = new TCP();  // Thread-local header
  *         while (running) {
  *             Packet p = workQueue.take();
  *             if (p.hasHeader(tcp)) {
