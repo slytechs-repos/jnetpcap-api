@@ -34,7 +34,7 @@ public class UserUpcall implements NativeUpcall {
 	}
 
 	/**
-	 * @see com.slytechs.jnet.jnetpcap.api.foreign.NativeUpcall#nativeUpcall(java.lang.foreign.MemorySegment,
+	 * @see com.slytechs.sdk.jnetpcap.api.foreign.NativeUpcall#nativeUpcall(java.lang.foreign.MemorySegment,
 	 *      java.lang.foreign.MemorySegment, java.lang.foreign.MemorySegment)
 	 */
 	@Override
@@ -55,7 +55,7 @@ public class UserUpcall implements NativeUpcall {
 	}
 
 	/**
-	 * @see com.slytechs.jnet.jnetpcap.api.foreign.NativeUpcall#setUserCallback(com.slytechs.jnet.jnetpcap.api.foreign.ScopedCallback)
+	 * @see com.slytechs.sdk.jnetpcap.api.foreign.NativeUpcall#setUserCallback(com.slytechs.sdk.jnetpcap.api.foreign.ScopedCallback)
 	 */
 	@Override
 	public void setUserCallback(NativeUpcall userCallback) {
