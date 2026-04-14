@@ -45,83 +45,324 @@ import com.slytechs.sdk.jnetpcap.constant.PcapTstampType;
 import com.slytechs.sdk.jnetpcap.util.PcapVersionException;
 import com.slytechs.sdk.protocol.core.Packet;
 import com.slytechs.sdk.protocol.core.PacketSettings;
-import com.slytechs.sdk.protocol.core.stack.ProtocolStack;
 import com.slytechs.sdk.protocol.tcpip.ethernet.Ethernet;
 import com.slytechs.sdk.protocol.tcpip.ip.Ip4;
 
 /**
- * High-level packet capture interface with protocol dissection support.
- * 
+ * High-level packet capture and protocol dissection API.
+ *
  * <p>
- * NetPcap wraps the low-level {@link Pcap} bindings and integrates with the
- * {@link ProtocolStack} to provide automatic packet dissection. Packets
- * delivered through {@link #dispatch}, {@link #loop}, {@link #next}, and
- * {@link #nextEx} are fully dissected with protocol headers accessible via the
+ * {@code NetPcap} wraps the low-level {@link Pcap} bindings and integrates
+ * protocol dissection so that packets delivered through {@link #dispatch},
+ * {@link #loop}, {@link #next}, and {@link #nextEx} are fully dissected before
+ * reaching the caller. Protocol headers are accessible via the
  * zero-allocation {@code hasHeader()} pattern.
  * </p>
- * 
+ *
+ * <p>
+ * License activation is implicit — the Community Edition activates
+ * automatically on the first {@code NetPcap} operation. No setup is required.
+ * Commercial keys are resolved from environment variables, system properties,
+ * file paths, and container secrets. See {@link #activateLicense()} for the
+ * full resolution order if manual activation is needed.
+ * </p>
+ *
+ * <h2>Factory Methods</h2>
+ *
+ * <table>
+ * <caption>NetPcap factory methods</caption>
+ * <tr><th>Method</th><th>Use Case</th><th>Activated</th></tr>
+ * <tr><td>{@link #create(String)}</td>
+ *     <td>Two-stage live capture — configure then activate</td><td>No</td></tr>
+ * <tr><td>{@link #openLive(String, int, boolean, Duration)}</td>
+ *     <td>One-shot live capture</td><td>Yes</td></tr>
+ * <tr><td>{@link #openOffline(String)}</td>
+ *     <td>Read pcap/pcapng file</td><td>Yes</td></tr>
+ * <tr><td>{@link #openDead(PcapDlt, int)}</td>
+ *     <td>Filter compilation or dump file writing</td><td>Yes</td></tr>
+ * </table>
+ *
  * <h2>Usage Examples</h2>
- * 
- * <h3>Simple Live Capture</h3>
- * 
- * <pre>{@code
- * try (NetPcap pcap = NetPcap.openLive("eth0", 65535, true, Duration.ofSeconds(1))) {
- * 	Ip4 ip = new Ip4();
- * 
- * 	pcap.loop(100, packet -> {
- * 		if (packet.hasHeader(ip)) {
- * 			System.out.printf("%s -> %s%n", ip.src(), ip.dst());
- * 		}
- * 	});
- * }
- * }</pre>
- * 
- * <h3>File Reading with Custom Stack</h3>
- * 
- * <pre>{@code
- * ProtocolStack stack = ProtocolStack.packetDissectionOnly();
- * stack.getPacketPolicy().zeroCopy();
- * 
- * try (NetPcap pcap = NetPcap.openOffline("capture.pcap", stack)) {
- * 	pcap.setFilter("tcp port 80");
- * 
- * 	Packet packet;
- * 	while ((packet = pcap.next()) != null) {
- * 		// Process packet...
- * 	}
- * }
- * }</pre>
- * 
- * <h3>Two-Stage Capture Configuration</h3>
- * 
+ *
+ * <h3>Live Capture with BPF Filter</h3>
  * <pre>{@code
  * try (NetPcap pcap = NetPcap.create("eth0")) {
- * 	pcap.setSnaplen(128)
- * 			.setPromisc(true)
- * 			.setTimeout(100)
- * 			.setImmediateMode(true)
- * 			.activate();
- * 
- * 	pcap.dispatch(1000, packet -> {
- * 		// Process packet...
- * 	});
+ *     pcap.setSnaplen(65535)
+ *         .setPromisc(true)
+ *         .setTimeout(Duration.ofMillis(100))
+ *         .activate();
+ *
+ *     pcap.setFilter("tcp port 443");
+ *
+ *     Ip4 ip4 = new Ip4();
+ *     Tcp tcp = new Tcp();
+ *
+ *     pcap.loop(-1, packet -> {
+ *         if (packet.hasHeader(ip4) && packet.hasHeader(tcp))
+ *             System.out.printf("%s:%d -> %s:%d%n",
+ *                 ip4.src(), tcp.srcPort(),
+ *                 ip4.dst(), tcp.dstPort());
+ *     });
+ * }
+ * }</pre>
+ *
+ * <h3>Offline File Reading with Protocol Dissection</h3>
+ * <pre>{@code
+ * PacketSettings settings = new PacketSettings().dissect();
+ *
+ * try (NetPcap pcap = NetPcap.openOffline("capture.pcap", settings)) {
+ *     Ethernet eth = new Ethernet();
+ *     Ip4 ip4 = new Ip4();
+ *
+ *     pcap.loop(-1, packet -> {
+ *         if (packet.hasHeader(eth) && packet.hasHeader(ip4))
+ *             System.out.printf("%s -> %s%n", ip4.src(), ip4.dst());
+ *     });
+ * }
+ * }</pre>
+ *
+ * <h3>Multi-threaded Producer-Consumer</h3>
+ * <pre>{@code
+ * BlockingQueue<Packet> queue = new LinkedBlockingQueue<>(10000);
+ *
+ * // Capture thread
+ * try (NetPcap pcap = NetPcap.openLive("eth0", 65535, true, Duration.ofSeconds(1))) {
+ *     pcap.loop(-1, packet -> {
+ *         if (filter(packet))
+ *             queue.put(packet.persist());   // persist before callback returns
+ *     });
+ * }
+ *
+ * // Worker thread — each needs its own header instances
+ * Tcp tcp = new Tcp();
+ * while (running) {
+ *     Packet p = queue.poll(100, TimeUnit.MILLISECONDS);
+ *     if (p != null) {
+ *         if (p.hasHeader(tcp)) process(tcp);
+ *         p.recycle();
+ *     }
  * }
  * }</pre>
  *
  * @author Mark Bednarczyk [mark@slytechs.com]
  * @author Sly Technologies Inc.
  * @see Pcap
- * @see ProtocolStack
+ * @see PacketSettings
  * @see PacketHandler
  */
 public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 
+	/** The jNetPcap library version string. */
 	public static final String VERSION = Pcap.VERSION;
+
+	/**
+	 * Explicitly activates the SDK license using automatic key resolution.
+	 *
+	 * <p>
+	 * In most cases this method does not need to be called — the license activates
+	 * automatically on the first {@code NetPcap} operation. Call this method only
+	 * if you need to activate before any capture operations, or to force a specific
+	 * key resolution.
+	 * </p>
+	 *
+	 * <p>The key is resolved from the following sources in order:</p>
+	 * <ol>
+	 * <li>Environment variable {@code JNETPCAP_LICENSE_KEY}</li>
+	 * <li>Environment variable {@code JNETPCAP_LICENSE_DIR} → {@code jnetpcap.lic}</li>
+	 * <li>System property {@code jnetpcap.license.key}</li>
+	 * <li>System property {@code jnetpcap.license.dir} → {@code jnetpcap.lic}</li>
+	 * <li>Environment variable {@code LICENSE_KEY}</li>
+	 * <li>Environment variable {@code LICENSE_DIR} → {@code jnetpcap.lic}</li>
+	 * <li>System property {@code license.key}</li>
+	 * <li>System property {@code license.dir} → {@code jnetpcap.lic}</li>
+	 * <li>Container secrets: {@code /run/secrets/jnetpcap.lic}</li>
+	 * <li>User home: {@code ~/.jnetpcap/jnetpcap.lic}</li>
+	 * <li>System path: {@code /etc/jnetpcap/jnetpcap.lic} (Linux) or
+	 *     {@code %PROGRAMFILES%\jnetpcap\jnetpcap.lic} (Windows)</li>
+	 * <li>Universal home: {@code ~/.license/jnetpcap.lic}</li>
+	 * <li>Universal system: {@code /etc/license/jnetpcap.lic}</li>
+	 * <li>Classpath: {@code /license/jnetpcap.lic} (embedded Community Edition key)</li>
+	 * </ol>
+	 *
+	 * <p>
+	 * If no commercial key is found the embedded Community Edition key is used,
+	 * providing unlimited captures with telemetry enabled.
+	 * </p>
+	 *
+	 * @throws LicenseException if no valid key is found or activation fails
+	 * @see #activateLicense(String)
+	 */
+	public static void activateLicense() throws LicenseException {
+		Pcap.activateLicense();
+	}
+
+	/**
+	 * Explicitly activates the SDK license using the specified key.
+	 *
+	 * <p>
+	 * Use this method when the license key is obtained programmatically or stored
+	 * in a location not covered by the automatic resolution order in
+	 * {@link #activateLicense()}.
+	 * </p>
+	 *
+	 * @param key the license key string
+	 * @throws LicenseException         if the key is invalid or activation fails
+	 * @throws IllegalArgumentException if key is null or malformed
+	 * @see #activateLicense()
+	 */
+	public static void activateLicense(String key) throws LicenseException, IllegalArgumentException {
+		Pcap.activateLicense(key);
+	}
+
+	/**
+	 * Checks that the application version is compatible with this library version.
+	 *
+	 * @param applicationVersion the version string the application was built against
+	 * @throws PcapVersionException if the versions are incompatible
+	 */
+	public static void checkVersion(String applicationVersion) throws PcapVersionException {
+		PcapVersionException.throwIfVersionMismatch(NetPcap.VERSION, applicationVersion);
+	}
+
+	/**
+	 * Creates a capture handle for the specified device using two-stage
+	 * configuration.
+	 *
+	 * <p>
+	 * The handle is not yet active. Call configuration setters then
+	 * {@link #activate()} before dispatching packets. Uses default
+	 * {@link PacketSettings}.
+	 * </p>
+	 *
+	 * <pre>{@code
+	 * try (NetPcap pcap = NetPcap.create(device)) {
+	 *     pcap.setSnaplen(65535)
+	 *         .setPromisc(true)
+	 *         .setTimeout(Duration.ofMillis(100))
+	 *         .activate();
+	 *
+	 *     pcap.setFilter("tcp");
+	 *     pcap.loop(-1, handler);
+	 * }
+	 * }</pre>
+	 *
+	 * @param device the network interface to capture on
+	 * @return a new, unactivated {@code NetPcap} handle
+	 * @throws PcapException if handle creation fails
+	 * @see #activate()
+	 * @see #create(PcapIf, PacketSettings)
+	 */
+	public static NetPcap create(PcapIf device) throws PcapException {
+		return create(device, new PacketSettings());
+	}
+
+	/**
+	 * Creates a capture handle for the specified device with custom packet settings.
+	 *
+	 * @param device   the network interface to capture on
+	 * @param settings packet structure and dissection configuration
+	 * @return a new, unactivated {@code NetPcap} handle
+	 * @throws PcapException if handle creation fails
+	 * @see #activate()
+	 */
+	public static NetPcap create(PcapIf device, PacketSettings settings) throws PcapException {
+		return create(device.name(), settings);
+	}
+
+	/**
+	 * Creates a capture handle for the named device using two-stage configuration.
+	 *
+	 * <p>Uses default {@link PacketSettings}.</p>
+	 *
+	 * @param device the device name (e.g., {@code "eth0"}, {@code "en0"})
+	 * @return a new, unactivated {@code NetPcap} handle
+	 * @throws PcapException if handle creation fails
+	 * @see #activate()
+	 * @see #create(String, PacketSettings)
+	 */
+	public static NetPcap create(String device) throws PcapException {
+		return create(device, new PacketSettings());
+	}
+
+	/**
+	 * Creates a capture handle for the named device with custom packet settings.
+	 *
+	 * @param device   the device name (e.g., {@code "eth0"}, {@code "en0"})
+	 * @param settings packet structure and dissection configuration
+	 * @return a new, unactivated {@code NetPcap} handle
+	 * @throws PcapException if handle creation fails
+	 * @see #activate()
+	 */
+	public static NetPcap create(String device, PacketSettings settings) throws PcapException {
+		Pcap pcap = Pcap.create(device);
+		return new NetPcap(pcap, settings, false);
+	}
+
+	/**
+	 * Returns all network interfaces available for capture on this system.
+	 *
+	 * <p>
+	 * Interfaces that the calling process cannot open (e.g., insufficient
+	 * privileges) are silently omitted from the returned list. An empty list is a
+	 * valid result and does not indicate an error.
+	 * </p>
+	 *
+	 * <p>Each {@link PcapIf} provides:</p>
+	 * <ul>
+	 * <li>{@code name()} — interface name to pass to {@link #create} or
+	 *     {@link #openLive}</li>
+	 * <li>{@code description()} — human-readable description (optional)</li>
+	 * <li>{@code addresses()} — list of network addresses (IPv4, IPv6, or other)</li>
+	 * <li>{@code isLoopback()}, {@code isUp()}, {@code isRunning()},
+	 *     {@code isWireless()} — interface flags</li>
+	 * </ul>
+	 *
+	 * <pre>{@code
+	 * NetPcap.findAllDevs().stream()
+	 *     .filter(d -> d.isUp() && !d.isLoopback())
+	 *     .forEach(d -> System.out.println(d.name()));
+	 * }</pre>
+	 *
+	 * @return list of available network interfaces, possibly empty
+	 * @throws PcapException if the underlying pcap call fails
+	 * @since libpcap 0.7
+	 */
+	public static List<PcapIf> findAllDevs() throws PcapException {
+		return Pcap.findAllDevs();
+	}
+
+	/**
+	 * Returns network interfaces from a remote RPCAP source or directory of
+	 * savefiles.
+	 *
+	 * <p>
+	 * Extends {@link #findAllDevs()} with support for remote capture via the RPCAP
+	 * protocol and for scanning a directory of pcap savefiles.
+	 * </p>
+	 *
+	 * <p>Source format examples:</p>
+	 * <ul>
+	 * <li>{@code "rpcap://"} — local interfaces (equivalent to
+	 *     {@link #findAllDevs()})</li>
+	 * <li>{@code "rpcap://host:2002"} — interfaces on a remote RPCAP host</li>
+	 * <li>{@code "file:///path/to/dir"} — pcap savefiles in a directory</li>
+	 * </ul>
+	 *
+	 * @param source   the source URI to scan for interfaces or savefiles
+	 * @param type     authentication type for remote sources
+	 * @param username username for remote authentication (or null)
+	 * @param password password for remote authentication (or null)
+	 * @return list of available interfaces or savefiles
+	 * @throws PcapException if the source cannot be reached or enumeration fails
+	 * @since libpcap 1.9 / WinPcap
+	 */
+	public static List<PcapIf> findAllDevsEx(String source, PcapSrc type, String username, String password)
+			throws PcapException {
+		return Pcap.findAllDevsEx(source, type, username, password);
+	}
 
 	public static void main(String[] args) throws PcapException {
 		final String FILENAME = "pcaps/HTTP.cap";
-
-		NetPcap.activateLicense();
 
 		PacketSettings settings = new PacketSettings()
 				.dissect();
@@ -149,302 +390,33 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 	}
 
 	/**
-	 * Constructs a list of network devices that can be opened with
-	 * pcap_create(3PCAP) and pcap_activate(3PCAP) or with pcap_open_live(3PCAP).
-	 * (Note that there may be network devices that cannot be opened by the process
-	 * calling pcap_findalldevs(), because, for example, that process does not have
-	 * sufficient privileges to open them for capturing; if so, those devices will
-	 * not appear on the list.) If pcap_findalldevs() succeeds, the pointer pointed
-	 * to by alldevsp is set to point to the first element of the list, or to NULL
-	 * if no devices were found (this is considered success).
-	 * 
-	 * <p>
-	 * Each element of the list is of type pcap_if_t, and has the following members:
-	 * </p>
-	 * <dl>
-	 * <dt>next</dt>
-	 * <dd>if not NULL, a pointer to the next element in the list; NULL for the last
-	 * element of the list</dd>
-	 * <dt>name</dt>
-	 * <dd>a pointer to a string giving a name for the device to pass to
-	 * pcap_open_live()</dd>
-	 * <dt>description</dt>
-	 * <dd>if not NULL, a pointer to a string giving a human-readable description of
-	 * the device</dd>
-	 * <dt>addresses</dt>
-	 * <dd>a pointer to the first element of a list of network addresses for the
-	 * device, or NULL if the device has no addresses</dd>
-	 * </dl>
-	 * <dl>
-	 * <dt>flags</dt>
-	 * <dd>device flags:
-	 * <dt>PCAP_IF_LOOPBACK</dt>
-	 * <dd>set if the device is a loopback interface</dd>
-	 * <dt>PCAP_IF_UP</dt>
-	 * <dd>set if the device is up</dd>
-	 * <dt>PCAP_IF_RUNNING</dt>
-	 * <dd>set if the device is running</dd>
-	 * <dt>PCAP_IF_WIRELESS</dt>
-	 * <dd>set if the device is a wireless interface; this includes IrDA as well as
-	 * radio-based networks such as IEEE 802.15.4 and IEEE 802.11, so it doesn't
-	 * just mean Wi-Fi</dd>
-	 * </dl>
-	 * <dl>
-	 * <dt>PCAP_IF_CONNECTION_STATUS</dt>
-	 * <dd>a bitmask for an indication of whether the adapter is connected or not;
-	 * for wireless interfaces, "connected" means "associated with a network"
-	 * <dt>PCAP_IF_CONNECTION_STATUS_UNKNOWN</dt>
-	 * <dd>it's unknown whether the adapter is connected or not</dd>
-	 * <dt>PCAP_IF_CONNECTION_STATUS_CONNECTED</dt>
-	 * <dd>the adapter is connected</dd>
-	 * <dt>PCAP_IF_CONNECTION_STATUS_DISCONNECTED</dt>
-	 * <dd>the adapter is disconnected</dd>
-	 * <dt>PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE</dt>
-	 * <dd>the notion of "connected" and "disconnected" don't apply to this
-	 * interface; for example, it doesn't apply to a loopback device</dd>
-	 * </dl>
-	 * 
-	 * <p>
-	 * Each element of the list of addresses is of type pcap_addr_t, and has the
-	 * following members:
-	 * </p>
-	 * <dl>
-	 * <dt>next</dt>
-	 * <dd>if not NULL, a pointer to the next element in the list; NULL for the last
-	 * element of the list</dd>
-	 * <dt>addr</dt>
-	 * <dd>a pointer to a struct sockaddr containing an address</dd>
-	 * <dt>netmask</dt>
-	 * <dd>if not NULL, a pointer to a struct sockaddr that contains the netmask
-	 * corresponding to the address pointed to by addr</dd>
-	 * <dt>broadaddr</dt>
-	 * <dd>if not NULL, a pointer to a struct sockaddr that contains the broadcast
-	 * address corresponding to the address pointed to by addr; may be null if the
-	 * device doesn't support broadcasts</dd>
-	 * <dt>dstaddr</dt>
-	 * <dd>if not NULL, a pointer to a struct sockaddr that contains the destination
-	 * address corresponding to the address pointed to by addr; may be null if the
-	 * device isn't a point-to-point interface</dd>
-	 * </dl>
-	 * <p>
-	 * Note that the addresses in the list of addresses might be IPv4 addresses,
-	 * IPv6 addresses, or some other type of addresses, so you must check the
-	 * sa_family member of the struct sockaddr before interpreting the contents of
-	 * the address; do not assume that the addresses are all IPv4 addresses, or even
-	 * all IPv4 or IPv6 addresses. IPv4 addresses have the value AF_INET, IPv6
-	 * addresses have the value AF_INET6 (which older operating systems that don't
-	 * support IPv6 might not define), and other addresses have other values.
-	 * Whether other addresses are returned, and what types they might have is
-	 * platform-dependent. For IPv4 addresses, the struct sockaddr pointer can be
-	 * interpreted as if it pointed to a struct sockaddr_in; for IPv6 addresses, it
-	 * can be interpreted as if it pointed to a struct sockaddr_in6.
-	 * </p>
-	 * <p>
-	 * <b>For example</b>
-	 * </p>
-	 * 
-	 * <pre>{@snippet : 
-	 * 	List<PcapIf> list = Pcap.findAllDevs()
-	 * }</pre>
-	 *
-	 * @return list of network devices
-	 * @throws PcapException any pcap errors
-	 * @since libpcap 0.7
-	 */
-	public static List<PcapIf> findAllDevs() throws PcapException {
-		return Pcap.findAllDevs();
-	}
-
-	/**
-	 * Create a list of network devices that can be opened with {@code Pcap#open}.
-	 * <p>
-	 * This routine can scan a directory for savefiles, list local capture devices,
-	 * or list capture devices on a remote machine running an RPCAP server.
-	 * </p>
-	 * <p>
-	 * For scanning for savefiles, it can be used on both UN*X systems and Windows
-	 * systems; for each directory entry it sees, it tries to open the file as a
-	 * savefile using pcap_open_offline(), and only includes it in the list of files
-	 * if the open succeeds, so it filters out files for which the user doesn't have
-	 * read permission, as well as files that aren't valid savefiles readable by
-	 * libpcap.
-	 * </p>
-	 * <p>
-	 * For listing local capture devices, it's just a wrapper around
-	 * pcap_findalldevs(); full using pcap_findalldevs() will work on more platforms
-	 * than full using pcap_findalldevs_ex().
-	 * </p>
-	 * <p>
-	 * For listing remote capture devices, pcap_findalldevs_ex() is currently the
-	 * only API available.
-	 * </p>
-	 * 
-	 * <p>
-	 * <em>Warning:</em>
-	 * </p>
-	 * 
-	 * <blockquote>There may be network devices that cannot be opened with
-	 * pcap_open() by the process calling pcap_findalldevs(), because, for example,
-	 * that process might not have sufficient privileges to open them for capturing;
-	 * if so, those devices will not appear on the list.</blockquote>
-	 * 
-	 * @param source   This source will be examined looking for adapters (local or
-	 *                 remote) (e.g. source can be 'rpcap://' for local adapters or
-	 *                 'rpcap://host:port' for adapters on a remote host) or pcap
-	 *                 files (e.g. source can be 'file://c:/myfolder/').
-	 * @param type     Type of the authentication required
-	 * @param username The username that has to be used on the remote machine for
-	 *                 authentication
-	 * @param password The password that has to be used on the remote machine for
-	 *                 authentication
-	 * @return The list of the devices
-	 * @throws PcapException the pcap exception
-	 * @since libpcap 1.9
-	 * @since early days of WinPcap
-	 */
-	public static List<PcapIf> findAllDevsEx(String source, PcapSrc type, String username, String password)
-			throws PcapException {
-		return Pcap.findAllDevsEx(source, type, username, password);
-	}
-
-	/**
-	 * Activates the product license using automatic key resolution.
-	 * 
-	 * <p>
-	 * The license key is resolved from the following sources in order:
-	 * </p>
-	 * <ol>
-	 * <li>Environment variable {@code JNETPCAP_LICENSE_KEY}</li>
-	 * <li>Environment variable {@code JNETPCAP_LICENSE_DIR} → jnetpcap.lic</li>
-	 * <li>System property {@code jnetpcap.license.key}</li>
-	 * <li>System property {@code jnetpcap.license.dir} → jnetpcap.lic</li>
-	 * <li>Environment variable {@code LICENSE_KEY}</li>
-	 * <li>Environment variable {@code LICENSE_DIR} → jnetpcap.lic</li>
-	 * <li>System property {@code license.key}</li>
-	 * <li>System property {@code license.dir} → jnetpcap.lic</li>
-	 * <li>Container secrets: {@code /run/secrets/jnetpcap.lic}</li>
-	 * <li>User home: {@code ~/.jnetpcap/jnetpcap.lic}</li>
-	 * <li>System path: {@code /etc/jnetpcap/jnetpcap.lic} (Linux) or
-	 * {@code %PROGRAMFILES%\jnetpcap\jnetpcap.lic} (Windows)</li>
-	 * <li>Universal home: {@code ~/.license/jnetpcap.lic}</li>
-	 * <li>Universal system: {@code /etc/license/jnetpcap.lic}</li>
-	 * <li>Classpath: {@code /license/jnetpcap.lic} (embedded community key)</li>
-	 * </ol>
-	 * 
-	 * <p>
-	 * The embedded community key provides unlimited activations with feature
-	 * restrictions. To unlock all features, install a commercial key in any of the
-	 * above locations.
-	 * </p>
-	 * 
-	 * @throws LicenseException if no valid license key is found or activation fails
-	 * @see #activateLicense(String)
-	 */
-	public static void activateLicense() throws LicenseException {
-		Pcap.activateLicense();
-	}
-
-	/**
-	 * Activates the product license using the specified key.
-	 * 
-	 * <p>
-	 * Use this method when the license key is obtained programmatically or stored
-	 * in a custom location not covered by automatic resolution.
-	 * </p>
-	 * 
-	 * @param key the license key string (must be at least 20 characters)
-	 * @throws LicenseException         if the key is invalid or activation fails
-	 * @throws IllegalArgumentException if key is null or too short
-	 * @see #activateLicense()
-	 */
-	public static void activateLicense(String key) throws LicenseException, IllegalArgumentException {
-		Pcap.activateLicense(key);
-	}
-
-	/**
-	 * Checks if the application version is compatible with this library version.
-	 *
-	 * @param applicationVersion the application's expected version
-	 * @throws PcapVersionException if versions are incompatible
-	 */
-	public static void checkVersion(String applicationVersion) throws PcapVersionException {
-		PcapVersionException.throwIfVersionMismatch(NetPcap.VERSION, applicationVersion);
-	}
-
-	/**
-	 * Creates a capture handle for the specified device using two-stage
-	 * configuration.
-	 * 
-	 * <p>
-	 * The handle must be configured and activated before use. Uses default
-	 * dissection-only protocol stack.
-	 * </p>
-	 *
-	 * @param device the network interface
-	 * @return a new NetPcap handle (not yet activated)
-	 * @throws PcapException if handle creation fails
-	 * @see #activate()
-	 */
-	public static NetPcap create(PcapIf device) throws PcapException {
-		return create(device, new PacketSettings());
-	}
-
-	/**
-	 * Creates a capture handle for the specified device with a custom protocol
-	 * stack.
-	 *
-	 * @param device the network interface
-	 * @param stack  the protocol stack for packet processing
-	 * @return a new NetPcap handle (not yet activated)
-	 * @throws PcapException if handle creation fails
-	 */
-	public static NetPcap create(PcapIf device, PacketSettings settings) throws PcapException {
-		return create(device.name(), settings);
-	}
-
-	/**
-	 * Creates a capture handle for the named device using two-stage configuration.
-	 *
-	 * @param device the device name (e.g., "eth0", "en0")
-	 * @return a new NetPcap handle (not yet activated)
-	 * @throws PcapException if handle creation fails
-	 */
-	public static NetPcap create(String device) throws PcapException {
-		return create(device, new PacketSettings());
-	}
-
-	/**
-	 * Creates a capture handle for the named device with a custom protocol stack.
-	 *
-	 * @param device the device name
-	 * @param stack  the protocol stack for packet processing
-	 * @return a new NetPcap handle (not yet activated)
-	 * @throws PcapException if handle creation fails
-	 */
-	public static NetPcap create(String device, PacketSettings settings) throws PcapException {
-		Pcap pcap = Pcap.create(device);
-		return new NetPcap(pcap, settings, false);
-	}
-
-	/**
 	 * Creates a "dead" handle for filter compilation or dump file writing.
 	 *
-	 * @param linktype the link-layer type
+	 * <p>
+	 * A dead handle is not bound to any live interface and cannot capture packets.
+	 * It is used to compile BPF filters (via {@link #compile}) or to write pcap
+	 * dump files (via {@link #dumpOpen}) without an active capture.
+	 * </p>
+	 *
+	 * <p>Uses default {@link PacketSettings}.</p>
+	 *
+	 * @param linktype the link-layer type for the dead handle
 	 * @param snaplen  the snapshot length
-	 * @return a new NetPcap handle
+	 * @return an activated dead {@code NetPcap} handle
 	 * @throws PcapException if handle creation fails
+	 * @see #openDeadWithTstampPrecision(PcapDlt, int, PcapTStampPrecision)
 	 */
 	public static NetPcap openDead(PcapDlt linktype, int snaplen) throws PcapException {
 		return openDead(linktype, snaplen, new PacketSettings());
 	}
 
 	/**
-	 * Creates a "dead" handle with a custom protocol stack.
+	 * Creates a "dead" handle with custom packet settings.
 	 *
-	 * @param linktype the link-layer type
+	 * @param linktype the link-layer type for the dead handle
 	 * @param snaplen  the snapshot length
-	 * @param stack    the protocol stack
-	 * @return a new NetPcap handle
+	 * @param settings packet structure and dissection configuration
+	 * @return an activated dead {@code NetPcap} handle
 	 * @throws PcapException if handle creation fails
 	 */
 	public static NetPcap openDead(PcapDlt linktype, int snaplen, PacketSettings settings) throws PcapException {
@@ -453,12 +425,14 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 	}
 
 	/**
-	 * Creates a "dead" handle with timestamp precision.
+	 * Creates a "dead" handle with specific timestamp precision.
+	 *
+	 * <p>Uses default {@link PacketSettings}.</p>
 	 *
 	 * @param linktype  the link-layer type
 	 * @param snaplen   the snapshot length
 	 * @param precision the timestamp precision
-	 * @return a new NetPcap handle
+	 * @return an activated dead {@code NetPcap} handle
 	 * @throws PcapException if handle creation fails
 	 */
 	public static NetPcap openDeadWithTstampPrecision(PcapDlt linktype, int snaplen,
@@ -467,13 +441,14 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 	}
 
 	/**
-	 * Creates a "dead" handle with timestamp precision and custom stack.
+	 * Creates a "dead" handle with specific timestamp precision and custom packet
+	 * settings.
 	 *
 	 * @param linktype  the link-layer type
 	 * @param snaplen   the snapshot length
 	 * @param precision the timestamp precision
-	 * @param stack     the protocol stack
-	 * @return a new NetPcap handle
+	 * @param settings  packet structure and dissection configuration
+	 * @return an activated dead {@code NetPcap} handle
 	 * @throws PcapException if handle creation fails
 	 */
 	public static NetPcap openDeadWithTstampPrecision(PcapDlt linktype, int snaplen,
@@ -483,15 +458,21 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 	}
 
 	/**
-	 * Opens a device for live packet capture.
+	 * Opens a network interface for live packet capture.
 	 *
-	 * @param device  the network interface
-	 * @param snaplen maximum bytes to capture per packet
-	 * @param promisc true for promiscuous mode
+	 * <p>
+	 * The returned handle is already activated. Uses default {@link PacketSettings}.
+	 * </p>
+	 *
+	 * @param device  the network interface to capture on
+	 * @param snaplen maximum bytes to capture per packet (use 65535 for full
+	 *                packets)
+	 * @param promisc {@code true} to enable promiscuous mode
 	 * @param timeout read timeout
 	 * @param unit    timeout unit
-	 * @return an activated NetPcap handle
-	 * @throws PcapException if open fails
+	 * @return an activated {@code NetPcap} handle
+	 * @throws PcapException if the interface cannot be opened
+	 * @see #create(PcapIf) for two-stage configuration with more options
 	 */
 	public static NetPcap openLive(PcapIf device, int snaplen, boolean promisc,
 			long timeout, TimeUnit unit) throws PcapException {
@@ -499,16 +480,16 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 	}
 
 	/**
-	 * Opens a device for live packet capture with custom stack.
+	 * Opens a network interface for live packet capture with custom packet settings.
 	 *
-	 * @param device  the network interface
-	 * @param snaplen maximum bytes to capture per packet
-	 * @param promisc true for promiscuous mode
-	 * @param timeout read timeout
-	 * @param unit    timeout unit
-	 * @param stack   the protocol stack
-	 * @return an activated NetPcap handle
-	 * @throws PcapException if open fails
+	 * @param device   the network interface to capture on
+	 * @param snaplen  maximum bytes to capture per packet
+	 * @param promisc  {@code true} to enable promiscuous mode
+	 * @param timeout  read timeout
+	 * @param unit     timeout unit
+	 * @param settings packet structure and dissection configuration
+	 * @return an activated {@code NetPcap} handle
+	 * @throws PcapException if the interface cannot be opened
 	 */
 	public static NetPcap openLive(PcapIf device, int snaplen, boolean promisc,
 			long timeout, TimeUnit unit, PacketSettings settings) throws PcapException {
@@ -516,14 +497,16 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 	}
 
 	/**
-	 * Opens a device for live packet capture using Duration.
+	 * Opens a network interface for live packet capture.
 	 *
-	 * @param device  the device name
+	 * <p>Uses default {@link PacketSettings}.</p>
+	 *
+	 * @param device  the device name (e.g., {@code "eth0"}, {@code "en0"})
 	 * @param snaplen maximum bytes to capture per packet
-	 * @param promisc true for promiscuous mode
-	 * @param timeout read timeout as Duration
-	 * @return an activated NetPcap handle
-	 * @throws PcapException if open fails
+	 * @param promisc {@code true} to enable promiscuous mode
+	 * @param timeout read timeout as {@link Duration}
+	 * @return an activated {@code NetPcap} handle
+	 * @throws PcapException if the interface cannot be opened
 	 */
 	public static NetPcap openLive(String device, int snaplen, boolean promisc,
 			Duration timeout) throws PcapException {
@@ -531,15 +514,15 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 	}
 
 	/**
-	 * Opens a device for live packet capture using Duration with custom stack.
+	 * Opens a network interface for live packet capture with custom packet settings.
 	 *
-	 * @param device  the device name
-	 * @param snaplen maximum bytes to capture per packet
-	 * @param promisc true for promiscuous mode
-	 * @param timeout read timeout as Duration
-	 * @param stack   the protocol stack
-	 * @return an activated NetPcap handle
-	 * @throws PcapException if open fails
+	 * @param device   the device name
+	 * @param snaplen  maximum bytes to capture per packet
+	 * @param promisc  {@code true} to enable promiscuous mode
+	 * @param timeout  read timeout as {@link Duration}
+	 * @param settings packet structure and dissection configuration
+	 * @return an activated {@code NetPcap} handle
+	 * @throws PcapException if the interface cannot be opened
 	 */
 	public static NetPcap openLive(String device, int snaplen, boolean promisc,
 			Duration timeout, PacketSettings settings) throws PcapException {
@@ -547,15 +530,17 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 	}
 
 	/**
-	 * Opens a device for live packet capture.
+	 * Opens a network interface for live packet capture.
+	 *
+	 * <p>Uses default {@link PacketSettings}.</p>
 	 *
 	 * @param device  the device name
 	 * @param snaplen maximum bytes to capture per packet
-	 * @param promisc true for promiscuous mode
+	 * @param promisc {@code true} to enable promiscuous mode
 	 * @param timeout read timeout value
 	 * @param unit    timeout unit
-	 * @return an activated NetPcap handle
-	 * @throws PcapException if open fails
+	 * @return an activated {@code NetPcap} handle
+	 * @throws PcapException if the interface cannot be opened
 	 */
 	public static NetPcap openLive(String device, int snaplen, boolean promisc,
 			long timeout, TimeUnit unit) throws PcapException {
@@ -563,16 +548,16 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 	}
 
 	/**
-	 * Opens a device for live packet capture with custom stack.
+	 * Opens a network interface for live packet capture with custom packet settings.
 	 *
-	 * @param device  the device name
-	 * @param snaplen maximum bytes to capture per packet
-	 * @param promisc true for promiscuous mode
-	 * @param timeout read timeout value
-	 * @param unit    timeout unit
-	 * @param stack   the protocol stack
-	 * @return an activated NetPcap handle
-	 * @throws PcapException if open fails
+	 * @param device   the device name
+	 * @param snaplen  maximum bytes to capture per packet
+	 * @param promisc  {@code true} to enable promiscuous mode
+	 * @param timeout  read timeout value
+	 * @param unit     timeout unit
+	 * @param settings packet structure and dissection configuration
+	 * @return an activated {@code NetPcap} handle
+	 * @throws PcapException if the interface cannot be opened
 	 */
 	public static NetPcap openLive(String device, int snaplen, boolean promisc,
 			long timeout, TimeUnit unit, PacketSettings settings) throws PcapException {
@@ -581,46 +566,72 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 	}
 
 	/**
-	 * Opens a capture file for reading.
+	 * Opens a pcap or pcapng capture file for reading.
+	 *
+	 * <p>Uses default {@link PacketSettings}.</p>
 	 *
 	 * @param file the capture file
-	 * @return an activated NetPcap handle
-	 * @throws PcapException if file cannot be opened
+	 * @return an activated {@code NetPcap} handle
+	 * @throws PcapException if the file cannot be opened or is not a valid capture
+	 *                       file
+	 * @see #openOffline(File, PacketSettings)
 	 */
 	public static NetPcap openOffline(File file) throws PcapException {
 		return openOffline(file, new PacketSettings());
 	}
 
 	/**
-	 * Opens a capture file for reading with custom stack.
+	 * Opens a capture file for reading with custom packet settings.
 	 *
-	 * @param file  the capture file
-	 * @param stack the protocol stack
-	 * @return an activated NetPcap handle
-	 * @throws PcapException if file cannot be opened
+	 * @param file     the capture file
+	 * @param settings packet structure and dissection configuration
+	 * @return an activated {@code NetPcap} handle
+	 * @throws PcapException if the file cannot be opened
 	 */
 	public static NetPcap openOffline(File file, PacketSettings settings) throws PcapException {
 		return openOffline(file.getAbsolutePath(), settings);
 	}
 
 	/**
-	 * Opens a capture file for reading.
+	 * Opens a pcap or pcapng capture file for reading.
 	 *
-	 * @param fname the filename
-	 * @return an activated NetPcap handle
-	 * @throws PcapException if file cannot be opened
+	 * <p>Uses default {@link PacketSettings}.</p>
+	 *
+	 * <pre>{@code
+	 * try (NetPcap pcap = NetPcap.openOffline("capture.pcap")) {
+	 *     pcap.loop(-1, packet -> System.out.println(packet));
+	 * }
+	 * }</pre>
+	 *
+	 * @param fname the path to the capture file
+	 * @return an activated {@code NetPcap} handle
+	 * @throws PcapException if the file cannot be opened or is not a valid capture
+	 *                       file
+	 * @see #openOffline(String, PacketSettings)
 	 */
 	public static NetPcap openOffline(String fname) throws PcapException {
 		return openOffline(fname, new PacketSettings());
 	}
 
 	/**
-	 * Opens a capture file for reading with custom stack.
+	 * Opens a capture file for reading with custom packet settings.
 	 *
-	 * @param fname the filename
-	 * @param stack the protocol stack
-	 * @return an activated NetPcap handle
-	 * @throws PcapException if file cannot be opened
+	 * <pre>{@code
+	 * PacketSettings settings = new PacketSettings().dissect();
+	 *
+	 * try (NetPcap pcap = NetPcap.openOffline("capture.pcap", settings)) {
+	 *     Ip4 ip4 = new Ip4();
+	 *     pcap.loop(-1, packet -> {
+	 *         if (packet.hasHeader(ip4))
+	 *             System.out.println(ip4.src() + " -> " + ip4.dst());
+	 *     });
+	 * }
+	 * }</pre>
+	 *
+	 * @param fname    the path to the capture file
+	 * @param settings packet structure and dissection configuration
+	 * @return an activated {@code NetPcap} handle
+	 * @throws PcapException if the file cannot be opened
 	 */
 	public static NetPcap openOffline(String fname, PacketSettings settings) throws PcapException {
 		Pcap pcap = Pcap.openOffline(fname);
@@ -651,12 +662,17 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 	}
 
 	/**
-	 * 
+	 * Activates this capture handle.
+	 *
+	 * <p>
+	 * Must be called after {@link #create} and before any packet dispatch methods.
+	 * Configuration setters ({@code setSnaplen}, {@code setPromisc}, etc.) must be
+	 * called before activation. {@link #setFilter} must be called after activation.
+	 * </p>
+	 *
+	 * @throws PcapException if activation fails (e.g., insufficient privileges,
+	 *                       device not found)
 	 */
-	private void configurePipeline() {
-		this.pipeline = new PacketPipeline(pcapApi, pcapApi.getPcapHeaderABI(), settings);
-	}
-
 	@Override
 	public void activate() throws PcapException {
 		super.activate();
@@ -665,20 +681,41 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 	}
 
 	/**
-	 * Processes packets using the specified handler with user context.
 	 * 
+	 */
+	private void configurePipeline() {
+		this.pipeline = new PacketPipeline(pcapApi, pcapApi.getPcapHeaderABI(), settings);
+	}
+
+	/**
+	 * Processes up to {@code count} packets, passing each to the handler with a
+	 * user context object.
+	 *
 	 * <p>
-	 * Packets are dissected through the protocol stack before being passed to the
-	 * handler. The handler receives fully parsed packets with headers accessible
-	 * via {@code hasHeader()}.
+	 * Packets are dissected through the protocol pipeline before the handler is
+	 * called. The handler receives a fully dissected {@link Packet} with protocol
+	 * headers accessible via {@code hasHeader()}.
+	 * </p>
+	 *
+	 * <p>
+	 * Returns after processing {@code count} packets, after a read timeout, or
+	 * after {@link #breakloop()} is called. Unlike {@link #loop}, this method
+	 * respects the read timeout configured via {@link #setTimeout}.
+	 * </p>
+	 *
+	 * <p>
+	 * The {@link Packet} passed to the handler is only valid for the duration of
+	 * the callback. Call {@link Packet#persist()} to retain it beyond the callback.
 	 * </p>
 	 *
 	 * @param <U>     the user context type
-	 * @param count   maximum packets to process (-1 for unlimited)
+	 * @param count   maximum packets to process; use {@code -1} for unlimited
 	 * @param handler the packet handler
-	 * @param user    user context passed to handler
-	 * @return number of packets processed, 0 on timeout, -1 on error, -2 on break
+	 * @param user    user context passed to each handler invocation
+	 * @return number of packets processed, {@code 0} on timeout,
+	 *         {@code -1} on error, {@code -2} if {@link #breakloop()} was called
 	 * @throws PcapException if capture fails
+	 * @see #loop(int, OfPacketConsumer)
 	 */
 	public <U> int dispatch(int count, OfPacket<U> handler, U user) throws PcapException {
 
@@ -693,12 +730,26 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 	}
 
 	/**
-	 * Processes packets using a consumer-style handler.
+	 * Processes up to {@code count} packets, passing each to a consumer-style
+	 * handler.
 	 *
-	 * @param count   maximum packets to process (-1 for unlimited)
+	 * <p>
+	 * Equivalent to {@link #dispatch(int, OfPacket, Object)} without a user context
+	 * object. The handler is a standard {@link java.util.function.Consumer Consumer}
+	 * of {@link Packet}.
+	 * </p>
+	 *
+	 * <p>
+	 * The {@link Packet} passed to the handler is only valid for the duration of
+	 * the callback. Call {@link Packet#persist()} to retain it beyond the callback.
+	 * </p>
+	 *
+	 * @param count   maximum packets to process; use {@code -1} for unlimited
 	 * @param handler the packet consumer
-	 * @return number of packets processed, 0 on timeout, -1 on error, -2 on break
+	 * @return number of packets processed, {@code 0} on timeout,
+	 *         {@code -1} on error, {@code -2} if {@link #breakloop()} was called
 	 * @throws PcapException if capture fails
+	 * @see #loop(int, OfPacketConsumer)
 	 */
 	public int dispatch(int count, OfPacketConsumer handler) throws PcapException {
 
@@ -719,18 +770,58 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 	}
 
 	/**
-	 * Processes packets in a loop with user context.
-	 * 
+	 * Injects a packet on the network, returning the number of bytes sent.
+	 *
 	 * <p>
-	 * Unlike {@link #dispatch}, this method ignores read timeout and blocks until
-	 * the specified count is reached or {@link #breakloop()} is called.
+	 * Functionally equivalent to {@link #sendPacket(Packet)} but returns the byte
+	 * count rather than void. Prefer this method when the sent byte count needs to
+	 * be verified.
+	 * </p>
+	 *
+	 * @param packet the packet to inject
+	 * @return the number of bytes injected
+	 * @throws PcapException if injection fails
+	 * @see #sendPacket(Packet)
+	 */
+	public int inject(Packet packet) throws PcapException {
+		MemorySegment segment = packet.view().segment();
+		long start = packet.view().start();
+		int length = packet.captureLength();
+		return pcapApi.inject(segment.asSlice(start, length), length);
+	}
+
+	/**
+	 * Returns whether this handle has been activated.
+	 *
+	 * @return {@code true} if {@link #activate()} has been called or the handle was
+	 *         created via {@link #openLive}, {@link #openOffline}, or
+	 *         {@link #openDead}
+	 */
+	public boolean isActivated() {
+		return activated;
+	}
+
+	/**
+	 * Processes packets in a loop with a user context object.
+	 *
+	 * <p>
+	 * Unlike {@link #dispatch}, this method ignores the read timeout and blocks
+	 * until exactly {@code count} packets are processed or {@link #breakloop()} is
+	 * called. Use {@code count = -1} for infinite capture.
+	 * </p>
+	 *
+	 * <p>
+	 * The {@link Packet} passed to the handler is only valid for the duration of
+	 * the callback. Call {@link Packet#persist()} to retain it beyond the callback.
 	 * </p>
 	 *
 	 * @param <U>     the user context type
-	 * @param count   packets to process (-1 for infinite)
+	 * @param count   packets to process; use {@code -1} for infinite
 	 * @param handler the packet handler
-	 * @param user    user context passed to handler
-	 * @return number of packets processed, -1 on error, -2 on break
+	 * @param user    user context passed to each handler invocation
+	 * @return number of packets processed, {@code -1} on error,
+	 *         {@code -2} if {@link #breakloop()} was called
+	 * @see #dispatch(int, OfPacketConsumer)
 	 */
 	public <U> int loop(int count, OfPacket<U> handler, U user) {
 		dispatcher.userUpcall().setUserCallback((MemorySegment _, MemorySegment h, MemorySegment p) -> {
@@ -744,11 +835,24 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 	}
 
 	/**
-	 * Processes packets in a loop with consumer-style handler.
+	 * Processes packets in a loop with a consumer-style handler.
 	 *
-	 * @param count   packets to process (-1 for infinite)
+	 * <p>
+	 * Unlike {@link #dispatch}, this method ignores the read timeout and blocks
+	 * until exactly {@code count} packets are processed or {@link #breakloop()} is
+	 * called. Use {@code count = -1} for infinite capture.
+	 * </p>
+	 *
+	 * <p>
+	 * The {@link Packet} passed to the handler is only valid for the duration of
+	 * the callback. Call {@link Packet#persist()} to retain it beyond the callback.
+	 * </p>
+	 *
+	 * @param count   packets to process; use {@code -1} for infinite
 	 * @param handler the packet consumer
-	 * @return number of packets processed, -1 on error, -2 on break
+	 * @return number of packets processed, {@code -1} on error,
+	 *         {@code -2} if {@link #breakloop()} was called
+	 * @see #dispatch(int, OfPacketConsumer)
 	 */
 	public int loop(int count, OfPacketConsumer handler) {
 		dispatcher.userUpcall().setUserCallback((MemorySegment _, MemorySegment h, MemorySegment p) -> {
@@ -761,28 +865,30 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 		return dispatcher.loopRaw(count, MemorySegment.NULL);
 	}
 
+	/** {@inheritDoc} */
 	@Override
 	public String name() {
 		return super.getName();
 	}
 
 	/**
-	 * Retrieves the next packet without blocking.
-	 * 
+	 * Returns the next available packet without blocking indefinitely.
+	 *
 	 * <p>
-	 * Returns null if no packet is available (timeout) or on EOF for offline
-	 * captures. The returned packet is fully dissected with headers accessible via
-	 * {@code hasHeader()}.
-	 * </p>
-	 * 
-	 * <p>
-	 * <b>Warning:</b> The returned Packet is only valid until the next call to
-	 * {@code next()}, {@code nextEx()}, {@code dispatch()}, or {@code loop()}. Copy
-	 * the packet data if you need to retain it.
+	 * Returns {@code null} if no packet is available within the read timeout, or at
+	 * end-of-file for offline captures. The returned packet is fully dissected with
+	 * headers accessible via {@code hasHeader()}.
 	 * </p>
 	 *
-	 * @return the next dissected packet, or null on timeout/EOF
+	 * <p>
+	 * <strong>Lifetime warning:</strong> The returned {@link Packet} is only valid
+	 * until the next call to {@code next()}, {@code nextEx()}, {@code dispatch()},
+	 * or {@code loop()}. Call {@link Packet#persist()} if you need to retain it.
+	 * </p>
+	 *
+	 * @return the next dissected packet, or {@code null} on timeout or EOF
 	 * @throws PcapException if capture fails
+	 * @see #nextEx()
 	 */
 	@Override
 	public Packet next() throws PcapException {
@@ -796,17 +902,25 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 	}
 
 	/**
-	 * Retrieves the next packet, distinguishing timeout from EOF.
-	 * 
+	 * Returns the next available packet, distinguishing timeout from EOF.
+	 *
 	 * <p>
-	 * Unlike {@link #next()}, this method throws {@link TimeoutException} when no
-	 * packet is available within the read timeout, allowing the caller to
-	 * distinguish between timeout and end-of-file conditions.
+	 * Unlike {@link #next()}, this method throws {@link TimeoutException} on read
+	 * timeout, allowing the caller to distinguish between timeout (no packet yet)
+	 * and end-of-file (no more packets).
+	 * </p>
+	 *
+	 * <p>
+	 * <strong>Lifetime warning:</strong> The returned {@link Packet} is only valid
+	 * until the next call to any dispatch method. Call {@link Packet#persist()} if
+	 * you need to retain it.
 	 * </p>
 	 *
 	 * @return the next dissected packet
-	 * @throws PcapException    if capture fails or EOF reached
-	 * @throws TimeoutException if read timeout expires with no packet
+	 * @throws PcapException    if capture fails or EOF is reached on an offline
+	 *                          capture
+	 * @throws TimeoutException if the read timeout expires with no packet available
+	 * @see #next()
 	 */
 	@Override
 	public Packet nextEx() throws PcapException, TimeoutException {
@@ -820,16 +934,29 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 	}
 
 	/**
-	 * Sends a packet on the network.
-	 * 
+	 * {@inheritDoc}
+	 *
+	 * @return this {@code NetPcap} for method chaining
+	 */
+	@Override
+	public NetPcap perror(String prefix) {
+		super.perror(prefix);
+		return this;
+	}
+
+	/**
+	 * Transmits a packet on the network.
+	 *
 	 * <p>
-	 * The packet's raw data is transmitted. Any modifications made to the packet
-	 * headers are reflected in the transmitted data. The entire packet from
-	 * position 0 to capture length is sent.
+	 * The packet's raw bytes from position {@code 0} to {@code captureLength()} are
+	 * transmitted. Any header modifications made before calling this method are
+	 * reflected in the transmitted data.
 	 * </p>
 	 *
-	 * @param packet the packet to send
-	 * @throws PcapException if transmission fails
+	 * @param packet the packet to transmit
+	 * @throws PcapException if transmission fails (e.g., insufficient privileges,
+	 *                       network error)
+	 * @see #inject(Packet)
 	 */
 	public void sendPacket(Packet packet) throws PcapException {
 		MemorySegment segment = packet.view().segment();
@@ -839,23 +966,9 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 	}
 
 	/**
-	 * Injects a packet on the network, returning bytes sent.
-	 *
-	 * @param packet the packet to inject
-	 * @return number of bytes injected
-	 * @throws PcapException if injection fails
-	 */
-	public int inject(Packet packet) throws PcapException {
-		MemorySegment segment = packet.view().segment();
-		long start = packet.view().start();
-		int length = packet.captureLength();
-		return pcapApi.inject(segment.asSlice(start, length), length);
-	}
-
-	/**
 	 * {@inheritDoc}
-	 * 
-	 * @return this NetPcap for method chaining
+	 *
+	 * @return this {@code NetPcap} for method chaining
 	 */
 	@Override
 	public NetPcap setBufferSize(int bufferSize) throws PcapException {
@@ -864,12 +977,14 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 	}
 
 	/**
-	 * Sets the kernel buffer size with unit specification.
+	 * Sets the kernel capture buffer size.
+	 *
+	 * <p>Must be called before {@link #activate()}.</p>
 	 *
 	 * @param size the buffer size value
-	 * @param unit the size unit
-	 * @return this NetPcap for method chaining
-	 * @throws PcapException if operation fails
+	 * @param unit the size unit (e.g., {@link MemoryUnit#MEGABYTES})
+	 * @return this {@code NetPcap} for method chaining
+	 * @throws PcapException if the operation fails
 	 */
 	public NetPcap setBufferSize(long size, MemoryUnit unit) throws PcapException {
 		return setBufferSize((int) unit.toBytes(size));
@@ -877,8 +992,8 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 
 	/**
 	 * {@inheritDoc}
-	 * 
-	 * @return this NetPcap for method chaining
+	 *
+	 * @return this {@code NetPcap} for method chaining
 	 */
 	@Override
 	public NetPcap setDatalink(int dlt) throws PcapException {
@@ -888,8 +1003,8 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 
 	/**
 	 * {@inheritDoc}
-	 * 
-	 * @return this NetPcap for method chaining
+	 *
+	 * @return this {@code NetPcap} for method chaining
 	 */
 	@Override
 	public NetPcap setDatalink(Optional<PcapDlt> dlt) throws PcapException {
@@ -899,8 +1014,8 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 
 	/**
 	 * {@inheritDoc}
-	 * 
-	 * @return this NetPcap for method chaining
+	 *
+	 * @return this {@code NetPcap} for method chaining
 	 */
 	@Override
 	public NetPcap setDatalink(PcapDlt dlt) throws PcapException {
@@ -910,8 +1025,8 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 
 	/**
 	 * {@inheritDoc}
-	 * 
-	 * @return this NetPcap for method chaining
+	 *
+	 * @return this {@code NetPcap} for method chaining
 	 */
 	@Override
 	public NetPcap setDirection(int dir) throws PcapException {
@@ -921,8 +1036,8 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 
 	/**
 	 * {@inheritDoc}
-	 * 
-	 * @return this NetPcap for method chaining
+	 *
+	 * @return this {@code NetPcap} for method chaining
 	 */
 	@Override
 	public NetPcap setDirection(Optional<PcapDirection> dir) throws PcapException {
@@ -932,8 +1047,8 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 
 	/**
 	 * {@inheritDoc}
-	 * 
-	 * @return this NetPcap for method chaining
+	 *
+	 * @return this {@code NetPcap} for method chaining
 	 */
 	@Override
 	public NetPcap setDirection(PcapDirection dir) throws PcapException {
@@ -943,8 +1058,8 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 
 	/**
 	 * {@inheritDoc}
-	 * 
-	 * @return this NetPcap for method chaining
+	 *
+	 * @return this {@code NetPcap} for method chaining
 	 */
 	@Override
 	public NetPcap setFilter(BpFilter bpfProgram) throws PcapException {
@@ -954,8 +1069,8 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 
 	/**
 	 * {@inheritDoc}
-	 * 
-	 * @return this NetPcap for method chaining
+	 *
+	 * @return this {@code NetPcap} for method chaining
 	 */
 	@Override
 	public NetPcap setFilter(Optional<BpFilter> bpfProgram) throws PcapException {
@@ -964,23 +1079,36 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 	}
 
 	/**
-	 * Sets a BPF filter using a filter expression string.
+	 * Compiles and applies a BPF filter expression.
 	 *
-	 * @param expression the filter expression (e.g., "tcp port 80")
-	 * @return this NetPcap for method chaining
-	 * @throws PcapException if filter compilation or application fails
+	 * <p>
+	 * Must be called after {@link #activate()}. The filter is compiled with
+	 * optimization enabled. For optimization control use
+	 * {@link #setFilter(String, boolean)}.
+	 * </p>
+	 *
+	 * <pre>{@code
+	 * pcap.setFilter("tcp port 80 or tcp port 443");
+	 * pcap.setFilter("host 192.168.1.1 and not port 22");
+	 * pcap.setFilter("tcp[tcpflags] & tcp-syn != 0");  // SYN packets only
+	 * }</pre>
+	 *
+	 * @param expression the BPF filter expression
+	 * @return this {@code NetPcap} for method chaining
+	 * @throws PcapException if the expression is invalid or cannot be applied
+	 * @see #setFilter(String, boolean)
 	 */
 	public NetPcap setFilter(String expression) throws PcapException {
 		return setFilter(expression, true);
 	}
 
 	/**
-	 * Sets a BPF filter with optimization control.
+	 * Compiles and applies a BPF filter expression with optimization control.
 	 *
-	 * @param expression the filter expression
-	 * @param optimize   true to optimize the filter
-	 * @return this NetPcap for method chaining
-	 * @throws PcapException if filter compilation or application fails
+	 * @param expression the BPF filter expression
+	 * @param optimize   {@code true} to optimize the compiled filter
+	 * @return this {@code NetPcap} for method chaining
+	 * @throws PcapException if the expression is invalid or cannot be applied
 	 */
 	public NetPcap setFilter(String expression, boolean optimize) throws PcapException {
 		try (BpFilter filter = compile(expression, optimize)) {
@@ -991,8 +1119,10 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 
 	/**
 	 * {@inheritDoc}
-	 * 
-	 * @return this NetPcap for method chaining
+	 *
+	 * <p>Must be called before {@link #activate()}.</p>
+	 *
+	 * @return this {@code NetPcap} for method chaining
 	 */
 	@Override
 	public NetPcap setImmediateMode(boolean enable) throws PcapException {
@@ -1002,8 +1132,8 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 
 	/**
 	 * {@inheritDoc}
-	 * 
-	 * @return this NetPcap for method chaining
+	 *
+	 * @return this {@code NetPcap} for method chaining
 	 */
 	@Override
 	public NetPcap setNonBlock(boolean nonBlock) throws PcapException {
@@ -1013,8 +1143,10 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 
 	/**
 	 * {@inheritDoc}
-	 * 
-	 * @return this NetPcap for method chaining
+	 *
+	 * <p>Must be called before {@link #activate()}.</p>
+	 *
+	 * @return this {@code NetPcap} for method chaining
 	 */
 	@Override
 	public NetPcap setPromisc(boolean promiscuousMode) throws PcapException {
@@ -1024,8 +1156,11 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 
 	/**
 	 * {@inheritDoc}
-	 * 
-	 * @return this NetPcap for method chaining
+	 *
+	 * <p>Must be called before {@link #activate()}. Only supported on
+	 * wireless interfaces.</p>
+	 *
+	 * @return this {@code NetPcap} for method chaining
 	 */
 	@Override
 	public NetPcap setRfmon(boolean rfMonitor) throws PcapException {
@@ -1035,8 +1170,10 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 
 	/**
 	 * {@inheritDoc}
-	 * 
-	 * @return this NetPcap for method chaining
+	 *
+	 * <p>Must be called before {@link #activate()}.</p>
+	 *
+	 * @return this {@code NetPcap} for method chaining
 	 */
 	@Override
 	public NetPcap setSnaplen(int snaplen) throws PcapException {
@@ -1045,9 +1182,24 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 	}
 
 	/**
+	 * Sets the read timeout using a {@link Duration}.
+	 *
+	 * <p>Must be called before {@link #activate()}.</p>
+	 *
+	 * @param timeout the read timeout
+	 * @return this {@code NetPcap} for method chaining
+	 * @throws PcapException if the operation fails
+	 */
+	public NetPcap setTimeout(Duration timeout) throws PcapException {
+		return setTimeout((int) timeout.toMillis());
+	}
+
+	/**
 	 * {@inheritDoc}
-	 * 
-	 * @return this NetPcap for method chaining
+	 *
+	 * <p>Must be called before {@link #activate()}.</p>
+	 *
+	 * @return this {@code NetPcap} for method chaining
 	 */
 	@Override
 	public NetPcap setTimeout(int timeoutInMillis) throws PcapException {
@@ -1056,23 +1208,14 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 	}
 
 	/**
-	 * Sets the read timeout using Duration.
+	 * Sets the read timeout with an explicit time unit.
 	 *
-	 * @param timeout the timeout duration
-	 * @return this NetPcap for method chaining
-	 * @throws PcapException if operation fails
-	 */
-	public NetPcap setTimeout(Duration timeout) throws PcapException {
-		return setTimeout((int) timeout.toMillis());
-	}
-
-	/**
-	 * Sets the read timeout with time unit.
+	 * <p>Must be called before {@link #activate()}.</p>
 	 *
 	 * @param timeout the timeout value
 	 * @param unit    the time unit
-	 * @return this NetPcap for method chaining
-	 * @throws PcapException if operation fails
+	 * @return this {@code NetPcap} for method chaining
+	 * @throws PcapException if the operation fails
 	 */
 	public NetPcap setTimeout(long timeout, TimeUnit unit) throws PcapException {
 		return setTimeout((int) unit.toMillis(timeout));
@@ -1080,8 +1223,10 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 
 	/**
 	 * {@inheritDoc}
-	 * 
-	 * @return this NetPcap for method chaining
+	 *
+	 * <p>Must be called before {@link #activate()}.</p>
+	 *
+	 * @return this {@code NetPcap} for method chaining
 	 */
 	@Override
 	public NetPcap setTstampPrecision(PcapTStampPrecision precision) throws PcapException {
@@ -1091,8 +1236,10 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 
 	/**
 	 * {@inheritDoc}
-	 * 
-	 * @return this NetPcap for method chaining
+	 *
+	 * <p>Must be called before {@link #activate()}.</p>
+	 *
+	 * @return this {@code NetPcap} for method chaining
 	 */
 	@Override
 	public NetPcap setTstampType(PcapTstampType type) throws PcapException {
@@ -1102,8 +1249,8 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 
 	/**
 	 * {@inheritDoc}
-	 * 
-	 * @return this NetPcap for method chaining
+	 *
+	 * @return this {@code NetPcap} for method chaining
 	 */
 	@Override
 	public NetPcap setUncaughtExceptionHandler(Consumer<? super Throwable> exceptionHandler) {
@@ -1113,8 +1260,8 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 
 	/**
 	 * {@inheritDoc}
-	 * 
-	 * @return this NetPcap for method chaining
+	 *
+	 * @return this {@code NetPcap} for method chaining
 	 */
 	@Override
 	public NetPcap setUncaughtExceptionHandler(UncaughtExceptionHandler exceptionHandler) {
@@ -1123,27 +1270,10 @@ public final class NetPcap extends BaseNetPcap implements Named, AutoCloseable {
 	}
 
 	/**
-	 * {@inheritDoc}
-	 * 
-	 * @return this NetPcap for method chaining
-	 */
-	@Override
-	public NetPcap perror(String prefix) {
-		super.perror(prefix);
-		return this;
-	}
-
-	/**
-	 * Returns whether this handle has been activated.
+	 * Returns a string representation of this handle including the device name and
+	 * activation state.
 	 *
-	 * @return true if activated
-	 */
-	public boolean isActivated() {
-		return activated;
-	}
-
-	/**
-	 * Returns a string representation including device name and state.
+	 * @return e.g., {@code "NetPcap[eth0, activated=true]"}
 	 */
 	@Override
 	public String toString() {
